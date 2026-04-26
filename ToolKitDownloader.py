@@ -79,9 +79,14 @@ TOOLS = {
         {"name": "NetworkServiceExploit.exe", "cat": "potato", "url": "https://raw.githubusercontent.com/jakobfriedl/precompiled-binaries/main/PrivilegeEscalation/Token/NetworkServiceExploit.exe"},
         {"name": "SigmaPotato.exe",      "cat": "potato",  "url": "https://github.com/tylerdotrar/SigmaPotato/releases/latest/download/SigmaPotato.exe"},
         {"name": "GodPotato-NET4.exe",   "cat": "potato",  "url": "https://github.com/BeichenDream/GodPotato/releases/latest/download/GodPotato-NET4.exe"},
+        {"name": "GodPotato-NET35.exe",  "cat": "potato",  "url": "https://github.com/BeichenDream/GodPotato/releases/latest/download/GodPotato-NET35.exe"},
         {"name": "GodPotato-NET2.exe",   "cat": "potato",  "url": "https://github.com/BeichenDream/GodPotato/releases/latest/download/GodPotato-NET2.exe"},
         {"name": "PrintSpoofer64.exe",   "cat": "potato",  "url": "https://github.com/itm4n/PrintSpoofer/releases/download/v1.0/PrintSpoofer64.exe"},
         {"name": "SweetPotato.exe",      "cat": "potato",  "url": "https://raw.githubusercontent.com/Flangvik/SharpCollection/master/NetFramework_4.7_x64/SweetPotato.exe"},
+        # SigmaPotatoCore = PS Core / .NET Core variant of SigmaPotato
+        {"name": "SigmaPotatoCore.exe",  "cat": "potato",  "url": "https://github.com/tylerdotrar/SigmaPotato/releases/latest/download/SigmaPotatoCore.exe"},
+        # TcbElevation: SeTcbPrivilege → SYSTEM via LsaLogonUser S4U (antonioCoco gist, pre-compiled by b4lisong)
+        {"name": "TcbElevation.exe",     "cat": "tokens",  "url": "https://github.com/b4lisong/SeTcbPrivilege-Abuse/raw/main/TcbElevation.exe"},
         {"name": "JuicyPotato.exe",      "cat": "potato",  "url": "https://github.com/ohpe/juicy-potato/releases/download/v0.1/JuicyPotato.exe"},
         {"name": "JuicyPotatoNG.zip",    "cat": "potato",  "url": "https://github.com/antonioCoco/JuicyPotatoNG/releases/download/v1.1/JuicyPotatoNG.zip", "extract": True},
         {"name": "RoguePotato.zip",      "cat": "potato",  "url": "https://github.com/antonioCoco/RoguePotato/releases/download/1.0/RoguePotato.zip", "extract": True},
@@ -101,9 +106,17 @@ TOOLS = {
 
         # -- Token / Privilege Abuse --
         {"name": "SeManageVolumeExploit.exe", "cat": "tokens", "url": "https://github.com/CsEnox/SeManageVolumeExploit/releases/latest/download/SeManageVolumeExploit.exe"},
-        # SeRestoreAbuse + SeDebugPrivesc: source-only repos, compile on Windows or use mimikatz privilege::debug
-        # Repos cloned to repos/SeRestoreAbuse + repos/SeDebugPrivesc for reference
-        {"name": "RunasCs.exe",          "cat": "tokens",  "url": "https://github.com/antonioCoco/RunasCs/releases/latest/download/RunasCs.exe"},
+        # SeBackupPrivilege DLL cmdlets (verified 200 — giuliano108 repo, committed compiled DLLs)
+        {"name": "SeBackupPrivilegeCmdLets.dll", "cat": "tokens", "url": "https://raw.githubusercontent.com/giuliano108/SeBackupPrivilege/master/SeBackupPrivilegeCmdLets/bin/Debug/SeBackupPrivilegeCmdLets.dll"},
+        {"name": "SeBackupPrivilegeUtils.dll",   "cat": "tokens", "url": "https://raw.githubusercontent.com/giuliano108/SeBackupPrivilege/master/SeBackupPrivilegeCmdLets/bin/Debug/SeBackupPrivilegeUtils.dll"},
+        # SeLoadDriverPrivilege toolchain — verified precompiled binaries (k4sth4/SeLoadDriverPrivilege, HTTP 200)
+        {"name": "eoploaddriver_x64.exe", "cat": "tokens", "url": "https://raw.githubusercontent.com/k4sth4/SeLoadDriverPrivilege/main/eoploaddriver_x64.exe"},
+        {"name": "ExploitCapcom.exe",     "cat": "tokens", "url": "https://raw.githubusercontent.com/k4sth4/SeLoadDriverPrivilege/main/ExploitCapcom.exe"},
+        {"name": "Capcom.sys",            "cat": "tokens", "url": "https://raw.githubusercontent.com/k4sth4/SeLoadDriverPrivilege/main/Capcom.sys"},
+        # SeRestoreAbuse.exe — precompiled by overgrowncarrot1 (verified MZ PE header, HTTP 200, 2026-04)
+        # Source: xct/SeRestoreAbuse | Pre-compiled fork: overgrowncarrot1/SeRestoreAbuse
+        {"name": "SeRestoreAbuse.exe",   "cat": "tokens", "url": "https://raw.githubusercontent.com/overgrowncarrot1/SeRestoreAbuse/main/SeRestoreAbuse.exe"},
+        {"name": "RunasCs.exe",           "cat": "tokens",  "url": "https://github.com/antonioCoco/RunasCs/releases/latest/download/RunasCs.exe"},
 
         # -- AD / Kerberos --
         {"name": "Rubeus.exe",           "cat": "ad",      "url": "https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/raw/master/Rubeus.exe"},
@@ -270,11 +283,15 @@ TOOLS = {
         {"name": "webshells",           "url": "https://github.com/BlackArch/webshells.git"},
         {"name": "rsg",                 "url": "https://github.com/mthbernardes/rsg.git"},
         {"name": "statistically-likely-usernames", "url": "https://github.com/insidetrust/statistically-likely-usernames.git"},
-        # SeLoadDriverPrivilege tools — source only, compile on Windows if needed
+        # SeLoadDriverPrivilege — source repos for reference (precompiled binaries now in windows/ section)
         {"name": "EoPLoadDriver",       "url": "https://github.com/TarlogicSecurity/EoPLoadDriver.git"},
         {"name": "ExploitCapcom",       "url": "https://github.com/tandasat/ExploitCapcom.git"},
-        # SeRestoreAbuse + SeDebugPrivesc — source only (no precompiled binaries available publicly)
+        # SeRestoreAbuse — source only, no precompiled binary exists publicly (verified 2026-04)
+        # To build: open SeRestoreAbuse.sln in VS → Build → Release x64 → copy SeRestoreAbuse.exe to windows/
         {"name": "SeRestoreAbuse",      "url": "https://github.com/xct/SeRestoreAbuse.git"},
+        # szkg64.sys — CVE-2018-15732 vulnerable driver (preferred over Capcom on Win11/Server 2022)
+        # Download: https://www.exploit-db.com/apps/ac6c7cf2b7fe4b4a5c2090fe05a3fe67-szkg64.zip
+        # (No reliable public direct-download URL exists; obtain from Exploit-DB or compile from source)
     ],
 }
 

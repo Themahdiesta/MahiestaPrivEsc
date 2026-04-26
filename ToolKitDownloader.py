@@ -398,9 +398,15 @@ def download_category(category, tools_list, base_dir):
 
     for t in tools_list:
         name = t["name"]
-        url = t["url"]
         dest = cat_dir / name
         should_extract = t.get("extract", False)
+
+        if t.get("local"):
+            skip(f"Local (copy step handles): {name}")
+            cached += 1
+            continue
+
+        url = t["url"]
 
         if should_extract:
             extract_marker = cat_dir / f".{name}.extracted"
@@ -410,11 +416,6 @@ def download_category(category, tools_list, base_dir):
                 continue
         elif file_ok(dest):
             skip(f"Cached: {name}")
-            cached += 1
-            continue
-
-        if t.get("local"):
-            skip(f"Local (copy step handles): {name}")
             cached += 1
             continue
 

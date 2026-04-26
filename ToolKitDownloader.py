@@ -557,22 +557,25 @@ def copy_local_files(base_dir):
 
 
 def build_html(base_dir):
-    """Copy privesc.html (and other local assets) from the script's directory."""
+    """Copy all local HTML assets from the script's directory into the toolkit root."""
     script_dir = Path(__file__).resolve().parent
-    src = script_dir / "privesc.html"
-    dst = base_dir / "privesc.html"
-
-    if not src.exists():
-        warn("privesc.html not found next to ToolKitDownloader.py — skipping HTML build")
+    # All .html files next to this script are served at the toolkit root
+    html_files = list(script_dir.glob("*.html"))
+    if not html_files:
+        warn("No .html files found next to ToolKitDownloader.py — skipping HTML build")
         return False
 
-    try:
-        shutil.copy2(src, dst)
-        ok(f"privesc.html → {dst}")
-        return True
-    except Exception as e:
-        warn(f"Failed to copy privesc.html: {e}")
-        return False
+    copied = 0
+    for src in html_files:
+        dst = base_dir / src.name
+        try:
+            shutil.copy2(src, dst)
+            ok(f"{src.name} → {dst}")
+            copied += 1
+        except Exception as e:
+            warn(f"Failed to copy {src.name}: {e}")
+
+    return copied > 0
 
 
 def serve_toolkit(base_dir, ip):
@@ -590,8 +593,10 @@ def serve_toolkit(base_dir, ip):
     server = socketserver.TCPServer(("0.0.0.0", port), QuietHandler)
 
     html_line = ""
-    if (base_dir / "privesc.html").exists():
-        html_line = f"\n{M}  GUIDE: http://{ip}:{port}/privesc.html  ← open this in your browser{NC}"
+    html_files = sorted(base_dir.glob("*.html"))
+    if html_files:
+        links = "  ".join(f"http://{ip}:{port}/{h.name}" for h in html_files)
+        html_line = f"\n{M}  PAGES: {links}{NC}"
 
     print(f"""
 {G}╔══════════════════════════════════════════════════════════════╗

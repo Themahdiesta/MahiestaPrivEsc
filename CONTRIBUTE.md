@@ -353,3 +353,151 @@ section to find where they're inlined).
 - [ ] Add download commands (iwr + certutil alts) in the relevant HTML section
 - [ ] If local script: place file in project root and use `"local": True`
 - [ ] Test: run `ToolKitDownloader.py --serve-only` and curl the path to verify it 200s
+
+---
+
+## Changelog
+
+### Session 5 — 2026-04-26 (Notes Completion Pass)
+
+**Added to `privesc.html`:**
+
+1. **DCOMPotato subsection** (§7.14) — Was in the original notes (7.14.1) but missing from HTML.
+   Added: compat table row, TRANSFER/TEST/REV SHELL/ADD ADMIN commands, info callout.
+
+2. **RottenPotato subsection** (§7.14) — Was in original notes (7.14.8) but missing from HTML.
+   Added: TRANSFER/RUN commands, warning callout noting JuicyPotato/GodPotato supersede it,
+   decision tip for tool selection.
+
+3. **Potato compat table expanded** — Added DCOMPotato and RottenPotato rows to the OS
+   compatibility table so the quick-reference matches all 11 potato variants from the notes.
+
+4. **PowerSharpPack tool card expanded** (§7.13) — Notes had 13 additional sub-tools not shown
+   in the HTML. Added grouped commands for:
+   - Enum/Privesc: InternalMonologue, SharpWeb, SharpChromium, SharpCloud
+   - AD/Kerberos: SharpView, Grouper2
+   - Persistence/Lateral: SharPersist, UrbanBishop
+   - Recon: SharpShares, SharpSniper, SauronEye, SharpSpray, SharpGPOAbuse
+   Also added multi-param tip callout.
+
+5. **Linux Capabilities table expanded** (§8.5) — Notes had 16 capabilities; HTML only had 10.
+   Added the 7 missing entries: CAP_AUDIT_CONTROL, CAP_SETGID, CAP_SETPCAP, CAP_IPC_LOCK,
+   CAP_MAC_ADMIN, CAP_BLOCK_SUSPEND (and improved CAP_AUDIT_WRITE description).
+
+---
+
+### Session 4 — (prior session) — Major Build Pass
+
+**Added to `privesc.html`:**
+- §7.16 UAC Bypass — full Fodhelper/EventViewer/CMSTP/Disk Cleanup pipeline
+- §7.17 LSASS Dump — comsvcs MiniDump, procdump, nanodump, pypykatz
+- §7.18 Credential Manager — cmdkey /list, vault extraction, mimikatz sekurlsa
+- §7.19 Weak Registry Service DACL — sc sdshow, accesschk, sc config exploitation
+- §7.20 LAPS — detect, read via impacket, enumerate who can read
+- §7.21 Kerberoasting & AS-REP Roasting — impacket + Rubeus
+- §7.22 DNSAdmins DLL Hijack — full pipeline
+- §7.23 DCSync & ACL Abuse — secretsdump, mimikatz, WriteDACL/GenericAll/ACL chain
+- §8.x many Linux bonus sections (fail2ban, update-motd.d, LXD, screen, chkrootkit, etc.)
+- Tool Catalog modal (⬇ Tools button in topbar)
+- Accesschk.ps1 bundled local script
+- SI Parser, OS Compat Table, Decision Tree, Shell Stabilization Panel (data-driven)
+- 18 command fixes identified and corrected in audit pass
+
+---
+
+## Notes-vs-HTML Coverage Checklist
+
+### Windows (from `windows_priv_esc` notes)
+
+- [x] 7.1 Enumeration — complete
+- [x] 7.2 Finding Files & Directories — complete
+- [x] 7.3 PowerShell Goldmine (Logs & History) — complete
+- [x] 7.4 Abusing Privileges — complete (table + FullPowers)
+- [x] 7.5 Service Binary Hijacking — complete with pipeline
+- [x] 7.6 Service DLL Hijacking — complete with pipeline
+- [x] 7.7 Unquoted Service Paths — complete
+- [x] 7.8 Scheduled Tasks — complete
+- [x] 7.9 Internal Services — complete
+- [x] 7.10 Cleartext Password Finding — complete (findstr, configs, sysprep, VNC)
+- [x] 7.11 Shadow Copies (SAM/SYSTEM/NTDS.dit/SECURITY/NTUSER.dat) — complete
+- [x] 7.12 AlwaysInstallElevated — complete
+- [x] 7.13.1 WinPEAS — complete
+- [x] 7.13.2 PowerUp — complete
+- [x] 7.13.3 PowerCat — complete
+- [x] 7.13.4 PowerView — complete (in AD sections)
+- [x] 7.13.5 PowerMad — complete
+- [x] 7.13.6 PrivescCheck — complete (with dot-source warning)
+- [x] 7.13.7 Seatbelt — complete
+- [x] 7.13.8 PowerSharpPack — complete (expanded with all 13 sub-tools — Session 5)
+- [x] 7.14.1 DCOMPotato — **added Session 5**
+- [x] 7.14.2 EfsPotato — complete
+- [x] 7.14.3 GodPotato — complete
+- [x] 7.14.4 HotPotato — complete
+- [x] 7.14.5 JuicyPotato — complete (with CLSID table)
+- [x] 7.14.6 PrintSpoofer — complete
+- [x] 7.14.7 RoguePotato — complete
+- [x] 7.14.8 RottenPotato — **added Session 5**
+- [x] 7.14.9 SharpEfsPotato — complete
+- [x] 7.14.10 SigmaPotato — complete
+- [x] 7.14.11 SweetPotato — complete
+- [x] 7.15.1 CVE-2023-29360 — complete
+- [x] 7.15.2 SeAssignPrimaryToken — complete (in §7.14 + table)
+- [x] 7.15.3 SeBackupPrivilege — complete
+- [x] 7.15.4 SeDebugPrivilege — complete
+- [x] 7.15.5 SeImpersonatePrivilege — complete (§7.14 + decision tree)
+- [x] 7.15.6 SeManageVolumeAbuse — complete (full pipeline)
+- [x] 7.15.7 SeRestorePrivilege — complete
+
+### Linux (from `linux_priv_esc` notes)
+
+- [x] 8.1 Enumeration — complete
+- [x] 8.2 Service Footprints / Sniffing — complete
+- [x] 8.3 Cron Job Abuse — complete
+- [x] 8.4.1 /etc/passwd — complete
+- [x] 8.4.2 /etc/shadow — complete
+- [x] 8.5.1 Setuid Binaries — complete
+- [x] 8.5.2 Exploiting Setuid Binaries — complete
+- [x] 8.5.3 Capabilities — complete (getcap, setcap commands)
+- [x] 8.5.4 Capabilities Table — **expanded Session 5** (was 10 entries, now 17)
+- [x] 8.6 Sudo Abuse — complete (sudo -l + GTFOBins + wildcard injection)
+- [x] 8.7 Kernel Exploits — complete (CVE table with links)
+- [x] 8.8 Wildcard Injection — complete (tar, chown, chmod)
+- [x] 8.9 Disk Group Permissions — complete
+- [x] 8.10 MySQL as Root — complete
+- [x] 8.11 User-Installed Software — complete
+- [x] 8.12 Weak/Reused/Plaintext Passwords — complete
+- [x] 8.13 Internal Services — complete
+- [x] 8.14 World-Writable Scripts Run as Root — complete
+- [x] 8.15 Unmounted Filesystems — complete
+- [x] 8.16 SUID/GUID — complete (full guide + GTFOBins integration)
+- [x] 8.17.1 LinPEAS — complete
+- [x] 8.17.2 LinEnum — complete
+- [x] 8.17.3 unix-privesc-check — complete
+- [x] 8.17.4 Checksec — complete
+- [x] 8.17.5 Peepdf — complete
+- [x] 8.17.6 Exploit Suggester — complete
+
+### Extra sections in HTML (beyond the notes)
+
+- [x] §7.16 UAC Bypass — added (not in original notes)
+- [x] §7.17 LSASS Dump — added (not in original notes)
+- [x] §7.18 Credential Manager — added (not in original notes)
+- [x] §7.19 Weak Registry Service DACL — added (not in original notes)
+- [x] §7.20 LAPS — added (not in original notes)
+- [x] §7.21 Kerberoasting & AS-REP Roasting — added (not in original notes)
+- [x] §7.22 DNSAdmins DLL Hijack — added (not in original notes)
+- [x] §7.23 DCSync & ACL Abuse — added (not in original notes)
+- [x] §7.15b Windows Kernel Exploit Reference — added (enhanced CVE table)
+- [x] NFS no_root_squash, Docker/LXC, LD_PRELOAD, PATH Hijacking, PYTHONPATH — added
+- [x] Restricted Shell Escape, LXD Group, chkrootkit, GNU screen CVE — added
+- [x] Git Hooks & Gitea, fail2ban, update-motd.d, Tmux session hijack — added
+- [x] GTFOBins mini-lookup, Reverse Shell Generator, Shell Stabilization panel — added
+- [x] File Transfer Quick-Ref, Proof Collection, Tool Catalog modal — added
+- [x] Decision Tree, OS Compat Table, SI Parser — added
+
+### Known Gaps / TODO
+
+- [x] `RottenPotato.exe` — added to `ToolKitDownloader.py`, `TOOL_MAP`, `TOOL_CATALOG`. URL verified 200 OK.
+- [x] `DCOMPotato.exe` — added to `TOOL_MAP`, `TOOL_CATALOG` in HTML for documentation/commands. **No public precompiled binary exists.** ToolKitDownloader.py entry is commented out. Must compile from source: https://github.com/zcgonvh/DCOMPotato. HTML section has a warning callout and fallback to GodPotato.
+- [x] Line 145 indentation fix in `ToolKitDownloader.py` (cosmetic — chisel_win.zip was missing leading spaces)
+- [x] PowerSharpPack sub-tools (SharpChromium, SharpCloud, etc.) served via the main PS1 — no individual TOOL_MAP entries needed

@@ -95,6 +95,11 @@ TOOLS = {
         {"name": "SharpEfsPotato.exe",   "cat": "potato",  "url": "https://github.com/jakobfriedl/precompiled-binaries/raw/main/PrivilegeEscalation/Token/SharpEfsPotato.exe"},
         {"name": "LocalPotato.zip",      "cat": "potato",  "url": "https://github.com/decoder-it/LocalPotato/releases/download/v1.1/LocalPotato.zip", "extract": True},
         {"name": "EfsPotato.cs",         "cat": "potato",  "url": "https://raw.githubusercontent.com/zcgonvh/EfsPotato/master/EfsPotato.cs"},
+        # DCOMPotato: DCOM-based impersonation (Win7/8/10/Server 2008+). No verified public precompiled binary.
+        # Compile from source: https://github.com/zcgonvh/DCOMPotato — place compiled DCOMPotato.exe in windows/
+        # {"name": "DCOMPotato.exe",     "cat": "potato",  "url": ""},  # no public precompiled binary
+        # RottenPotato: legacy DCOM/NTLM impersonation. Superseded by JuicyPotato and GodPotato.
+        {"name": "RottenPotato.exe",     "cat": "potato",  "url": "https://github.com/foxglovesec/RottenPotato/raw/master/rottenpotato.exe"},
 
         # -- Credentials --
         {"name": "mimikatz_trunk.zip",   "cat": "creds",   "url": "https://github.com/gentilkiwi/mimikatz/releases/latest/download/mimikatz_trunk.zip", "extract": True},
@@ -138,7 +143,7 @@ TOOLS = {
         {"name": "RunasCs.zip",          "cat": "net",     "url": "https://github.com/antonioCoco/RunasCs/releases/latest/download/RunasCs.zip", "extract": True},
         # plink.exe: PuTTY SSH client — used for port forwarding when chisel not available (64-bit)
         {"name": "plink.exe",            "cat": "tunnel",  "url": "https://the.earth.li/~sgtatham/putty/latest/w64/plink.exe"},
-{"name": "chisel_win.zip",       "cat": "tunnel",  "url": "https://github.com/jpillora/chisel/releases/download/v1.11.5/chisel_1.11.5_windows_amd64.zip", "extract": True},
+        {"name": "chisel_win.zip",       "cat": "tunnel",  "url": "https://github.com/jpillora/chisel/releases/download/v1.11.5/chisel_1.11.5_windows_amd64.zip", "extract": True},
         {"name": "ligolo_agent_win.zip", "cat": "tunnel",  "url": "https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.3/ligolo-ng_agent_0.8.3_windows_amd64.zip", "extract": True},
     ],
 

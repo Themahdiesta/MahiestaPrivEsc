@@ -12,11 +12,12 @@ Features:
   - Prints target download commands with your IP
 
 Usage:
-  python3 ToolKitDownloader.py                    # Download all, serve after
-  python3 ToolKitDownloader.py --download-only     # Download only, no server
-  python3 ToolKitDownloader.py --serve-only        # Serve existing cache
-  python3 ToolKitDownloader.py --category windows  # Only download windows tools
-  python3 ToolKitDownloader.py --list              # List all tools without downloading
+  python3 ToolKitDownloader.py                      # Download all, pick interface, serve
+  python3 ToolKitDownloader.py --ip 192.168.45.250  # Skip interface prompt, use this IP
+  python3 ToolKitDownloader.py --download-only      # Download only, no server
+  python3 ToolKitDownloader.py --serve-only         # Serve existing cache
+  python3 ToolKitDownloader.py --category windows   # Only download windows tools
+  python3 ToolKitDownloader.py --list               # List all tools without downloading
 """
 
 import os
@@ -298,25 +299,58 @@ def warn(msg): log(f"[!] {msg}", Y)
 def err(msg):  log(f"[X] {msg}", R)
 def info(msg): log(f"[*] {msg}", C)
 
-def detect_ip():
-    for iface in ["tun0", "tap0", "eth0", "wlan0"]:
-        try:
-            out = subprocess.check_output(
-                f"ip -4 addr show {iface} 2>/dev/null | grep -oP 'inet \\K[\\d.]+'",
-                shell=True, text=True
-            ).strip().split("\n")[0]
-            if out:
-                return out
-        except:
-            pass
+def get_all_interfaces():
+    """Return list of (iface, ip) for every interface that has an IPv4 address."""
+    ifaces = []
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("1.1.1.1", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except:
+        raw = subprocess.check_output(
+            "ip -4 addr show | awk '/^[0-9]+:/{iface=$2; sub(/:$/,\"\",iface)} /inet /{split($2,a,\"/\"); print iface\" \"a[1]}'",
+            shell=True, text=True
+        ).strip().splitlines()
+        for line in raw:
+            parts = line.split()
+            if len(parts) == 2:
+                ifaces.append((parts[0], parts[1]))
+    except Exception:
+        pass
+    return ifaces
+
+
+def pick_ip(forced_ip=None):
+    """Return the IP to use for serving. Uses --ip if given, else asks interactively."""
+    if forced_ip:
+        return forced_ip
+
+    ifaces = get_all_interfaces()
+    # Filter out loopback
+    ifaces = [(n, ip) for n, ip in ifaces if not ip.startswith("127.")]
+
+    if not ifaces:
         return "127.0.0.1"
+
+    # Prefer VPN interfaces automatically only if there's exactly one tun/tap
+    vpn = [(n, ip) for n, ip in ifaces if n.startswith(("tun", "tap"))]
+
+    print(f"\n{C}  Available interfaces:{NC}")
+    for i, (name, ip) in enumerate(ifaces):
+        tag = f" {Y}← VPN{NC}" if name.startswith(("tun", "tap")) else ""
+        print(f"  {B}[{i}]{NC} {name:12s}  {ip}{tag}")
+
+    # Default selection: first VPN if any, else first interface
+    default_idx = ifaces.index(vpn[0]) if vpn else 0
+    default_ip = ifaces[default_idx][1]
+
+    try:
+        choice = input(f"\n  {B}Select interface [{default_idx}] (Enter = {default_ip}): {NC}").strip()
+        if choice == "":
+            return default_ip
+        idx = int(choice)
+        if 0 <= idx < len(ifaces):
+            return ifaces[idx][1]
+        warn(f"Invalid choice, using default: {default_ip}")
+        return default_ip
+    except (ValueError, EOFError, KeyboardInterrupt):
+        return default_ip
 
 def file_ok(path):
     return path.exists() and path.stat().st_size > 0
@@ -575,11 +609,12 @@ def main():
     parser.add_argument("--list", action="store_true", help="List all tools and cache status")
     parser.add_argument("--category", choices=["windows", "scripts", "linux", "repos", "all"], default="all", help="Download specific category")
     parser.add_argument("--cache-dir", type=str, default=str(CACHE_DIR), help="Cache directory path")
+    parser.add_argument("--ip", type=str, default=None, help="IP address to use for download commands (skips interactive selection)")
     args = parser.parse_args()
 
     cache_dir = Path(args.cache_dir)
     _update_cache_dir(cache_dir)
-    ip = detect_ip()
+    ip = pick_ip(args.ip)
 
     if args.list:
         list_tools()

@@ -85,8 +85,10 @@ TOOLS = {
         {"name": "SweetPotato.exe",      "cat": "potato",  "url": "https://raw.githubusercontent.com/Flangvik/SharpCollection/master/NetFramework_4.7_x64/SweetPotato.exe"},
         # SigmaPotatoCore = PS Core / .NET Core variant of SigmaPotato
         {"name": "SigmaPotatoCore.exe",  "cat": "potato",  "url": "https://github.com/tylerdotrar/SigmaPotato/releases/latest/download/SigmaPotatoCore.exe"},
-        # TcbElevation: SeTcbPrivilege → SYSTEM via LsaLogonUser S4U (antonioCoco gist, pre-compiled by b4lisong)
-        {"name": "TcbElevation.exe",     "cat": "tokens",  "url": "https://github.com/b4lisong/SeTcbPrivilege-Abuse/raw/main/TcbElevation.exe"},
+        # TcbElevation: SeTcbPrivilege → SYSTEM via LsaLogonUser S4U
+        # Source: gist.github.com/antonioCoco/19563adef860614b56d010d92e67d178 (TcbElevation.cpp)
+        # No verified public precompiled binary — compile from source and place at windows/TcbElevation.exe
+        # {"name": "TcbElevation.exe",   "cat": "tokens",  "url": ""},  # uncomment when precompiled available
         {"name": "JuicyPotato.exe",      "cat": "potato",  "url": "https://github.com/ohpe/juicy-potato/releases/download/v0.1/JuicyPotato.exe"},
         {"name": "JuicyPotatoNG.zip",    "cat": "potato",  "url": "https://github.com/antonioCoco/JuicyPotatoNG/releases/download/v1.1/JuicyPotatoNG.zip", "extract": True},
         {"name": "RoguePotato.zip",      "cat": "potato",  "url": "https://github.com/antonioCoco/RoguePotato/releases/download/1.0/RoguePotato.zip", "extract": True},
@@ -134,7 +136,9 @@ TOOLS = {
         {"name": "nc64.exe",             "cat": "net",     "url": "https://github.com/int0x33/nc.exe/raw/master/nc64.exe"},
         {"name": "nc.exe",               "cat": "net",     "url": "https://github.com/int0x33/nc.exe/raw/master/nc.exe"},
         {"name": "RunasCs.zip",          "cat": "net",     "url": "https://github.com/antonioCoco/RunasCs/releases/latest/download/RunasCs.zip", "extract": True},
-        {"name": "chisel_win.zip",       "cat": "tunnel",  "url": "https://github.com/jpillora/chisel/releases/download/v1.11.5/chisel_1.11.5_windows_amd64.zip", "extract": True},
+        # plink.exe: PuTTY SSH client — used for port forwarding when chisel not available (64-bit)
+        {"name": "plink.exe",            "cat": "tunnel",  "url": "https://the.earth.li/~sgtatham/putty/latest/w64/plink.exe"},
+{"name": "chisel_win.zip",       "cat": "tunnel",  "url": "https://github.com/jpillora/chisel/releases/download/v1.11.5/chisel_1.11.5_windows_amd64.zip", "extract": True},
         {"name": "ligolo_agent_win.zip", "cat": "tunnel",  "url": "https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.3/ligolo-ng_agent_0.8.3_windows_amd64.zip", "extract": True},
     ],
 
@@ -188,6 +192,8 @@ TOOLS = {
         {"name": "Invoke-ConPtyShell.ps1",     "cat": "shells",   "url": "https://raw.githubusercontent.com/antonioCoco/ConPtyShell/master/Invoke-ConPtyShell.ps1"},
         {"name": "Invoke-RunasCs.ps1",         "cat": "shells",   "url": "https://raw.githubusercontent.com/antonioCoco/RunasCs/master/Invoke-RunasCs.ps1"},
         {"name": "powercat.ps1",               "cat": "shells",   "url": "https://raw.githubusercontent.com/besimorhino/powercat/master/powercat.ps1"},
+        # psgetsys.ps1: SeDebugPrivilege → impersonate parent process token (decoder-it/splinter_code)
+        {"name": "psgetsys.ps1",               "cat": "shells",   "url": "https://raw.githubusercontent.com/decoder-it/psgetsystem/master/psgetsys.ps1"},
     ],
 
     # ══════════════════════════════════════════════════════════════
@@ -274,7 +280,7 @@ TOOLS = {
         {"name": "BeRoot",              "url": "https://github.com/AlessandroZ/BeRoot.git"},
         {"name": "linux-exploit-suggester", "url": "https://github.com/mzet-/linux-exploit-suggester.git"},
         {"name": "GTFOBLookup",         "url": "https://github.com/nccgroup/GTFOBLookup.git"},
-        {"name": "LinEsc",              "url": "https://github.com/IvanGlinkin/LinEsc.git"},
+        {"name": "LinEnum",             "url": "https://github.com/rebootuser/LinEnum.git"},
         {"name": "noPac",               "url": "https://github.com/Ridter/noPac.git"},
         {"name": "CVE-2021-1675",       "url": "https://github.com/cube0x0/CVE-2021-1675.git"},
         {"name": "CVE-2020-1472",       "url": "https://github.com/dirkjanm/CVE-2020-1472.git"},

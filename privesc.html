@@ -7439,7 +7439,9 @@ function parseTokenPrivs(raw, out) {
   // Handles: "SeXxxPrivilege    <description text>    Enabled|Disabled"
   const privLines = [];
   const seen = new Set();
-  const privRe = /^(Se\w+(?:Privilege)?)\s{2,}.+?\s{2,}(Enabled|Disabled)\s*$/gim;
+  // Primary: tolerates single-space column separators (tight column padding fills column exactly).
+  // Uses \s+ (not \s{2,}) so SeManageVolumePrivilege / SeIncreaseWorkingSetPrivilege are never missed.
+  const privRe = /^(Se\w+(?:Privilege)?)\s+\S.*?\s+(Enabled|Disabled)\s*$/gim;
   let m;
   while ((m = privRe.exec(raw)) !== null) {
     if (!seen.has(m[1])) {
@@ -7448,14 +7450,13 @@ function parseTokenPrivs(raw, out) {
     }
   }
 
-  // Fallback: looser — single space separations (Server format / tight columns)
-  if (privLines.length === 0) {
-    const looseRe = /^(Se\w+(?:Privilege)?)\b.*?\b(Enabled|Disabled)\s*$/gim;
-    while ((m = looseRe.exec(raw)) !== null) {
-      if (!seen.has(m[1])) {
-        seen.add(m[1]);
-        privLines.push({name: m[1], enabled: m[2].toLowerCase() === 'enabled'});
-      }
+  // Supplement: looser fallback catches any remaining privileges the primary missed
+  // (runs unconditionally so tight-column edge cases don't silently drop entries)
+  const looseRe = /^(Se\w+(?:Privilege)?)\b.*?\b(Enabled|Disabled)\s*$/gim;
+  while ((m = looseRe.exec(raw)) !== null) {
+    if (!seen.has(m[1])) {
+      seen.add(m[1]);
+      privLines.push({name: m[1], enabled: m[2].toLowerCase() === 'enabled'});
     }
   }
 
@@ -7575,6 +7576,9 @@ function parseTokenPrivs(raw, out) {
 
   if (matched.length === 0 && !Object.keys(GROUP_EXPLOITS).some(g => userGroups.includes(g))) {
     html2 += '<div class="si-msg ok">&#10003; No directly exploitable privileges found in the known list. Run <code>winPEAS.exe</code> and <code>PrivescCheck.ps1</code> for deeper analysis.</div>';
+    if (privLines.some(p => p.name === 'SeChangeNotifyPrivilege')) {
+      html2 += '<div class="si-msg info" style="background:var(--bg3);border-left:3px solid var(--text3);margin-top:6px;font-size:11px">&#8505; <b>SeChangeNotifyPrivilege</b> is a default privilege granted to all users — it allows traversing directories without explicit read permission. It has <b>no known standalone escalation path</b>; its absence (not its presence) would be notable. No action needed for this privilege.</div>';
+    }
   }
 
   // ── STEP 9: Per-privilege exploit cards ────────────────────────────────────
@@ -7623,7 +7627,7 @@ function parseTokenPrivs(raw, out) {
   if (unmatched.length > 0) {
     html2 += `<div style="margin-top:10px;padding:6px 10px;background:var(--bg4);border-radius:4px;font-size:11px;color:var(--text3)">
       <span style="color:var(--text2)">Other privileges (no known direct exploit path):</span><br>
-      ${unmatched.map(p => `<code style="font-size:10px;background:var(--bg3);padding:2px 5px;border-radius:2px;margin:2px 2px 0 0;display:inline-block;color:${p.enabled ? 'var(--text)' : 'var(--text3)'}">${escHtml(p.name)}${p.enabled ? ' &#9679;' : ''}</code>`).join('')}
+      ${unmatched.map(p => `<code style="font-size:10px;background:var(--bg3);padding:2px 5px;border-radius:2px;margin:2px 2px 0 0;display:inline-block;color:${p.enabled ? 'var(--text)' : 'var(--text3)'}">${escHtml(p.name)}${p.enabled ? ' &#9679;' : ''}</code>`).join(' ')}
     </div>`;
   }
 

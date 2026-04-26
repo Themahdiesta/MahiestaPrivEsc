@@ -490,6 +490,7 @@
 
   ul { padding-left: 18px; margin: 8px 0; }
   ul li { margin-bottom: 4px; }
+  .var-highlight { color: #f0c040; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -3287,6 +3288,31 @@ document.querySelectorAll('.code-block').forEach(block => {
   btn.textContent = 'COPY';
   block.appendChild(btn);
 });
+
+// Live variable substitution — reads values set in privesc.html (shared localStorage)
+(function applyVars() {
+  const VAR_MAP = {
+    'KALI_IP': localStorage.getItem('v-kali')   || '{{KALI_IP}}',
+    'PORT':    localStorage.getItem('v-port')    || '{{PORT}}',
+    'RPORT':   localStorage.getItem('v-rport')   || '{{RPORT}}',
+    'TARGET':  localStorage.getItem('v-target')  || '{{TARGET}}',
+    'USER':    localStorage.getItem('v-user')    || '{{USER}}',
+    'PASS':    localStorage.getItem('v-pass')    || '{{PASS}}',
+    'DOMAIN':  localStorage.getItem('v-domain')  || '{{DOMAIN}}',
+    'WPATH':   localStorage.getItem('v-wpath')   || '{{WPATH}}',
+    'LFILE':   localStorage.getItem('v-lfile')   || '{{LFILE}}',
+    'SVCBIN':  localStorage.getItem('v-svcbin')  || '{{SVCBIN}}',
+    'SVCDIR':  localStorage.getItem('v-svcdir')  || '{{SVCDIR}}',
+    'TASKBIN': localStorage.getItem('v-taskbin') || '{{TASKBIN}}',
+  };
+  document.querySelectorAll('.code-block, pre, code').forEach(el => {
+    let t = el.innerHTML;
+    Object.entries(VAR_MAP).forEach(([k, v]) => {
+      if (v && v !== '{{' + k + '}}') t = t.replaceAll('{{' + k + '}}', `<span class="var-highlight">${v}</span>`);
+    });
+    el.innerHTML = t;
+  });
+})();
 </script>
 </body>
 </html>

